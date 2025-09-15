@@ -1,4 +1,6 @@
-export default function Home() {
+import React from "react";
+
+export default function Profile() {
     return (
       <div className="h-[calc(100%-232px)] flex flex-col items-center justify-center">
         <h1 className="text-5xl text-white font-bold mb-8 animate-pulse">

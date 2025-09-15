@@ -48,7 +48,7 @@ const SlideTabs = () => {
       <Tab setPosition={setPosition} link="/Home">Home</Tab>
       <Tab setPosition={setPosition} link="/Home/Chat">Chat</Tab>
       <Tab setPosition={setPosition} link="/Home/Games">Games</Tab>
-      <Tab setPosition={setPosition} link="/Home/Profile">Settings</Tab>
+      <Tab setPosition={setPosition} link="/Home/Settings">Settings</Tab>
       <Tab setPosition={setPosition} link="/Home/LeaderBoard">Ascend</Tab>
 
       <Cursor position={position} />

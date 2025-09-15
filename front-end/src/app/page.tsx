@@ -4,7 +4,7 @@ import Link from 'next/link';
 export default function Intro() {
     return (
       <div className="h-screen bg-[url('/images/bg-image.png')] bg-cover bg-center flex justify-center items-center">
-        <div className="h-250 w-300 b m-auto bg-primary/35 rounded-[35px] flex flex-col items-center">
+        <div className="h-250 w-300 b m-auto bg-white-smoke/50 rounded-[35px] flex flex-col items-center">
             <Image className="w-80 pt-20"  alt="Logo for  a ping pong" src="/images/logo.png" width={500} height={400}/>
             <h1 className="-mt-10 text-center block text-[48px] text-primary text-shadow-lg/30 font-semibold" >Welcome, champ.<br/>Let’s ping. Let’s pong.</h1>
             <p className="text-md font-medium text-shadow-sm text-h"> No paddles, no fun! Jump in—sign up or log in.</p>
