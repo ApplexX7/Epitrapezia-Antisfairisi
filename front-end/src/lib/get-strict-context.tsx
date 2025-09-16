@@ -20,7 +20,7 @@ function getStrictContext<T>(
   }: {
     value: T;
     children?: React.ReactNode;
-  }) => <Context.Provider value={value}>{children}</Context.Provider>;
+  }) => <Context.Provider value={value}>{children}</Context.Provider>; 
 
   const useSafeContext = () => {
     const ctx = React.useContext(Context);
