@@ -1,0 +1,51 @@
+1. Schema Validation (first defense)
+
+    Define a JSON schema for the signup request body (username, password, email, etc.).
+
+    Fastify automatically validates against the schema before hitting your handler.
+
+    This prevents invalid data types (e.g., numbers instead of strings, malformed emails, too-short passwords).
+
+2. Input Sanitization (second defense)
+
+    After validation, you should sanitize values to prevent injection attacks or unintended data storage:
+
+    Trim whitespace from strings like username and email.
+
+    Normalize case (e.g., lowercase emails).
+
+    Escape dangerous characters to prevent injection (for example, converting <script> into a harmless string).
+
+    Remove unexpected fields not part of the schema.
+
+3. Password Handling
+
+    Enforce length and complexity rules in the schema.
+
+    Never store raw passwords — hash them with a strong algorithm (e.g., bcrypt or argon2).
+
+    Don’t log or return them anywhere.
+
+4. Email / Username checks
+
+    Ensure email is a valid format.
+
+    Optionally, apply additional normalization (e.g., strip dots in Gmail if that fits your logic).
+
+    Enforce uniqueness by checking the database before accepting.
+
+5. Rate Limiting & Throttling
+
+    Even if validation and sanitization are perfect, attackers may brute-force signup.
+
+    Use rate limiting (Fastify plugins exist).
+
+    Add CAPTCHA if bots become an issue.
+
+6. Defense-in-Depth
+
+    Reject requests with unexpected content-types.
+
+    Enforce HTTPS in production.
+
+    Validate and sanitize again at persistence boundaries (before saving into DB).

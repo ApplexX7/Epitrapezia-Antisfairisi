@@ -1,14 +1,19 @@
-import fastify from "fastify";
+import fastify, { FastifyInstance } from "fastify";
 import { Server } from "./server";
-import {createTable} from './db'
-import { SignUp } from './controllers/auth'
+import {createTable, db} from './databases/db'
+import { authRouters } from "./routers/auth";
+import { serialize } from "v8";
 
 
-const db = createTable();
+createTable();
 
+authRouters();
 
-Server.route('post', '/auth/sign-up', SignUp);
-Server.route('post', '/auth/sign-up', Login);
-
+Server.instance().get("/", async (req, reply) => {
+    return "hello";
+  });
 
 Server.start()
+
+process.on("exit", () => db.close());
+process.on("SIGINT", () => db.close(() => process.exit(0)));

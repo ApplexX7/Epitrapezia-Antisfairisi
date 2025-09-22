@@ -1,23 +1,24 @@
 import Fastify from "fastify";
 import sqlite3 from "sqlite3";
+import path from "path";
 
 const fastify = Fastify({ logger: true });
 const { Database } = sqlite3;
 
+const dbPath = path.resolve(__dirname, "./mydatabase.sqlite");    
+export const db = new Database(dbPath, (err) => {
+    if (err) {
+        console.error("Error opening database:", err.message);
+    } else {
+        console.log("Connected to the SQLite database");
+    }
+});
 
 export function createTable(){
-    const db = new Database("./databases/mydatabase.db", (err) => {
-        if (err) {
-            console.error("Error opening database:", err.message);
-        } else {
-            console.log("Connected to the SQLite database");
-        }
-    });
-    
     db.run(
         `CREATE TABLE IF NOT EXISTS players (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            username TEXT NOT NULL,
+            username TEXT UNIQUE NOT NULL,
             lastName TEXT NOT NULL,
             firstName TEXT NOT NULL,
             password TEXT NOT NULL,
@@ -31,7 +32,6 @@ export function createTable(){
             }
         }
     );
-    return (db);
 }
 
 

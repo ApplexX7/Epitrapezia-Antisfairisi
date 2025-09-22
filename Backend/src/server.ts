@@ -1,4 +1,4 @@
-import fastify, { FastifyInstance , RouteHandlerMethod} from "fastify";
+import fastify, { FastifyInstance, RouteHandlerMethod } from "fastify";
 
 export class Server {
   private static readonly port = 8080;
@@ -7,25 +7,20 @@ export class Server {
 
   public static async start() {
     try {
-      const address = await this.serv.listen({
-        port: this.port,
-        host: this.host,
-      });
-      console.log(`🚀 Server listening at ${address}`);
+      await this.serv.listen({ port: this.port, host: this.host });
+      console.log(`🚀 Server listening at http://${this.host}:${this.port}`);
     } catch (err) {
       console.error(err);
       process.exit(1);
     }
   }
 
-  public static route<
-    T extends "get" | "post" | "put" | "delete" | "patch"
-  >(
-    method: T,
+  public static route(
+    method: "get" | "post" | "put" | "delete" | "patch",
     path: string,
-    handler: Parameters<FastifyInstance[T]>[1]
+    handler: RouteHandlerMethod<any, any, any>
   ) {
-    this.serv[method](path, handler as RouteHandlerMethod);
+    this.serv[method](path, handler as any);
   }
 
   public static instance() {
