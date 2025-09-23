@@ -1,48 +1,52 @@
 'use client'
 import "../../globals.css";
+import Link from "next/link";
 import { useEffect, useState } from "react";
 
 export default function Home() {
-  let [localPongHover, setLocalPongHover] = useState(false);
-  let [rpsHover, setrpsHover] = useState(false);
-  let handlerpsHover = () =>
-  {
-    setrpsHover(true);
-  }
-  let handlerpsUnHover = () =>
-  {
-    setrpsHover(false);
-  }
-  let handleLocalHover = () =>
-  {
-    setLocalPongHover(true);
-  }
-  let handleLocalUnHover = () =>
-  {
-    setLocalPongHover(false);
-  }
+  // let [localPongHover, setLocalPongHover] = useState(false);
+  // let [rpsHover, setrpsHover] = useState(false);
+  // let handlerpsHover = () =>
+  // {
+  //   setrpsHover(true);
+  // }
+  // let handlerpsUnHover = () =>
+  // {
+  //   setrpsHover(false);
+  // }
+  // let handleLocalHover = () =>
+  // {
+  //   setLocalPongHover(true);
+  // }
+  // let handleLocalUnHover = () =>
+  // {
+  //   setLocalPongHover(false);
+  // }
   return (
     <>
+     <Link href="/Home/Games/Tournament">
      <div
       id = "localPong"
       // onMouseEnter={handleLocalHover}
       // onMouseLeave={handleLocalUnHover}
       className="
-        absolute
-        w-[20vw] h-[60vh]
-        top-[20vh] left-[10vw]
-        rounded-[2vw]
-        rotate-0
-        opacity-[0.8]
-        bg-cover bg-center
-        shadow-[0_0_2vw_rgba(0,0,0,0.5)]
-        duration-700
-        transition-transform
-        hover:scale-120"
+      absolute
+      w-[20vw] h-[60vh]
+      top-[20vh] left-[10vw]
+      rounded-[2vw]
+      rotate-0
+      opacity-[0.8]
+      bg-cover bg-center
+      shadow-[0_0_2vw_rgba(0,0,0,0.5)]
+      transition-all duration-700
+      hover:scale-115
+      filter hover:brightness-[1.75]
+      cursor-pointer
+    "
         style={{ backgroundImage: "url('/images/localPong.png')",
         // transition: "filter 0.8s ease",
-        filter: localPongHover ? "brightness(3.5)" : "brightness(1)",
-        transform: localPongHover ? "scale(1.2)" : "scale(1)",
+        // filter: localPongHover ? "brightness(3.5)" : "brightness(1)",
+        // transform: localPongHover ? "scale(1.2)" : "scale(1)",
         }}>  
     <span
       className="
@@ -55,6 +59,8 @@ export default function Home() {
           Masters Arena
     </span>
     </div>
+    </Link>
+    <Link href="/Home/Games/LocalPong">
     <div
   id="OnlineTourPong"
   className="
@@ -67,9 +73,11 @@ export default function Home() {
     opacity-[0.8]
     bg-cover bg-center
     shadow-[0_0_2vw_rgba(0,0,0,0.5)]
-    duration-700
-    transition-transform
-    hover:scale-120
+    transition-all duration-700
+    hover:scale-115
+    filter hover:brightness-[1.75]
+    cursor-pointer
+
   "
   style={{
     backgroundImage: "url('/images/pongDiv.png')",
@@ -88,6 +96,8 @@ export default function Home() {
     Head To Head
   </span>
 </div >
+</Link>
+<Link href="/Home/Games/HandClash">
     <div    className="
     absolute
     w-[20vw] h-[60vh]
@@ -97,15 +107,17 @@ export default function Home() {
     opacity-[0.65]
     bg-cover bg-center
     shadow-[0_0_2vw_rgba(0,0,0,0.5)]
-    duration-700
-    transition-transform
-    hover:scale-120
+    transition-all duration-700
+    hover:scale-115
+    filter hover:brightness-[1.75]
+    cursor-pointer
+
   " id="HandClash"
   // onMouseEnter={handlerpsHover}
   // onMouseLeave={handlerpsUnHover}
   style={{ backgroundImage: "url('/images/rps.png')" ,
   // transition: "filter 0.8s ease",
-  filter: rpsHover ? "brightness(3.5)" : "brightness(1)",
+  // filter: rpsHover ? "brightness(3.5)" : "brightness(1)",
   // transform: rpsHover ? "scale(1.2)" : "scale(1)",
   }}
   >
@@ -122,6 +134,7 @@ export default function Home() {
     Hand Clash
   </span>
   </div>
+  </Link>
   
     </>
   );
