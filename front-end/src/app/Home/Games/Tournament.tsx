@@ -36,7 +36,9 @@ export default function Tournament()
         -translate-x-1/2 translate-y-1/3
         font-poppins font-semibold
         text-[32px] leading-[100%] tracking-[0%]
-        text-white">
+        text-white
+        whitespace-nowrap
+    ">
           Masters Arena
     </span>
     </div>

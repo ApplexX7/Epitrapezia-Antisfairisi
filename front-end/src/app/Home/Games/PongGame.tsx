@@ -88,6 +88,7 @@ export default function PongGame() {
               font-poppins font-semibold
               text-[36px] leading-[100%] tracking-[0%]
               text-white
+              whitespace-nowrap
             "
           >
             Head To Head

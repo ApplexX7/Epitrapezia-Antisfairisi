@@ -37,6 +37,7 @@ export default function HandClash()
       font-poppins font-semibold
       text-[32px] leading-[100%] tracking-[0%]
       text-white
+      whitespace-nowrap
     "
   >
     Hand Clash
