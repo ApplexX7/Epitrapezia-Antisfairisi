@@ -4,7 +4,7 @@ import { Login } from "../controllers/login";
 import { SignUp } from "../controllers/signUp";
 
 export function authRouters(){
-  Server.instance().post<{ Body: { username: string; password: string } }>(
+  Server.instance().post<{ Body: { login: string; password: string } }>(
     "/auth/Login",
     Login()
   );

@@ -2,12 +2,17 @@ import fastify, { FastifyInstance } from "fastify";
 import { Server } from "./server";
 import {createTable, db} from './databases/db'
 import { authRouters } from "./routers/auth";
-import { serialize } from "v8";
+import fastifyCors from '@fastify/cors';
 
 
 createTable();
-
 authRouters();
+
+
+Server.instance().register(fastifyCors, {
+  origin: 'http://localhost:3000', 
+  credentials: true,
+});
 
 Server.instance().get("/", async (req, reply) => {
     return "hello";

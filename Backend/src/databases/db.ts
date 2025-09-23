@@ -22,7 +22,8 @@ export function createTable(){
             lastName TEXT NOT NULL,
             firstName TEXT NOT NULL,
             password TEXT NOT NULL,
-            email TEXT UNIQUE NOT NULL
+            email TEXT UNIQUE NOT NULL,
+            refreshToken TEXT
         )`,
         (err) => {
             if (err) {

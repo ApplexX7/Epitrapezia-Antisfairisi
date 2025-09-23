@@ -2,15 +2,39 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
+import { useUser } from "@/context/playerContext"
+import api from "@/lib/axios";
+import { useRouter } from "next/navigation";
 
 export default function Login() {
+  const router = useRouter()
   const [showPassword, setShowPassword] = useState(false)
-  const checkAuth = (event: React.FormEvent<HTMLFormElement>) => {
+  const { setUser }  = useUser()
+  const checkAuth = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const formData = new FormData(event.target);
     const name = formData.get("username");
     const password = formData.get("password");
-    console.log(name, password);
+    try {
+      const res = await api.post("/auth/Login", { login: name, password });
+      console.log(res);
+      if (!res?.data?.token?.accessToken || !res.data.user) {
+        alert("Login failed: Invalid server response");
+        return;
+      }
+      sessionStorage.setItem("accessToken", res.data.token.accessToken);
+      setUser(res.data.user);
+      router.push("/Home");
+    } catch (err: any) {
+      if (err.response) {
+        console.error(err.response.data?.message || err.response.statusText);
+        alert(err.response.data?.message || "Login failed");
+      } else {
+        console.error(err.message);
+        alert("Login failed: " + err.message);
+      }
+    }
+    
   };
   return (
     <div className="h-screen bg-[url('/images/bg-image.png')] bg-cover bg-center flex justify-center items-center">
