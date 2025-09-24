@@ -23,6 +23,7 @@ export function createTable(){
             firstName TEXT NOT NULL,
             password TEXT NOT NULL,
             email TEXT UNIQUE NOT NULL,
+            avatar TEXT NULL,
             refreshToken TEXT
         )`,
         (err) => {
