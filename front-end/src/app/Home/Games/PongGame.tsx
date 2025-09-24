@@ -29,7 +29,13 @@ export default function PongGame() {
         >
         <Link href='/Home/Games/OnlinePong'>
           <div
-            className="absolute inset-0  backdrop-blur-sm backdrop-brightness-120 filter hover:brightness-175"
+           className="
+           absolute inset-0
+           backdrop-brightness-120
+           backdrop-blur-sm hover:backdrop-blur-none
+           hover:brightness-175
+           filter
+         "
             style={{
               clipPath: 'polygon(0 0, 100% 0, 100% 65%, 0 35%)',
             }}
@@ -55,7 +61,12 @@ export default function PongGame() {
 </span>
             <Link href='/Home/Games/LocalPong'>
           <div
-            className="absolute inset-0 backdrop-blur-sm backdrop-brightness-80 filter hover:brightness-200"
+            className="
+            absolute inset-0
+            backdrop-blur-sm backdrop-brightness-80
+            hover:backdrop-blur-none hover:brightness-200
+            filter transition-all duration-300
+          "
             style={{
               clipPath: 'polygon(0 35%, 100% 65%, 100% 100%, 0 100%)',
             }}
