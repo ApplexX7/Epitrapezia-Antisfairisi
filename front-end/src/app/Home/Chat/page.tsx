@@ -19,10 +19,10 @@ export default function Home() {
             </CustomButton>
           </div>
         </div>
-        <div className="h-[2px] w-16 sm:w-24 lg:w-80 bg-white mx-auto"></div>
+        <div className="h-[2px] w-80 bg-white mx-auto"></div>
       </div>
       
-      <div className="w-2/3  h-full rounded-r-xl">
+      <div className="w-2/3 h-full rounded-r-xl">
         Centered Content
       </div>
     </div>
