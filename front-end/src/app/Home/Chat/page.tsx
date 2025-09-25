@@ -1,8 +1,30 @@
+'use client'
 import Image from "next/image";
 import { MagnifyingGlass, Plus } from "@phosphor-icons/react/ssr";
 import { CustomButton } from "@/components/CostumButton"
+import { useEffect, useState } from "react";
+import { div } from "motion/react-client";
 
 export default function Home() {
+  const [time, setTime] = useState( 
+    new Date().toLocaleTimeString([], {hour:"2-digit", minute: "2-digit"})
+  )
+
+  useEffect(()=>{
+    const interval = setInterval(()=>{
+      setTime(new Date().toLocaleTimeString([], { hour:"2-digit", minute: "2-digit"}));
+    }, 60000);
+    return ()=>clearInterval(interval);
+  },[]);
+
+  const chats = [
+    {id:1 ,name: "saloua", last: "s simple dummy ..", time},
+  ]
+
+  const message =[
+    { id: 1, user: "other", text: "hi" },
+    { id: 2, user: "me", text: "hello" },
+  ]
   return (
     <div className=" flex   border-none h-full justify-center shadow-[2px_2px_5px_3px_rgba(0,0,0,0.3)] 
     items-center  bg-[#F5F5F5]/40  rounded-xl m-10">
@@ -19,11 +41,42 @@ export default function Home() {
             </CustomButton>
           </div>
         </div>
-        <div className="h-[2px] w-80 bg-white mx-auto"></div>
+        <div className="flex h-[2px] w-130 bg-white/30 mx-auto"></div>
+        <div className="flex-1 space-y-4 overflow-y-auto">
+          {chats.map((chat) =>
+          <div
+            key={chat.id}
+            className="flex items-center gap-3 p-2 m-5 rounded-xl hover:bg-white/20 cursor-pointer"
+          > <Image src="/images/defaultAvatare.jpg"  alt="Profile" width={40} height={40} className="rounded-full gap-2" />
+          <div className="flex-1">
+            <p className="text-white font-medium">{chat.name}</p>
+            <p className="text-gray-300 text-sm truncate"> {chat.last} </p>
+          </div>
+          <span className="text-xs text-gray-200"> {chat.time} </span>
+          </div>
+          )}
+        </div>
       </div>
       
-      <div className="w-2/3 h-full rounded-r-xl">
-        Centered Content
+      <div className="w-2/3 h-full rounded-r-x flex flex-col flex-1">
+        <div className="flex-1 p-6 space-y-4 overflow-y-auto">
+          {message.map((msg)=>(
+          <div
+            key={msg.id}
+            className={`flex ${msg.user == "me" ? "justify-end" : "justify-start"}`}
+          >
+            <div className="flex gap-2 ">
+              <Image src="/images/defaultAvatare.jpg"  alt="Profile" width={40} height={40} className="rounded-full" />
+              <div className={`px-4 py-2 rounded-2xl max-w-[70%] text-sm ${msg.user === "me"
+              ? "bg-purple-500 text-white rounded-br-none" : "bg-gray-200 text-gray-900 rounded-bl-none "}`}>
+                {msg.text}
+              </div>
+            </div>
+          </div>
+          ))}
+        </div>
+        <div className="bg-">
+        </div>
       </div>
     </div>
   );
