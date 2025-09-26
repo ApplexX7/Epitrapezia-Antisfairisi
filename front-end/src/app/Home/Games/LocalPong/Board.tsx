@@ -1,60 +1,96 @@
 "use client";
-import { useState, useEffect, useRef } from "react";
-import { start } from "repl";
+import { useEffect, useRef, useState } from "react";
 
 export default function Board() {
+  const boardRef = useRef<HTMLDivElement | null>(null);
+  const leftPaddleRef = useRef<HTMLDivElement | null>(null);
+  const rightPaddleRef = useRef<HTMLDivElement | null>(null);
+
   const [startGameCounter, setStartGameCounter] = useState(5);
-  const [leftPaddleOffset, setLeftPaddleOffset] = useState(0); 
+  const [leftPaddleOffset, setLeftPaddleOffset] = useState(0);
   const [rightPaddleOffset, setRightPaddleOffset] = useState(0);
-  const [boardHeight, setBoardHeight] = useState(0);
-  const boardRef = useRef<HTMLDivElement>(null); 
-  let movingSpeed = 10;
-  useEffect (() => 
-  {
-    if (boardRef.current)
-        setBoardHeight(boardRef.current.offsetHeight);
-  })
+
+  const [bounds, setBounds] = useState({ min: 0, max: 0 });
+
   useEffect(() => {
     if (startGameCounter <= 0) return;
-
     const intervalId = setInterval(() => {
       setStartGameCounter((prev) => prev - 1);
     }, 1000);
     return () => clearInterval(intervalId);
   }, [startGameCounter]);
 
+  useEffect(() => {
+    function updateBounds() {
+      const board = boardRef.current;
+      const paddle = leftPaddleRef.current ?? rightPaddleRef.current;
+      if (!board || !paddle) return;
+
+      const boardH = board.clientHeight; 
+      const paddleH = paddle.offsetHeight; 
+
+      const halfBoard = boardH / 2;
+      const halfPaddle = paddleH / 2;
+
+      const min = -(halfBoard - halfPaddle);
+      const max = halfBoard - halfPaddle;
+
+      setBounds({ min, max });
+
+      setLeftPaddleOffset((p) => Math.min(max, Math.max(min, p)));
+      setRightPaddleOffset((p) => Math.min(max, Math.max(min, p)));
+    }
+
+    updateBounds();
+
+    const ro = new ResizeObserver(updateBounds);
+    if (boardRef.current) ro.observe(boardRef.current);
+    if (leftPaddleRef.current) ro.observe(leftPaddleRef.current);
+    window.addEventListener("resize", updateBounds);
+
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("resize", updateBounds);
+    };
+  }, []);
 
   useEffect(() => {
+    const step = 20;
+
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (!boardRef.current) return;
-      const paddleHeight = boardRef.current.offsetHeight * 0.2;
-    
-      const minY = -(boardHeight / 2) + paddleHeight ;
-      const maxY = (boardHeight / 2) - paddleHeight;
-    
-      if (e.key === "w") {
-        if (leftPaddleOffset - maxY > 0)
-            setLeftPaddleOffset(leftPaddleOffset - movingSpeed);
-      } else if (e.key === "s") {
-        setLeftPaddleOffset((yl) => Math.min(maxY, yl + movingSpeed));
+      let { min, max } = bounds;
+      if (min === 0 && max === 0 && boardRef.current && leftPaddleRef.current) {
+        const BH = boardRef.current.clientHeight;
+        const PH = leftPaddleRef.current.offsetHeight;
+        min = -(BH / 2 - PH / 2);
+        max = BH / 2 - PH / 2;
+      }
+
+      if (e.key === "w" || e.key === "W") {
+        setLeftPaddleOffset((p) => Math.max(min, p - step));
+      } else if (e.key === "s" || e.key === "S") {
+        setLeftPaddleOffset((p) => Math.min(max, p + step));
       } else if (e.key === "ArrowUp") {
-        setRightPaddleOffset((yr) => Math.max(minY, yr - movingSpeed));
+        e.preventDefault();
+        setRightPaddleOffset((p) => Math.max(min, p - step));
       } else if (e.key === "ArrowDown") {
-        setRightPaddleOffset((yr) => Math.min(maxY, yr + movingSpeed));
+        e.preventDefault();
+        setRightPaddleOffset((p) => Math.min(max, p + step));
       }
     };
-    
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, []);
+  }, [bounds]);
 
   return (
-    <div ref={boardRef}
+    <div
+      ref={boardRef}
       className="relative m-auto w-[80vw] h-[75vh]"
       style={{ backgroundColor: "#0A0F2A" }}
     >
       <div
+        ref={leftPaddleRef}
         id="leftPaddle"
         className="absolute left-0 top-1/2 w-[19px] h-[20%] rounded-sm"
         style={{
@@ -69,10 +105,12 @@ export default function Board() {
         style={{ backgroundColor: "#FF007F" }}
       ></div>
       <div
+        ref={rightPaddleRef}
         className="absolute right-0 top-1/2 w-[19px] h-[20%] rounded-sm "
-        style={{ backgroundColor: "#FF007F",
-            transform : `translateY(-50%) translateY(${rightPaddleOffset}px)`
-         }}
+        style={{
+          backgroundColor: "#FF007F",
+          transform: `translateY(-50%) translateY(${rightPaddleOffset}px)`,
+        }}
       ></div>
 
       {startGameCounter > 0 ? (
