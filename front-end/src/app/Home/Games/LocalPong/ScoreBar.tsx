@@ -16,12 +16,13 @@ export default function ScoreBar() {
         width: "38vw",
         height: "7vh",
         marginLeft: "34vw",
+        marginRight: "34vw",
         marginTop: "8vh",
         maxWidth: "650px",
         maxHeight: "109px",
       }}
     >
-      <div className="bg-white/20 backdrop-blur-sm rounded-lg w-full h-full relative">
+      <div className="bg-white/20 backdrop-blur-sm rounded-lg w-full h-full absolute ">
         <span
           className="absolute top-1/2 -translate-y-1/2 font-bold"
           style={{ left: `${imageWidth / 2 + 10}px` }}
