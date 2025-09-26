@@ -50,45 +50,75 @@ export default function Home() {
             </CustomButton>
           </div>
         </div>
-        <div className="flex h-[2px] w-130 bg-white/30 mx-auto"></div>
+        <div className="flex h-[2px] w-130 bg-white/30 mx-auto mb-5"></div>
         <div className="flex-1 space-y-4 overflow-y-auto">
           {chats.map((chat) =>(
           <div
             key={chat.id}
             onClick={() => setSelectedChat(chat.id)}
-            className="flex items-center gap-3 p-2 m-5 rounded-xl hover:bg-white/20 cursor-pointer"
-          > <Image src="/images/defaultAvatare.jpg"  alt="Profile" width={40} height={40} className="rounded-full gap-2" />
+            className={`flex items-center gap-3 m-0 p-2 ${selectedChat === chat.id ? "bg-white/20" : "hover:bg-white/20 cursor-pointer"}`}
+          > 
+          <div className="relative">
+            <Image src="/images/defaultAvatare.jpg"  alt="Profile" width={40} height={40} className="rounded-full gap-2 ml-7" />
+            <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-none rounded-full"></div>
+          </div>
           <div className="flex-1">
             <p className="text-white font-medium">{chat.name}</p>
             <p className="text-gray-300 text-sm truncate"> {chat.last} </p>
           </div>
-          <span className="text-xs text-gray-200"> {chat.time} </span>
+          <span className="text-xs text-gray-200 mr-7"> {chat.time} </span>
           </div>
           ))}
         </div>
       </div>
-      
       <div className="w-2/3 h-full rounded-r-xl flex flex-col flex-1">
         {selectedChat ? (
-          <div className="flex-1 p-6 space-y-4 overflow-y-auto">
-            {message[selectedChat].map((msg) => (
-              <div
-                key={`${selectedChat}-${msg.id}`}
-                className={`flex ${msg.user === "me" ? "justify-end" : "justify-start"}`}
-              >
-                <div className="flex gap-2">
-                  <Image src="/images/defaultAvatare.jpg" alt="Profile" width={40} height={40} className="rounded-full" />
-                  <div className={`px-4 py-2 rounded-2xl max-w-[70%] text-sm ${
-                    msg.user === "me"
-                      ? "bg-purple-500 text-white rounded-br-none"
-                      : "bg-gray-200 text-gray-900 rounded-bl-none"
-                  }`}>
-                    {msg.text}
+          <>
+            <div className="flex-1 p-6 space-y-4 overflow-y-auto">
+              {message[selectedChat].map((msg) => (
+                <div key={`${selectedChat}-${msg.id}`} className={`flex ${msg.user === "me" ? "justify-end" : "justify-start"}`}>
+                  <div className="flex gap-2 items-start">
+                    {msg.user !== "me" && (
+                      <Image src="/images/defaultAvatare.jpg" alt="Profile" width={40} height={40} className="rounded-full mt-2" />
+                    )}
+                    <div className={`px-4 py-2 rounded-2xl max-w-[70%] text-sm ${
+                      msg.user === "me"
+                      ? "bg-[#D1DAE9]/30 text-black-nave font-medium rounded-br-none"
+                      : "bg-[#D1DAE9]/30 text-black-nave font-medium rounded-bl-none"
+                    }`}>
+                      {msg.text}
+                    </div>
+                    {msg.user === "me" && (
+                      <Image src="/images/defaultAvatare.jpg" alt="Profile" width={40} height={40} className="rounded-full mt-2" />
+                    )}
                   </div>
                 </div>
+              ))}
+            </div>
+            <div className="p-4  bg-[#D1DAE9]/20 border-t border-none rounded-r-xl">
+              <div className="w-full max-w-7xl ">
+                <div className="flex items-center gap-4 ">
+                  <div className="flex-1 relative">
+                    <div className="absolute left-4 top-1/2 transform -translate-y-1/2 z-10">
+                      <button className="flex items-center justify-center transition-colors">
+                        <Plus size={30} weight="bold" />
+                      </button>
+                    </div>
+                    <input
+                      type="text"
+                      placeholder="Write Something"
+                      className="w-full pl-16 pr-6 py-4 bg-[#D1DAE9]/30 rounded-xl text-black-nave font-medium boder-none shadow-[inset_2px_2px_5px_rgba(0,0,0,0.3)] "
+                    />
+                  </div>
+                  <button
+                    className="px-8 py-4 bg-[#D1DAE9]/30 hover:bg-black/30 text-black-nave rounded-xl font-bold shadow-[inset_2px_2px_5px_rgba(0,0,0,0.3)]"
+                  >
+                    Send
+                  </button>
+                </div>
               </div>
-            ))}
-          </div>
+            </div>
+          </>
         ) : (
           <div className="flex justify-center items-center h-full">
             👈 Select a chat to start messaging
