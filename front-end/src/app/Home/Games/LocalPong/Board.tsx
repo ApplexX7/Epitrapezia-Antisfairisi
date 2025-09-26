@@ -5,11 +5,12 @@ export default function Board() {
   const boardRef = useRef<HTMLDivElement | null>(null);
   const leftPaddleRef = useRef<HTMLDivElement | null>(null);
   const rightPaddleRef = useRef<HTMLDivElement | null>(null);
+  const ballRef = useRef<HTMLDivElement | null>(null);
 
   const [startGameCounter, setStartGameCounter] = useState(5);
   const [leftPaddleOffset, setLeftPaddleOffset] = useState(0);
   const [rightPaddleOffset, setRightPaddleOffset] = useState(0);
-
+  const [ballOffset, setBallOffset] = useState(0);
   const [bounds, setBounds] = useState({ min: 0, max: 0 });
 
   useEffect(() => {
@@ -101,7 +102,7 @@ export default function Board() {
 
       <div className="absolute left-1/2 top-0 h-full w-[1%] -translate-x-1/2 bg-white-smoke"></div>
       <div
-        className="absolute left-1/2 top-1/2 w-[33px] h-[33px] -translate-x-1/2 -translate-y-1/2 rounded-full"
+        className="absolute left-1/2 top-1/2 w-[33px] h-[33px] -translate-x-1/2 -translate-y-1/2 rounded-full" ref={ballRef}
         style={{ backgroundColor: "#FF007F" }}
       ></div>
       <div
