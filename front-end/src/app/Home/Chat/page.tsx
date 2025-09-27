@@ -36,9 +36,9 @@ export default function Home() {
   const [selectedChat, setSelectedChat] = useState(null);
 
   return (
-    <div className=" flex border-none h-full justify-center shadow-[2px_2px_5px_3px_rgba(0,0,0,0.3)] 
+    <div className="flex border-none h-full justify-center shadow-[2px_2px_5px_3px_rgba(0,0,0,0.3)] 
     items-center  bg-[#F5F5F5]/40  rounded-xl m-10">
-      <div className="flex flex-col w-2/3 sm:w-1/3 h-full backdrop-brightness-[120%]
+      <div className="flex-block flex-col w-2/3 sm:w-1/3 h-full backdrop-brightness-[120%]
         bg-black/50 border-[#000000] rounded-l-xl">
         <div className="flex gap-2 w-full justify-between py-5 items-center self-start">
           <h2 className="border-none font-bold text-3xl text-black-nave pl-10">Recent chat</h2>
@@ -53,13 +53,13 @@ export default function Home() {
             </CustomButton>
           </div>
         </div>
-        <div className="flex h-[2px] w-130 bg-white/30 mx-auto mb-5"></div>
+        <div className="flex flex-col h-[2px] sm-w-2/3 bg-white/30 mx-auto mb-5"></div>
         <div className="flex-1 space-y-4 overflow-y-auto">
           {chats.map((chat) =>(
           <div
             key={chat.id}
             onClick={() => setSelectedChat(chat.id)}
-            className={`flex items-center gap-3 m-0 p-2 ${selectedChat === chat.id ? "bg-white/20" : "hover:bg-white/20 cursor-pointer"}`}
+            className={`flex items-center gap-3 m-0 p-4 ${selectedChat === chat.id ? "bg-white/20" : "hover:bg-white/20 cursor-pointer"}`}
           > 
           <div className="relative">
             <Image src="/images/defaultAvatare.jpg"  alt="Profile" width={40} height={40} className="rounded-full gap-2 ml-7" />
