@@ -56,33 +56,57 @@ export default function Board() {
   }, []);
 
   useEffect(() => {
-    const step = 20;
-
+    const pressedKeys = new Set<string>();
+    const step = 50;
+  
     const handleKeyDown = (e: KeyboardEvent) => {
-      let { min, max } = bounds;
-      if (min === 0 && max === 0 && boardRef.current && leftPaddleRef.current) {
-        const BH = boardRef.current.clientHeight;
-        const PH = leftPaddleRef.current.offsetHeight;
-        min = -(BH / 2 - PH / 2);
-        max = BH / 2 - PH / 2;
-      }
-
-      if (e.key === "w" || e.key === "W") {
-        setLeftPaddleOffset((p) => Math.max(min, p - step));
-      } else if (e.key === "s" || e.key === "S") {
-        setLeftPaddleOffset((p) => Math.min(max, p + step));
-      } else if (e.key === "ArrowUp") {
+      pressedKeys.add(e.key);
+      if (e.key === "ArrowUp" || e.key === "ArrowDown") {
         e.preventDefault();
-        setRightPaddleOffset((p) => Math.max(min, p - step));
-      } else if (e.key === "ArrowDown") {
-        e.preventDefault();
-        setRightPaddleOffset((p) => Math.min(max, p + step));
       }
     };
-
+  
+    const handleKeyUp = (e: KeyboardEvent) => {
+      pressedKeys.delete(e.key);
+    };
+  
+    const loop = () => {
+      let { min, max } = bounds;
+  
+      setLeftPaddleOffset((p) => {
+        if (pressedKeys.has("w") || pressedKeys.has("W")) {
+          return Math.max(min, p - step);
+        }
+        if (pressedKeys.has("s") || pressedKeys.has("S")) {
+          return Math.min(max, p + step);
+        }
+        return p;
+      });
+  
+      setRightPaddleOffset((p) => {
+        if (pressedKeys.has("ArrowUp")) {
+          return Math.max(min, p - step);
+        }
+        if (pressedKeys.has("ArrowDown")) {
+          return Math.min(max, p + step);
+        }
+        return p;
+      });
+  
+      requestAnimationFrame(loop);
+    };
+  
     window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
+    window.addEventListener("keyup", handleKeyUp);
+  
+    loop();
+  
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("keyup", handleKeyUp);
+    };
   }, [bounds]);
+  
 
   return (
     <div
