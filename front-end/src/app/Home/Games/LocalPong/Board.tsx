@@ -131,20 +131,34 @@ export default function Board() {
     };
   }, [bounds]);
 
+  let dx = 3;
+  let dy = 3;
   useEffect(() => {
-    let ballInterval = setInterval(() => {
-      setBallOffsetY((p) =>
-        Math.min(ballLimits.bottomMax, Math.max(ballLimits.topMax, p + 2))
-      );
-      setBallOffsetX((p) =>
-        Math.min(ballLimits.rightMax, Math.max(ballLimits.leftMax, p + 2))
-      );
-    }, 100);
 
-    return () => {
-      clearInterval(ballInterval);
-    };
-  }, [ballLimits]);
+  let ballInterval = setInterval(() => {
+    setBallOffsetY((p) => {
+      let nextY = p + dy;
+
+      if (nextY >= ballLimits.bottomMax || nextY <= ballLimits.topMax) {
+        dy = -dy;
+        nextY = p + dy;
+      }
+      return nextY;
+    });
+
+    setBallOffsetX((p) => {
+      let nextX = p + dx;
+
+      if (nextX >= ballLimits.rightMax || nextX <= ballLimits.leftMax) {
+        dx = -dx;
+        nextX = p + dx;
+      }
+      return nextX;
+    });
+  }, 16);
+
+  return () => clearInterval(ballInterval);
+}, [ballLimits]);
 
   return (
     <div
@@ -164,14 +178,14 @@ export default function Board() {
 
       <div className="absolute left-1/2 top-0 h-full w-[1%] -translate-x-1/2 bg-white-smoke"></div>
 
-      <div
-        ref={ballRef}
-        className="absolute left-1/2 top-1/2 w-[33px] h-[33px] rounded-full"
-        style={{
-          backgroundColor: "#FF007F",
-          transform: `translate(-50%, -50%) translate(${ballOffsetX}px, ${ballOffsetY}px)`,
-        }}
-      ></div>
+     <div
+  ref={ballRef}
+  className="absolute left-1/2 top-1/2 w-[33px] h-[33px] rounded-full"
+  style={{
+    backgroundColor: "#FF007F",
+    transform: `translate(-50%, -50%) translate(${ballOffsetX}px, ${ballOffsetY}px)`,
+  }}
+></div>
 
       <div
         ref={rightPaddleRef}
