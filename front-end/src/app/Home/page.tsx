@@ -1,7 +1,4 @@
 "use client";
-import Image from "next/image";
-import Link from "next/link";
-import { useState } from "react";
 import { BoxLayout } from '@/components/BoxLayout'
 import React from "react";
 import BarProgressionLevel  from '@/components/BarProgressionLevel'

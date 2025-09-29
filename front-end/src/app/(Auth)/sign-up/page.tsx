@@ -1,18 +1,20 @@
 "use client";
+import api from "@/lib/axios";
 import Image from "next/image";
 import Link from "next/link";
-import api from "@/lib/axios";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useUser } from "@/context/playerContext"
-import { useState } from "react";
 import {InputLogin} from "@/components/LoginInput"
 import {LoginButton} from "@/components/loginButton"
+import { useAuth } from "@/components/hooks/authProvider";
+import LoadingComp from "@/components/loadingComp";
+import LoginPageWrapper from "@/components/LoginWrapComp";
+
 
 export default function SignUp() {
-  const [failedLog, setFailedLog] = useState('');
-  const [showPassword, setShowPassword] = useState(false)
-  const { setUser }  = useUser()
-  const router = useRouter()
+  const router = useRouter();
+  const [failedLog, setFailedLog] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const SignUpCread = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const formData = new FormData(event.target as HTMLFormElement);
@@ -20,7 +22,6 @@ export default function SignUp() {
     try{
       const res = await api.post("/auth/Sign-up", data)
       sessionStorage.setItem("accessToken", res.data.token.accessToken);
-      setUser(res.data.user);
       router.push("/Home")
     } catch (err: any) {
       if (err.response) {
@@ -31,6 +32,7 @@ export default function SignUp() {
     }
   };
   return (
+    <LoginPageWrapper>
     <div className="h-screen bg-[url('/images/bg-image.png')] bg-cover bg-center flex justify-center items-center">
       <div className="relative h-full w-full md:h-[900px] md:w-[1600px] md:ml-10 md:mr-10 bg-white/5 border-white backdrop-blur-lg ring-1
         ring-amber-50/20 backdrop-brightness-[150%] rounded-[35px] shadow-[10px_10px_10px_10px_rgba(0,0,0,0.3)] flex flex-row-reverse  gap-10">
@@ -108,6 +110,7 @@ export default function SignUp() {
         </div>
         <Image className="z-0 hidden md:w-[700px] left-[100px] h-full  md:block absolute"  alt="Logo for  a ping pong" src="/images/logo-S.png" width={500} height={500}/>
       </div>
-    </div>
+      </div>
+    </LoginPageWrapper>
   );
 }

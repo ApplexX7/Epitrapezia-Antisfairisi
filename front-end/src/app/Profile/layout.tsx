@@ -1,12 +1,25 @@
+"use client"
 import "../globals.css";
-import Link from "next/link";
-import Image from "next/image";
-import { NavBar } from '@/components/Navbar'
-import HomeNavBar from "@/components/HomeNavBar";
-
+import { useEffect } from "react";
+import { useRouter , usePathname} from "next/navigation";
+import { useAuth } from "@/components/hooks/authProvider";
+import LoadingComp from "@/components/loadingComp";
 
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
+  const router = useRouter();
+  const pathname = usePathname()
+  const { accessToken, checkingAuth, refreshAuth } = useAuth();
+  useEffect(() => {
+    refreshAuth();
+  }, [refreshAuth]);
+  useEffect(() => {
+    if (!checkingAuth && accessToken && pathname === "/login") {
+      router.replace("/Home");
+    }
+  }, [checkingAuth, accessToken, router]);
+
+  if (checkingAuth) return <LoadingComp />;
   return (
       <div className="custom-gradient h-screen w-full 
       flex flex-col items-center">
