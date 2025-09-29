@@ -77,7 +77,7 @@ export default function Home() {
       <div className="w-2/3 h-full rounded-r-xl flex flex-col flex-1">
         {selectedChat ? (
           <>
-            <div className="flex-1 p-6 space-y-4 overflow-y-auto">
+            <div className="flex-1 p-6 mt-10 space-y-4 overflow-y-auto">
               {message[selectedChat].map((msg) => (
                 <div key={`${selectedChat}-${msg.id}`} className={`flex ${msg.user === "me" ? "justify-end-safe" : "justify-start"}`}>
                   <div className={`flex gap-2 ${msg.user === "me" ? "justify-end-safe" : ""}`}>
