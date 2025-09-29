@@ -24,31 +24,26 @@ export const useAuth = create<AuthState>((set) => {
   return {
     user: null,
     accessToken: null,
-    checkingAuth: true,
+    checkingAuth: true, // start as "checking"
     setAuth: (user, token) => set({ user, accessToken: token, checkingAuth: false }),
     clearAuth: () => set({ user: null, accessToken: null, checkingAuth: false }),
     refreshAuth: async () => {
-      if (refreshPromise) return refreshPromise;
+      if (refreshPromise) return refreshPromise; // avoid multiple calls
       refreshPromise = (async () => {
         try {
           const res = await api.get("/auth/refresh");
           if (res.data?.token?.accessToken && res.data.user) {
-            set({
-              user: res.data.user,
-              accessToken: res.data.token.accessToken,
-              checkingAuth: false,
-            });
+            set({ user: res.data.user, accessToken: res.data.token.accessToken, checkingAuth: false });
           } else {
             set({ user: null, accessToken: null, checkingAuth: false });
           }
         } catch {
           set({ user: null, accessToken: null, checkingAuth: false });
         } finally {
-          refreshPromise = null;
+          refreshPromise = null; // reset
         }
       })();
       return refreshPromise;
     },
   };
 });
-

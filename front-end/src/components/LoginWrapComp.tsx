@@ -8,28 +8,24 @@ import LoadingComp from "@/components/loadingComp";
 export default function LoginPageWrapper({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const { accessToken, checkingAuth, refreshAuth } = useAuth();
-  const [ready, setReady] = useState(false); // local state to know when refresh is done
+  const [initialized, setInitialized] = useState(false);
 
   useEffect(() => {
     async function init() {
       await refreshAuth();
-      setReady(true); // mark refresh attempt done
+      setInitialized(true); // mark refresh attempt done
     }
     init();
   }, [refreshAuth]);
 
   useEffect(() => {
-    if (ready && accessToken) {
-      router.replace("/Home"); // redirect logged-in users
+    if (initialized && accessToken) {
+      router.replace("/Home");
     }
-  }, [ready, accessToken, router]);
+  }, [initialized, accessToken, router]);
 
-  // While waiting for refresh, show loading
-  if (!ready) return <LoadingComp />;
-
-  // Show login page only if refresh is done and user is logged out
-  if (!accessToken) return <>{children}</>;
-
-  // fallback (optional)
-  return null;
+  if (initialized){
+    return <LoadingComp />;
+  }
+  return <>{children}</>;
 }
