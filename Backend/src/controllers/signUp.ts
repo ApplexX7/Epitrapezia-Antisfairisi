@@ -26,7 +26,6 @@ export  function SignUp  (){
     if (exist)
       return reply.code(409).send({message: "this username or email already registred"})
     const hashedPassword = await bcrypt.hash(password, 10);
-    console.log("ffffffffffffffff")
     const UserId = await new Promise<number>((resolve, reject) => {
       db.run(
         "INSERT INTO players (firstName, lastName, username, email, password) VALUES (?, ?, ?, ?, ?)",
@@ -37,22 +36,26 @@ export  function SignUp  (){
         }
       );
     });
-    console.log("ffffffffffffffff")
     const user = {id : UserId, username, email}
     const refreshToken =  generateRefreshToken(user)
-    const accesToken = generateAccessToken(user)
+    const accessToken = generateAccessToken(user)
     await storeRefrechTokenInDb(refreshToken, user)
-    console.log("ffffffffffffffff")
-    return reply.setCookie("refreshToken" , refreshToken ,{
-      httpOnly : true,
-      secure : false,
-      sameSite : "strict",
-      path : "/"
-    }).status(201).send({
-      message : "Sign Up successful",
+    const refreshTokenExpiration = new Date();
+    refreshTokenExpiration.setDate(refreshTokenExpiration.getDate() + 7);
+    return reply
+    .setCookie('refreshToken', refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      expires: refreshTokenExpiration,
+      path: '/',
+    })
+    .status(201)
+    .send({
+      message: 'user created successfully',
       user,
-      token : {
-        accesToken,
+      token: {
+        accessToken,
       },
     });
   }catch(err){

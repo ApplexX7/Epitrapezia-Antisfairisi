@@ -23,19 +23,22 @@ export  function Login  (){
         const accessToken = generateAccessToken(user)
         const refreshToken = generateRefreshToken(user)
         await storeRefrechTokenInDb(refreshToken, user)
-        return reply.setCookie("refreshToken", refreshToken, {
-          httpOnly : true,
-          secure : false,
-          sameSite : "strict",
-          path : "/"
-        }).status(200).send({
-          message : "Login successful",
+        return reply
+        .setCookie('refreshToken', refreshToken, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'strict',
+          path: '/',
+          maxAge: 7 * 24 * 60 * 60,
+        })
+        .status(200)
+        .send({
+          message: 'Login successful',
           user,
-          token : {
+          token: {
             accessToken,
           },
         });
-
     }catch(err){
       return reply.status(500).send({ message: 'Internal server error during registration' });
     }

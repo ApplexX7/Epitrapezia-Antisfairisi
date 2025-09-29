@@ -2,6 +2,7 @@ import { FastifyInstance } from "fastify";
 import { Server } from "../server";
 import { Login } from "../controllers/login";
 import { SignUp } from "../controllers/signUp";
+import { RefreshToken } from "../controllers/authRefresh"
 
 type LoginBody = {
   login: string;
@@ -43,6 +44,8 @@ export function authRouters() {
     { schema: { body: loginSchema } },
     Login()
   );
+
+  Server.instance().get("/auth/refresh", RefreshToken())
 
   Server.instance().post<{ Body: SignUpBody }>(
     "/auth/Sign-up",
