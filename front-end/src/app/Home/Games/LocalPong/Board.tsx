@@ -10,7 +10,8 @@ export default function Board() {
   const [startGameCounter, setStartGameCounter] = useState(5);
   const [leftPaddleOffset, setLeftPaddleOffset] = useState(0);
   const [rightPaddleOffset, setRightPaddleOffset] = useState(0);
-  const [ballOffset, setBallOffset] = useState(0);
+  const [ballOffsetY, setBallOffsetY] = useState(0);
+  const [ballOffsetX, setBallOffsetX] = useState(0);
   const [bounds, setBounds] = useState({ min: 0, max: 0 });
 
   useEffect(() => {
@@ -40,6 +41,7 @@ export default function Board() {
 
       setLeftPaddleOffset((p) => Math.min(max, Math.max(min, p)));
       setRightPaddleOffset((p) => Math.min(max, Math.max(min, p)));
+      setBallOffsetY((p) => Math.min(max, Math.max(min, p)));
     }
 
     updateBounds();
@@ -57,7 +59,7 @@ export default function Board() {
 
   useEffect(() => {
     const pressedKeys = new Set<string>();
-    const step = 50;
+    const step = 7;
   
     const handleKeyDown = (e: KeyboardEvent) => {
       pressedKeys.add(e.key);
@@ -107,6 +109,21 @@ export default function Board() {
     };
   }, [bounds]);
   
+  useEffect(() => 
+  {
+    let ballInterval = setInterval(() => 
+    {
+      setBallOffsetY(p => p + 2);
+      setBallOffsetX(p => p + 2);
+    }
+      , 100)
+    return () =>
+    {
+      clearInterval(ballInterval);
+    }
+  }
+  ,
+  [])
 
   return (
     <div
@@ -126,8 +143,12 @@ export default function Board() {
 
       <div className="absolute left-1/2 top-0 h-full w-[1%] -translate-x-1/2 bg-white-smoke"></div>
       <div
-        className="absolute left-1/2 top-1/2 w-[33px] h-[33px] -translate-x-1/2 -translate-y-1/2 rounded-full" ref={ballRef}
-        style={{ backgroundColor: "#FF007F" }}
+        ref={ballRef}
+        className="absolute left-1/2 top-1/2 w-[33px] h-[33px] rounded-full"
+        style={{ backgroundColor: "#FF007F" ,
+               transform: `translate(-50%, -50%) translate(${ballOffsetX}px, ${ballOffsetY}px)`,
+
+        }}
       ></div>
       <div
         ref={rightPaddleRef}
