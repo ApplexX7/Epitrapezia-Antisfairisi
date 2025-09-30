@@ -5,7 +5,7 @@ import Image from "next/image";
 import { NavBar } from '@/components/Navbar'
 import { MagnifyingGlass , Bell} from "@phosphor-icons/react/ssr";
 import { CustomButton } from "@/components/CostumButton"
-
+import {NavigationMenuDemo } from "@/components/profileBar"
 
 export default function HomeNavBar (){
     return (
@@ -17,12 +17,13 @@ export default function HomeNavBar (){
             <div className="flex gap-5 h-[70px] mt-15 xl:mt-0 mr-10">
                 <CustomButton className="bg-white-smoke/30 w-[84px] h-full "><MagnifyingGlass size={48} color="#0d0c22" weight="bold"/> </CustomButton>
                 <CustomButton className="bg-white-smoke/30 w-[84px] h-full "> <Bell size={48} color="#0d0c22" weight="bold" /> </CustomButton>
-                <Link href="/Profile">
+                <NavigationMenuDemo />
+                {/* <Link href="/Profile">
                     <CustomButton
                         bgImage="/images/defaultAvatare.jpg"
                         className="bg-white-smoke/30 bg-cover bg-no-repeat bg-center w-[84px] h-full"
                         />
-                </Link>
+                </Link> */}
             </div>
         </div>
     );

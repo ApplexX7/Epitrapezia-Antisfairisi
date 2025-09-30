@@ -27,7 +27,6 @@
     #100C46); /* blue-purple */
 }
 
-/* tailwind.config.css or globals.css */
 .card {
   @apply bg-white-smoke/40 border-white backdrop-blur-none ring-1
     ring-amber-50/20 backdrop-brightness-[150%] rounded-[35px]
