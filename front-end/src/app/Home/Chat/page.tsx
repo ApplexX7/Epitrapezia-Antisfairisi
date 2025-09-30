@@ -3,6 +3,7 @@ import Image from "next/image";
 import { MagnifyingGlass, Plus } from "@phosphor-icons/react/ssr";
 import { CustomButton } from "@/components/CostumButton"
 import { useEffect, useState } from "react";
+import { input } from "motion/react-client";
 
 export default function Home() {
   const [time, setTime] = useState({
@@ -123,18 +124,35 @@ export default function Home() {
     return groups;
   };
 
+  const [isSearchActive, setIsSearchActive] = useState(false);
+
   return (
     <div className="flex border-none h-full justify-center shadow-[2px_2px_5px_3px_rgba(0,0,0,0.3)] 
     items-center bg-[#F5F5F5]/40 rounded-xl m-10">
       <div className="flex-block flex-col w-2/3 sm:w-1/3 h-full backdrop-brightness-[120%]
         bg-black/50 border-[#000000] rounded-l-xl">
         <div className="flex gap-2 w-full justify-between py-5 items-center self-start">
-          <h2 className="border-none font-bold text-3xl text-black-nave pl-10">Recent chat</h2>
-          <div className="flex gap-4 px-5">
-            <CustomButton className="flex justify-center items-center bg-white-smoke/10 hover:opacity-40
-            h-[48px] w-[48px] rounded-4xl shadow-[inset_2px_0px_4px_rgba(245,245,245,0.3)]">
-              <MagnifyingGlass size={25} color="#0d0c22" weight="bold"/>
-            </CustomButton>
+          {!isSearchActive && (
+            <h2 className="border-none font-bold text-3xl text-black-nave pl-10">
+              Recent chat
+            </h2>
+          )}
+            <div className={`flex gap-4 px-5 ${isSearchActive ? 'w-full' : ''}`}>
+              <button
+              onClick={()=> setIsSearchActive(!isSearchActive)}
+              className="flex justify-center items-center bg-white-smoke/10 hover:opacity-40
+              h-[48px] w-[48px] rounded-4xl shadow-[inset_2px_0px_4px_rgba(245,245,245,0.3)]
+              backdrop-blur-lg brightness-150">
+                <MagnifyingGlass size={25} weight="bold"/>
+              </button>
+              {isSearchActive && (
+                <input
+                  type="search"
+                  placeholder="Search"
+                  className="flex-1 px-4 py-2 rounded-4xl border border-gray-300 focus:outline-none"
+                  autoFocus
+                />
+              )}
             <CustomButton className="flex justify-center items-center bg-white-smoke/10 hover:opacity-40
             h-[48px] w-[48px] rounded-4xl shadow-[inset_2px_0px_4px_rgba(245,245,245,0.3)] ">
               <Plus size={25} weight="bold" />
@@ -187,7 +205,7 @@ export default function Home() {
                               : "bg-[#D1DAE9]/40 text-black-nave font-medium rounded-bl-none"
                             }`}>
                               {msg.text}
-                            <span className={`flex items-start justify-end text-xs text-white/60 mt-1 ${msg.user === "me" ? "text-right" : "text-left"}`}>
+                            <span className={`flex justify-end items-end text-xs text-white/60 mt-1 ${msg.user === "me" ? "text-right" : "text-left"}`}>
                               {msg.time.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit"})}
                             </span>
                             </div>
