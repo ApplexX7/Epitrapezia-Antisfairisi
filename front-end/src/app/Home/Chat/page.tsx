@@ -40,15 +40,15 @@ export default function Home() {
   const [selectedChat, setSelectedChat] = useState(null);
   const [inputMessage, setInputMessage] = useState("");
 
-  // Function to send a new message
   const handleSendMessage = () => {
-    if (!inputMessage.trim() || !selectedChat) return;
+    if (!inputMessage.trim() || !selectedChat)
+        return;
 
     const newMessage = {
       id: messages[selectedChat].length + 1,
       user: "me",
       text: inputMessage.trim(),
-      time: new Date() // Current date and time
+      time: new Date()
     };
 
     setMessages(prev => ({
@@ -59,9 +59,9 @@ export default function Home() {
     setInputMessage("");
   };
 
-  // Function to simulate receiving a message (for testing)
   const simulateReceivedMessage = () => {
-    if (!selectedChat) return;
+    if (!selectedChat) 
+        return;
 
     const responses = [
       "That's interesting!",
@@ -86,7 +86,6 @@ export default function Home() {
     }, 1000);
   };
 
-  // Handle Enter key press
   const handleKeyPress = (e) => {
     if (e.key === 'Enter') {
       handleSendMessage();
@@ -171,12 +170,9 @@ export default function Home() {
             <div className="flex-1 p-6 mt-10 space-y-6 overflow-y-auto">
               {groupMessagesByDate(messages[selectedChat]).map((group, groupIndex) => (
                 <div key={groupIndex}>
-                  {/* Date separator */}
                   <div className="flex justify-center my-6">
                       <span className="text-sm text-white/60 font-medium">{group.date}</span>
                   </div>
-
-                  {/* Messages for this date */}
                   <div className="space-y-4">
                     {group.messages.map((msg, msgIndex) => (
                       <div key={`${selectedChat}-${msg.id}`} className={`flex ${msg.user === "me" ? "justify-end" : "justify-start"}`}>
@@ -191,9 +187,9 @@ export default function Home() {
                               : "bg-[#D1DAE9]/40 text-black-nave font-medium rounded-bl-none"
                             }`}>
                               {msg.text}
-                            {/* <span className={` text-xs text-white/60 mt-1 ${msg.user === "me" ? "text-right" : "text-left"}`}>
-                              {msg.time.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                            </span> */}
+                            <span className={`flex items-start justify-end text-xs text-white/60 mt-1 ${msg.user === "me" ? "text-right" : "text-left"}`}>
+                              {msg.time.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit"})}
+                            </span>
                             </div>
                           </div>
                           {msg.user === "me" && (
