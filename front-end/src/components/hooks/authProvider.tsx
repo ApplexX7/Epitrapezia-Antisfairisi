@@ -7,6 +7,7 @@ type User = {
   lastName: string;
   username: string;
   email: string;
+  avatar: string;
 };
 
 type AuthState = {

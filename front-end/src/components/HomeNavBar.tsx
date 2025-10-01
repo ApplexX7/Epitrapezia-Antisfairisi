@@ -18,12 +18,6 @@ export default function HomeNavBar (){
                 <CustomButton className="bg-white-smoke/30 w-[84px] h-full "><MagnifyingGlass size={48} color="#0d0c22" weight="bold"/> </CustomButton>
                 <CustomButton className="bg-white-smoke/30 w-[84px] h-full "> <Bell size={48} color="#0d0c22" weight="bold" /> </CustomButton>
                 <NavigationMenuDemo />
-                {/* <Link href="/Profile">
-                    <CustomButton
-                        bgImage="/images/defaultAvatare.jpg"
-                        className="bg-white-smoke/30 bg-cover bg-no-repeat bg-center w-[84px] h-full"
-                        />
-                </Link> */}
             </div>
         </div>
     );

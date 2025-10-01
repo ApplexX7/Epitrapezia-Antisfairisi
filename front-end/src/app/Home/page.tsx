@@ -4,9 +4,11 @@ import React from "react";
 import BarProgressionLevel  from '@/components/BarProgressionLevel'
 import {ChartLineDefault} from '@/components/LineChart'
 import { ChartBarDefault } from '@/components/TimeLineLogin'
+import { useAuth } from '@/components/hooks/authProvider';
 
 
 export default function Home() {
+  const user = useAuth.getState().user
   return (
     <>
       <h1
@@ -14,7 +16,7 @@ export default function Home() {
         bg-gradient-to-l from-white-smoke to-white-smoke/85
         text-transparent bg-clip-text z-10" 
       >
-        Welcome ApplexX7
+       {`Welcome ${user?.username}`}
       </h1>
 
       <div className="-mt-4 grid grid-cols-4 grid-rows-4

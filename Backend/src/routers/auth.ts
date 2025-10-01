@@ -4,6 +4,7 @@ import { Login } from "../controllers/login";
 import { SignUp } from "../controllers/signUp";
 import { RefreshToken } from "../controllers/authRefresh"
 import { Logout } from "../controllers/logout";
+import {VerifyOtp} from "../controllers/verifyOtp"
 
 type LoginBody = {
   login: string;
@@ -48,6 +49,7 @@ export function authRouters() {
 
   Server.instance().get("/auth/refresh", RefreshToken());
   Server.instance().post("/auth/logout", Logout())
+  Server.instance().post("/auth/verify-otp", VerifyOtp());
 
   Server.instance().post<{ Body: SignUpBody }>(
     "/auth/Sign-up",

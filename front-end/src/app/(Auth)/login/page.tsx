@@ -42,9 +42,9 @@ export default function Login() {
     <LoginPageWrapper>
 
     <div className="h-screen bg-[url('/images/bg-image.png')] bg-cover bg-center flex justify-center items-center">
-      <div className="relative h-full w-450 w-max-450 md:h-[900px] md:w-[1600px] md:ml-10 md:mr-10 bg-white/5 border-white backdrop-blur-lg ring-1
+      <div className="relative h-full w-300 w-max-350 md:h-[850px] md:w-350 md:ml-10 md:mr-10 bg-white/5 border-white backdrop-blur-lg ring-1
         ring-amber-50/20 backdrop-brightness-[150%] rounded-[35px] shadow-[10px_10px_10px_10px_rgba(0,0,0,0.3)] flex flex-row  gap-10">
-        <div className=" bg-whitebg/50 w-full  sm:w-[718px] sm:pt-35 h-full rounded-l-[35px] rounded-tr-[80px] px-20 shadow-[10px_0px_10px_0px_rgba(0,0,0,0.2)]  flex flex-col justify-center items-center">
+        <div className=" bg-whitebg/50 w-full  sm:w-[650px] sm:pt-35 h-full rounded-l-[35px] rounded-tr-[80px] px-20 shadow-[10px_0px_10px_0px_rgba(0,0,0,0.2)]  flex flex-col justify-center items-center">
             <h1 className=" text-center text-2xl md:-mt-20 sm:text-[36px] font-bold text-shadow-lg/10 mb-0"> Welcome Back! </h1>
             <p className=" text-center text-sm md:-mt-3 font-light">sign-in to acces your account </p>
             <form onSubmit={checkAuth} className="mt-10 w-full flex flex-col items-center justify-between gap-8">
@@ -99,7 +99,7 @@ export default function Login() {
               <p className="text-md sm:text-[18px] text-center mt-4 sm:mt-8"> Dont Have an account? <Link className="ml-1 font-bold text-blue-murder hover:underline underline-offset-2 
               cursor-pointer" href="./sign-up">Sign Up!</Link></p>
         </div>
-        <Image className="hidden md:-z-50 md:w-[700px] right-[100px] h-full  md:block absolute"  alt="Logo for  a ping pong" src="/images/logo-S.png" width={500} height={500}/>
+        <Image className="hidden md:-z-50 md:w-[700px] right-10 h-full  md:block absolute"  alt="Logo for  a ping pong" src="/images/logo-S.png" width={500} height={500}/>
       </div>
     </div>
   </LoginPageWrapper>

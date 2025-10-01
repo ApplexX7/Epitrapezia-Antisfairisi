@@ -14,7 +14,7 @@ import api from "@/lib/axios"
   
   export function NavigationMenuDemo() {
     const router = useRouter()
-    const {clearAuth} = useAuth()
+    const {clearAuth, user} = useAuth()
     async function handleLogout(){
         clearAuth();
         await  api.post("/auth/logout");
@@ -28,7 +28,7 @@ import api from "@/lib/axios"
                 <div className="cursor-pointer w-[84px] h-full rounded-full 
                 overflow-hidden shadow-[2px_1px_2px_1px_rgba(0,0,0,0.2)] hover:opacity-85 ">
                     <Image
-                    src="/images/defaultAvatare.jpg"
+                    src={user?.avatar ?? "/images/defaultAvatare.jpg"}
                     width={84}
                     height={84}
                     alt="Avatar"
