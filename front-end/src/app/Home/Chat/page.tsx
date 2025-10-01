@@ -3,7 +3,6 @@ import Image from "next/image";
 import { MagnifyingGlass, Plus, ArrowLeft } from "@phosphor-icons/react/ssr";
 import { CustomButton } from "@/components/CostumButton"
 import { useEffect, useState, useRef } from "react";
-import { input } from "motion/react-client";
 
 export default function Home() {
   const [time, setTime] = useState({
@@ -96,6 +95,7 @@ export default function Home() {
     }
   };
 
+  // Function to group messages by date
   const groupMessagesByDate = (msgs) => {
     const groups = [];
     let currentDate = null;
