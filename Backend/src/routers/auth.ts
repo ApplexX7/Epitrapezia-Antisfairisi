@@ -3,6 +3,7 @@ import { Server } from "../server";
 import { Login } from "../controllers/login";
 import { SignUp } from "../controllers/signUp";
 import { RefreshToken } from "../controllers/authRefresh"
+import { Logout } from "../controllers/logout";
 
 type LoginBody = {
   login: string;
@@ -45,7 +46,8 @@ export function authRouters() {
     Login()
   );
 
-  Server.instance().get("/auth/refresh", RefreshToken())
+  Server.instance().get("/auth/refresh", RefreshToken());
+  Server.instance().post("/auth/logout", Logout())
 
   Server.instance().post<{ Body: SignUpBody }>(
     "/auth/Sign-up",

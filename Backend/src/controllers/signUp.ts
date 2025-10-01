@@ -28,8 +28,8 @@ export  function SignUp  (){
     const hashedPassword = await bcrypt.hash(password, 10);
     const UserId = await new Promise<number>((resolve, reject) => {
       db.run(
-        "INSERT INTO players (firstName, lastName, username, email, password) VALUES (?, ?, ?, ?, ?)",
-        [firstName, lastName, username, email, hashedPassword],
+        "INSERT INTO players (firstName, lastName, username, email, password, avatar) VALUES (?, ?, ?, ?, ?, ?)",
+        [firstName, lastName, username, email, hashedPassword, "/images/defaultAvatare.jpg"],
         function (err) {
           if (err) reject(err);
           else resolve(this.lastID);

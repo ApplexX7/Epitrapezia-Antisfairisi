@@ -17,7 +17,7 @@ async function refreshTokenDate(token:string) {
     }
 }
 
-async function verifyRefreshToken(refreshToken : string | any) : Promise<any>{
+export async function verifyRefreshToken(refreshToken : string | any) : Promise<any>{
     return new Promise((resolve, reject) => {
         db.get(
             "SELECT * FROM players WHERE  refreshToken = ?",
