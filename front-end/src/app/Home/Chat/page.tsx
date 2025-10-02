@@ -23,7 +23,7 @@ export default function Home() {
 
   const chats = [
     { id: 1, name: "saloua", last: "s simple dummy ..", time: new Date(), online: true },
-    { id: 2, name: "Applex", last: "hello", time: new Date(), online: false },
+    { id: 2, name: "mamaty", last: "hello", time: new Date(), online: false },
   ];
 
   const [messages, setMessages] = useState({
@@ -245,13 +245,15 @@ export default function Home() {
                             height={32} className="md:w-[40px] md:h-[40px] rounded-full mt-2 self-end" />
                           )}
                           <div className="flex flex-col">
-                            <div className={`px-3 md:px-4 py-2 md:py-3 rounded-2xl max-w-[250px] md:max-w-auto text-sm md:text-base ${
+                            <div className={`px-3 md:px-4 py-2 md:py-3  max-w-[300px] rounded-2xl  md:max-w-auto text-sm md:text-base ${
                               msg.user === "me"
                               ? "bg-[#D1DAE9]/40 text-black-nave font-medium rounded-br-none"
                               : "bg-[#D1DAE9]/40 text-black-nave font-medium rounded-bl-none"
                             }`}>
-                              {msg.text}
-                            <span className={`flex justify-end items-end text-xs text-white/60 mt-1
+                              <p className="text-wrap break-all" >
+                                {msg.text}
+                              </p>
+                            <span className={`flex justify-end items-end   text-xs text-white/60 mt-1
                             ${msg.user === "me" ? "text-right" : "text-left"}`}>
                               {msg.time.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit"})}
                             </span>

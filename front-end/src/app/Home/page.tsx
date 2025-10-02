@@ -19,7 +19,6 @@ export default function Home() {
       >
         Welcome ApplexX7
       </h1>
-
       <div className="-mt-4 grid grid-cols-4 grid-rows-4
         gap-5 w-full h-[calc(100%-232px)] p-5 z-0">
         <BoxLayout className="grid gap-5 grid-cols-3 col-span-3 row-span-1">
