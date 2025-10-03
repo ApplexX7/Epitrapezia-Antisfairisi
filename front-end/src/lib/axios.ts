@@ -15,15 +15,19 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (res) => res,
   async (error) => {
-    const originalRequest = error.config;
+    const originalRequest = error.config as any; 
 
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    const isLoginRequest = originalRequest.url?.includes("/auth/Login");
+    const isRefreshReq = originalRequest.url?.includes("/auth/refresh");
+
+    if (error.response?.status === 401 && !originalRequest._retry && !isRefreshReq) {
       originalRequest._retry = true;
-
       try {
         await useAuth.getState().refreshAuth();
         const token = useAuth.getState().accessToken;
         if (!token) throw new Error("No token after refresh");
+
+        originalRequest.headers = originalRequest.headers ?? {};
         originalRequest.headers.Authorization = `Bearer ${token}`;
         return api(originalRequest);
       } catch {
@@ -31,6 +35,7 @@ api.interceptors.response.use(
         return Promise.reject(error);
       }
     }
+
     return Promise.reject(error);
   }
 );

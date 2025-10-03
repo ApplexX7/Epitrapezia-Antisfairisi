@@ -19,12 +19,15 @@ export default function LoginPageWrapper({ children }: { children: React.ReactNo
   }, [refreshAuth]);
 
   useEffect(() => {
-    if (initialized && accessToken) {
+    if (!checkingAuth && accessToken) {
       router.replace("/Home");
     }
   }, [initialized, accessToken, router]);
 
-  if (initialized){
+  console.log("checkingAuth", checkingAuth);
+  console.log("accessToken", accessToken);
+
+  if (checkingAuth || accessToken) {
     return <LoadingComp />;
   }
   return <>{children}</>;

@@ -28,7 +28,7 @@ export async function sendVerificationEmail(email: string, otp: string) {
   const html = `
     <h2>Verify your email</h2>
     <p>Your OTP code is: <b>${otp}</b></p>
-    <p>This code will expire in 10 minutes.</p>
+    <p>This code will expire in 30 seconds.</p>
   `;
 
   await SendEmail(email, "Email Verification", html);

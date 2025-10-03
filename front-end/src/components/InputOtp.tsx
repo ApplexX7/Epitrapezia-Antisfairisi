@@ -1,70 +1,131 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useAuth } from "./hooks/authProvider";
 import api from "@/lib/axios";
+import { useRouter } from "next/navigation";
 
 import {
   InputOTP,
   InputOTPGroup,
   InputOTPSeparator,
   InputOTPSlot,
-} from "@/components/ui/input-otp"
+} from "@/components/ui/input-otp";
 
 interface OTPProps {
   email: string;
   player_id: number;
 }
 
-export function InputOTPWithSeparator({email , player_id} : OTPProps) {
-  const [otpValue, setOtpValue] = useState<string[]>(["", "", "", "", "", ""]);
+export function InputOTPWithSeparator({ email, player_id }: OTPProps) {
+  const [otp, setOtp] = useState("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
+  const [resendMessage, setResendMessage] = useState("");
+  const [cooldown, setCooldown] = useState(0);
+  const router = useRouter();
 
-  const handleChange = (index: number, value: string) => {
-    const newOtp = [...otpValue];
-    newOtp[index] = value;
-    setOtpValue(newOtp);
-  };
+  const handleSubmit = async () => {
+    if (otp.length !== 6) {
+      setError("Please enter all 6 digits.");
+      return;
+    }
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const otp = otpValue.join("");
-    console.log(otp, "   ",player_id);
     try {
-      const res = await api.post("/auth/verify-otp", {
-        player_id,
-        otp,
-      });
-      if (res.data?.message === "Email verified successfully") {
+      const res = await api.post("/auth/verify-otp", { player_id, otp });
+      if (
+        res.data?.message === "Email verified successfully" &&
+        res.data?.token?.accessToken &&
+        res.data.user
+      ) {
+        const { accessToken } = res.data.token;
+        const user = res.data.user;
+        useAuth.getState().setAuth(user, accessToken);
         setSuccess(true);
+        router.push("/Home");
       }
     } catch (err: any) {
       setError(err.response?.data?.message || "OTP verification failed");
     }
   };
 
-  if (success) return <p className="text-green-500">Email verified successfully!</p>;
+  useEffect(() => {
+    if (otp.length === 6) {
+      handleSubmit();
+    }
+  }, [otp]);
+  const handleResend = async () => {
+    try {
+      const res = await api.post("/auth/resend-otp", { email, player_id });
+      setResendMessage(res.data?.message || "OTP resent successfully!");
+      setError("");
+      setOtp("");
+      setCooldown(30);
+    } catch (err: any) {
+      setError(err.response?.data?.message || "Failed to resend OTP");
+    }
+  };
+
+  useEffect(() => {
+    if (cooldown > 0) {
+      const timer = setTimeout(() => setCooldown(cooldown - 1), 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [cooldown]);
+
+  if (success) {
+    return <p className="text-green-500">✅ Email verified successfully!</p>;
+  }
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col items-center gap-4">
-      <InputOTP maxLength={6}>
+    <form
+    onSubmit={(e) => {
+      e.preventDefault();
+      handleSubmit();
+    }}
+    className="flex flex-col items-center justify-center gap-4 w-full h-full"
+    >
+      {resendMessage && <p className="text-blue-500">{resendMessage}</p>}
+      <InputOTP
+        maxLength={6}
+        value={otp}
+        onChange={(value: string) => {
+          setOtp(value);
+          setError("");
+        }}
+     >
         <InputOTPGroup>
-          <InputOTPSlot index={0} value={otpValue[0]} onValueChange={(val) => handleChange(0, val)} />
-          <InputOTPSlot index={1} value={otpValue[1]} onValueChange={(val) => handleChange(1, val)} />
+          <InputOTPSlot className="" index={0} />
+          <InputOTPSlot index={1} />
         </InputOTPGroup>
         <InputOTPSeparator />
         <InputOTPGroup>
-          <InputOTPSlot index={2} value={otpValue[2]} onValueChange={(val) => handleChange(2, val)} />
-          <InputOTPSlot index={3} value={otpValue[3]} onValueChange={(val) => handleChange(3, val)} />
+          <InputOTPSlot index={2} />
+          <InputOTPSlot index={3} />
         </InputOTPGroup>
         <InputOTPSeparator />
         <InputOTPGroup>
-          <InputOTPSlot index={4} value={otpValue[4]} onValueChange={(val) => handleChange(4, val)} />
-          <InputOTPSlot index={5} value={otpValue[5]} onValueChange={(val) => handleChange(5, val)} />
+          <InputOTPSlot index={4} />
+          <InputOTPSlot index={5} />
         </InputOTPGroup>
       </InputOTP>
+
       {error && <p className="text-red-500">{error}</p>}
-      <button type="submit" className="mt-2 px-4 py-2 bg-blue-600 text-white rounded">
+
+      <button
+        type="submit"
+        className="mt-2 px-4 py-2 bg-blue-600 text-white rounded ctive:scale-95 active:bg-gray-700"
+      >
         Verify OTP
+      </button>
+
+      <button
+        type="button"
+        onClick={handleResend}
+        disabled={cooldown > 0}
+        className={`mt-2 px-4 py-2 rounded text-white ${
+          cooldown > 0 ? "bg-gray-400 cursor-not-allowed" : "bg-gray-600 active:scale-95 active:bg-gray-700"
+        }`}
+      >
+        {cooldown > 0 ? `Resend in ${cooldown}s` : "Resend OTP"}
       </button>
     </form>
   );

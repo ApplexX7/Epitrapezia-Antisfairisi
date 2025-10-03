@@ -19,7 +19,7 @@ export  function Login  (){
         const verifyPassowrd = await  bcrypt.compare(password, exist.password);
         if (!verifyPassowrd)
           return reply.code(401).send({message: "Invalid username/email or password"})
-        const user  = { id : exist.id, username : exist.username, email : exist.email}
+        const user  = { id : exist.id, username : exist.username, email : exist.email, avatar: exist.avatar}
         const accessToken = generateAccessToken(user)
         const refreshToken = generateRefreshToken(user)
         await storeRefrechTokenInDb(refreshToken, user)

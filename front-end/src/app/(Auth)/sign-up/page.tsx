@@ -11,7 +11,6 @@ import { InputOTPWithSeparator } from "@/components/InputOtp";
 
 
 export default function SignUp() {
-  const router = useRouter();
   const [failedLog, setFailedLog] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showOtp, setShowOtp] = useState(false);
@@ -61,6 +60,11 @@ export default function SignUp() {
                   className=" text-center text-sm md:-mt-0.5 font-light">
                     Register now for more fun!
                   </p>
+                    {failedLog && (
+                      <p className="text-red-800 font-medium text-center mt-2">
+                        {failedLog}
+                      </p>
+                    )}
                   <form onSubmit={SignUpCread} className="mt-10 w-full flex flex-col items-center justify-between gap-8">
                     <div className="flex justify-between w-full gap-5 sm:gap-10 items-center">
                     <InputLogin type="text" name="firstName" placeholder="First Name"/>

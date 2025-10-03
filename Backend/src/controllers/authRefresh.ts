@@ -1,5 +1,4 @@
 import { FastifyRequest, FastifyReply } from "fastify";
-import bcrypt from 'bcrypt';
 import { db } from "../databases/db";
 import { generateAccessToken } from "../modules/generateTokens";
 import jwt from "jsonwebtoken";

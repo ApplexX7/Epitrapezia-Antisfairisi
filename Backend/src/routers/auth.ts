@@ -5,6 +5,7 @@ import { SignUp } from "../controllers/signUp";
 import { RefreshToken } from "../controllers/authRefresh"
 import { Logout } from "../controllers/logout";
 import {VerifyOtp} from "../controllers/verifyOtp"
+import { ResendOtp } from "../controllers/resendOtp";
 
 type LoginBody = {
   login: string;
@@ -50,6 +51,7 @@ export function authRouters() {
   Server.instance().get("/auth/refresh", RefreshToken());
   Server.instance().post("/auth/logout", Logout())
   Server.instance().post("/auth/verify-otp", VerifyOtp());
+  Server.instance().post("/auth/resend-otp", ResendOtp());
 
   Server.instance().post<{ Body: SignUpBody }>(
     "/auth/Sign-up",

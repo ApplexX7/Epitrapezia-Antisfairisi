@@ -2,7 +2,7 @@
 import api from "@/lib/axios";
 import Image from "next/image";
 import Link from "next/link";
-import { useState} from "react";
+import { useEffect, useState} from "react";
 import { useRouter } from "next/navigation";
 import {InputLogin} from "@/components/LoginInput"
 import {LoginButton} from "@/components/loginButton"
@@ -20,7 +20,6 @@ export default function Login() {
     const data = Object.fromEntries(formData.entries());
     try {
       const res = await api.post("/auth/Login", data);
-  
       if (res.data?.token?.accessToken && res.data.user) {
         const { accessToken } = res.data.token;
         const user = res.data.user;
@@ -30,6 +29,7 @@ export default function Login() {
         setFailedLog("Login failed: Invalid server response");
       }
     } catch (err: any) {
+      console.log("Axios error", err.response?.data);
       if (err.response) {
         setFailedLog(err.response.data?.message || "Login failed");
       } else {
@@ -37,18 +37,20 @@ export default function Login() {
       }
     }
   };
-  
   return (
     <LoginPageWrapper>
-
     <div className="h-screen bg-[url('/images/bg-image.png')] bg-cover bg-center flex justify-center items-center">
-      <div className="relative h-full w-300 w-max-350 md:h-[850px] md:w-350 md:ml-10 md:mr-10 bg-white/5 border-white backdrop-blur-lg ring-1
+      <div className="relative h-full w-300 w-max-350 md:h-[900px] md:w-350 md:ml-10 md:mr-10 bg-white/5 border-white backdrop-blur-lg ring-1
         ring-amber-50/20 backdrop-brightness-[150%] rounded-[35px] shadow-[10px_10px_10px_10px_rgba(0,0,0,0.3)] flex flex-row  gap-10">
         <div className=" bg-whitebg/50 w-full  sm:w-[650px] sm:pt-35 h-full rounded-l-[35px] rounded-tr-[80px] px-20 shadow-[10px_0px_10px_0px_rgba(0,0,0,0.2)]  flex flex-col justify-center items-center">
             <h1 className=" text-center text-2xl md:-mt-20 sm:text-[36px] font-bold text-shadow-lg/10 mb-0"> Welcome Back! </h1>
             <p className=" text-center text-sm md:-mt-3 font-light">sign-in to acces your account </p>
             <form onSubmit={checkAuth} className="mt-10 w-full flex flex-col items-center justify-between gap-8">
-              {failedLog ? <p className="text-red-800 font-medium" >Login or password are Incorrect</p> : ''}
+              {failedLog && (
+                <p className="text-red-800 font-medium text-center mt-2">
+                  {failedLog}
+                </p>
+              )}
               <InputLogin type="text" name="login" placeholder="Username or Email" />
                <div className="relative mb-0 w-full">
                 <InputLogin type={showPassword ? "text" : "password"} name="password" placeholder="Password"/>

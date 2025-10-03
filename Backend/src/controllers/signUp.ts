@@ -23,7 +23,7 @@ export function SignUp() {
     }
 
     try {
-      const exist = await playerExist(email, username);
+      const exist = await playerExist(email, username );
       if (exist)
         return reply.code(409).send({ message: "Username or email already registered" });
 

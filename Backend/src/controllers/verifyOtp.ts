@@ -51,7 +51,7 @@ export function VerifyOtp() {
 
       await new Promise<void>((resolve, reject) => {
         db.run(
-          "DELETE FROM player_otp WHERE id = ?",
+          "DELETE FROM player_otps WHERE id = ?",
           [otpRecord.id],
           (err) => (err ? reject(err) : resolve())
         );
@@ -78,7 +78,7 @@ export function VerifyOtp() {
         });
     } catch (err) {
       console.error(err);
-      return reply.status(500).send({ message: "Database error" });
+      return reply.status(500).send({ message: "Internal server error" });
     }
   };
 }
