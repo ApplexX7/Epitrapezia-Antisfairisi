@@ -2,7 +2,8 @@
 import api from "@/lib/axios";
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useState} from "react";
+import { useGoogleAuth } from "@/components/useGoogleAuth";
+import {useState} from "react";
 import { useRouter } from "next/navigation";
 import {InputLogin} from "@/components/LoginInput"
 import {LoginButton} from "@/components/loginButton"
@@ -11,6 +12,7 @@ import LoginPageWrapper from "@/components/LoginWrapComp";
 
 
 export default function Login() {
+  const { signInWithGoogle } = useGoogleAuth();
   const router = useRouter();
   const [failedLog, setFailedLog] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -94,6 +96,7 @@ export default function Login() {
               <LoginButton 
                 types="submit"
                 className="inline-flex justify-center mt-3"
+                onClicks={() => (window.location.href = "http://localhost:8080/auth/google")}
                 >
                 <Image className="mr-3" src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google" width={32} height={32}/>
                   Sign in with Google

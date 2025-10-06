@@ -31,7 +31,7 @@ export function SignUp() {
 
       const userId = await new Promise<number>((resolve, reject) => {
         db.run(
-          "INSERT INTO players (firstName, lastName, username, email, password, avatar, is_verified) VALUES (?, ?, ?, ?, ?, ?, 0)",
+          "INSERT INTO players (firstName, lastName, username, email, password, avatar, is_verified, googleId) VALUES (?, ?, ?, ?, ?, ?, 0, NULL)",
           [firstName, lastName, username, email, hashedPassword, "/images/defaultAvatare.jpg"],
           function (err) {
             if (err) reject(err);
@@ -43,7 +43,7 @@ export function SignUp() {
       const otp = generateOTP();
       const expiredAt = new Date();
       expiredAt.setMinutes(expiredAt.getMinutes() + 10);
-       await saveOTP(userId, otp, "email_verification", 30);
+      await saveOTP(userId, otp, "email_verification", 30);
 
 
       await sendVerificationEmail(email, otp);

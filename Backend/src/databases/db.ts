@@ -47,7 +47,8 @@ export function createTable(){
             email TEXT UNIQUE NOT NULL,
             is_verified INTEGER DEFAULT 0,
             avatar TEXT NULL,
-            refreshToken TEXT
+            refreshToken TEXT,
+            googleId TEXT NULL
         )`,
         (err) => {
             if (err) {
