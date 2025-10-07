@@ -1,13 +1,16 @@
 import { create } from "zustand";
 import api from "@/lib/axios";
 
-type User = {
+export type User = {
   id: string;
   firstName: string;
   lastName: string;
   username: string;
   email: string;
   avatar: string;
+  des : string,
+  dateJoined: string,
+  exp: number,
 };
 
 type AuthState = {

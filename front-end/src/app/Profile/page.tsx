@@ -1,12 +1,15 @@
+"use client"
 import React from "react";
 import { BoxLayout } from "@/components/BoxLayout";
 import Playerinfo from "@/components/PlayerInfo";
 import { ChartRadarDefault } from '@/components/RadarGraph'
 import { ChartAreaDefault } from '@/components/TimeWInGraph'
 import { PingPong, CrownSimple , Star} from "@phosphor-icons/react/ssr";
+import { useAuth } from '@/components/hooks/authProvider';
 
 
 export default function Profile() {
+  const { user} = useAuth();
     return (
       <div className="flex h-full w-full flex-col py-10">
       <h1 className="pl-20 text-shadow-md text-4xl -mb-6 font-semibold
@@ -14,7 +17,7 @@ export default function Profile() {
         text-transparent bg-clip-text z-10" >My Account</h1>
         <div className="grid py-5 px-10 grid-cols-5 grid-rows-8 gap-5 w-full h-full max-w-480">
           <BoxLayout className="w-full h-ful   card col-span-3 row-span-2">
-            <Playerinfo />
+            <Playerinfo/>
           </BoxLayout>
           <BoxLayout className="grid  gap-5 col-span-2 grid-rows-8 row-span-8" >
             <BoxLayout className="card row-span-4 col-span-2">

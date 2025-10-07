@@ -1,6 +1,5 @@
 
 import "@/app/globals.css";
-import Link from "next/link";
 import Image from "next/image";
 import { NavBar } from '@/components/Navbar'
 import { MagnifyingGlass , Bell} from "@phosphor-icons/react/ssr";

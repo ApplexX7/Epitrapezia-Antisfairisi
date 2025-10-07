@@ -80,7 +80,7 @@ export async function GoogleAuthCallback(req: FastifyRequest, reply: FastifyRepl
             username,
             email,
             hashPassword,
-            picture || "/images/defaultAvatar.jpg",
+            picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(given_name + " " + family_name)}&background=random&color=fff&size=128`,
             "google",
           ],
           function (err) {
