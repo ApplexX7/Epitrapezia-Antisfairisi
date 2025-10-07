@@ -48,7 +48,7 @@ export function createTable(){
             is_verified INTEGER DEFAULT 0,
             avatar TEXT NULL,
             refreshToken TEXT,
-            googleId TEXT NULL
+            auth_Provider TEXT DEFAULT 'local'
         )`,
         (err) => {
             if (err) {

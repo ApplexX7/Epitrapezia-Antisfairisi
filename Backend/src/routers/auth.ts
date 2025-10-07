@@ -5,7 +5,7 @@ import { RefreshToken } from "../controllers/authRefresh"
 import { Logout } from "../controllers/logout";
 import {VerifyOtp} from "../controllers/verifyOtp"
 import { ResendOtp } from "../controllers/resendOtp";
-import { GoogleAuthRedirect, GoogleAuthCallback } from "../controllers/googleAuth";
+import { GoogleAuthRedirection, GoogleAuthCallback } from "../controllers/googleAuth";
 
 
 type LoginBody = {
@@ -53,7 +53,7 @@ export function authRouters() {
   Server.instance().post("/auth/logout", Logout())
   Server.instance().post("/auth/verify-otp", VerifyOtp());
   Server.instance().post("/auth/resend-otp", ResendOtp());
-  Server.instance().get("/auth/google", GoogleAuthRedirect);
+  Server.instance().get("/auth/google", GoogleAuthRedirection);
   Server.instance().get("/auth/google/callback", GoogleAuthCallback);
 
   Server.instance().post<{ Body: SignUpBody }>(

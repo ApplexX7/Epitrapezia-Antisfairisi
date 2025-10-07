@@ -12,7 +12,6 @@ import LoginPageWrapper from "@/components/LoginWrapComp";
 
 
 export default function Login() {
-  const { signInWithGoogle } = useGoogleAuth();
   const router = useRouter();
   const [failedLog, setFailedLog] = useState("");
   const [showPassword, setShowPassword] = useState(false);

@@ -31,8 +31,8 @@ export function SignUp() {
 
       const userId = await new Promise<number>((resolve, reject) => {
         db.run(
-          "INSERT INTO players (firstName, lastName, username, email, password, avatar, is_verified, googleId) VALUES (?, ?, ?, ?, ?, ?, 0, NULL)",
-          [firstName, lastName, username, email, hashedPassword, "/images/defaultAvatare.jpg"],
+          "INSERT INTO players (firstName, lastName, username, email, password, avatar, is_verified) VALUES (?, ?, ?, ?, ?, ?, 0)",
+          [firstName, lastName, username, email.toLowerCase(), hashedPassword, "/images/defaultAvatare.jpg"],
           function (err) {
             if (err) reject(err);
             else resolve(this.lastID);
@@ -48,7 +48,7 @@ export function SignUp() {
 
       await sendVerificationEmail(email, otp);
 
-      const user = { id: userId, username, email, firstName, lastName, avatar: "/images/defaultAvatare.jpg" };
+      const user = { id: userId, username, email, firstName, lastName, avatar: "/images/defaultAvatare.jpg" , auth_Provider : "local"};
       return reply.status(201).send({
         message: "User created successfully. Please verify your email with the OTP sent.",
         user,

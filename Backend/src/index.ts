@@ -1,4 +1,3 @@
-import fastify, { FastifyInstance } from "fastify";
 import { Server } from "./server";
 import {createTable, createOTPTable ,db} from './databases/db'
 import { authRouters } from "./routers/auth";

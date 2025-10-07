@@ -2,12 +2,12 @@
 import api from "@/lib/axios";
 import Image from "next/image";
 import Link from "next/link";
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useState} from "react";
 import {InputLogin} from "@/components/LoginInput"
 import {LoginButton} from "@/components/loginButton"
 import LoginPageWrapper from "@/components/LoginWrapComp";
 import { InputOTPWithSeparator } from "@/components/InputOtp";
+import {isStrongPassword, getPasswordStrengthMessage, isValidUsername, getUsernameErrorMessage} from "@/lib/sanitize";
 
 
 export default function SignUp() {
@@ -22,6 +22,16 @@ export default function SignUp() {
     event.preventDefault();
     const formData = new FormData(event.target as HTMLFormElement);
     const data = Object.fromEntries(formData.entries()); 
+    const rawUsername = data.username?.toString() || "";
+    if (!isValidUsername(rawUsername)) {
+      setFailedLog(getUsernameErrorMessage(rawUsername));
+      return;
+    }
+    const password = data.password?.toString() || "";
+    if (!isStrongPassword(password)) {
+      setFailedLog(getPasswordStrengthMessage(password));
+      return;
+    }
     try{
       const res = await api.post("/auth/Sign-up", data)
       if (res.data?.user){
