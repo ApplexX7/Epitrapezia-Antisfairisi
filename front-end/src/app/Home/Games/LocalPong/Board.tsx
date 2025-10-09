@@ -1,7 +1,15 @@
 "use client";
 import React, { useEffect, useRef, useState } from "react";
 
-export default function Board() {
+type BoardProps = 
+{
+  playerOneScore : number;
+  playerTwoScore : number;
+  setPlayerOneScore: React.Dispatch<React.SetStateAction<number>>;
+  setPlayerTwoScore: React.Dispatch<React.SetStateAction<number>>;
+};
+
+export default function Board({playerOneScore, playerTwoScore, setPlayerOneScore, setPlayerTwoScore} : BoardProps) {
   const boardRef = useRef<HTMLDivElement | null>(null);
   const leftPaddleRef = useRef<HTMLDivElement | null>(null);
   const rightPaddleRef = useRef<HTMLDivElement | null>(null);
@@ -135,21 +143,34 @@ export default function Board() {
           nextX <= ballLimits.leftMax + leftPaddle.offsetWidth &&
           ballBottom >= leftTop &&
           ballTop <= leftBottom
-        ) {
+        ) 
+        {
           dxRef.current = -dxRef.current;
           nextX = ballXRef.current + dxRef.current;
         } else if (
           nextX >= ballLimits.rightMax - rightPaddle.offsetWidth &&
           ballBottom >= rightTop &&
-          ballTop <= rightBottom
-        ) {
+          ballTop <= rightBottom) 
+        {
           dxRef.current = -dxRef.current;
           nextX = ballXRef.current + dxRef.current;
-        } else if (nextX >= ballLimits.rightMax || nextX <= ballLimits.leftMax) {
+        } 
+        else if (nextX >= ballLimits.rightMax)
+         {
           nextX = 0;
           nextY = 0;
           dxRef.current = 3;
           dyRef.current = 3;
+          setPlayerOneScore((prev) => prev + 1);
+          setStartGameCounter(3);
+        }
+        else if (nextX <= ballLimits.leftMax)
+        {
+          nextX = 0;
+          nextY = 0;
+          dxRef.current = 3;
+          dyRef.current = 3;
+          setPlayerTwoScore((prev) => prev + 1);
           setStartGameCounter(3);
         }
       }

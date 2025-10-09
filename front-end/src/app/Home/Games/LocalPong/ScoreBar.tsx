@@ -1,9 +1,13 @@
 'use client'
 import Image from "next/image";
+import React, { useState } from "react";
 
-export default function ScoreBar() {
-  const playerOneScore = 4;
-  const playerTwoScore = 5;
+type ScoreBarProps = {
+  playerOneScore: number;
+  playerTwoScore: number;
+};
+
+export default function ScoreBar({playerOneScore, playerTwoScore} : ScoreBarProps) {
   const playerOneName = "asedoun";
   const playerTwoName = "asedoun";
 
