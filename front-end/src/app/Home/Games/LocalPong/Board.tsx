@@ -15,7 +15,7 @@ export default function Board({
   setPlayerTwoScore,
 }: BoardProps) {
   let [lostPlayer, setLostPlayer] = useState("");
-  let step = 7;
+  let stepRef = useRef(7);
   const boardRef = useRef<HTMLDivElement | null>(null);
   const leftPaddleRef = useRef<HTMLDivElement | null>(null);
   const rightPaddleRef = useRef<HTMLDivElement | null>(null);
@@ -119,13 +119,13 @@ export default function Board({
     const loop = () => {
       let { min, max } = bounds;
       setLeftPaddleOffset((p) => {
-        if (pressedKeys.has("w") || pressedKeys.has("W")) return Math.max(min, p - step);
-        if (pressedKeys.has("s") || pressedKeys.has("S")) return Math.min(max, p + step);
+        if (pressedKeys.has("w") || pressedKeys.has("W")) return Math.max(min, p - stepRef.current);
+        if (pressedKeys.has("s") || pressedKeys.has("S")) return Math.min(max, p + stepRef.current);
         return p;
       });
       setRightPaddleOffset((p) => {
-        if (pressedKeys.has("ArrowUp")) return Math.max(min, p - step);
-        if (pressedKeys.has("ArrowDown")) return Math.min(max, p + step);
+        if (pressedKeys.has("ArrowUp")) return Math.max(min, p - stepRef.current);
+        if (pressedKeys.has("ArrowDown")) return Math.min(max, p + stepRef.current);
         return p;
       });
       requestAnimationFrame(loop);
@@ -182,7 +182,7 @@ export default function Board({
           nextY = 0;
           dxRef.current = dxRef.current * 1.2;
           dyRef.current = dyRef.current * 1.2;
-          step = step * 1.2;
+          stepRef.current = stepRef.current * 1.2;
           setPlayerOneScore((prev) => prev + 1);
           setStartGameCounter(3);
         } else if (nextX <= ballLimits.leftMax) {
@@ -190,7 +190,7 @@ export default function Board({
           nextY = 0;
           dxRef.current = dxRef.current * 1.2;
           dyRef.current = dyRef.current * 1.2;
-          step = step * 1.2;
+          stepRef.current = stepRef.current * 1.15;
           setPlayerTwoScore((prev) => prev + 1);
           setStartGameCounter(3);
         }
@@ -211,7 +211,7 @@ export default function Board({
       nextY = 0;
       dxRef.current = 3;
       dyRef.current = 3;
-      step = 7;
+      stepRef.current = 7;
       setStartGame(false);
       setShowVictoryVideo(true); 
 
