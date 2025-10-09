@@ -14,7 +14,7 @@ export default function Board({
   setPlayerOneScore,
   setPlayerTwoScore,
 }: BoardProps) {
-  let lostPlayer;
+  let [lostPlayer, setLostPlayer] = useState("");
   let step = 7;
   const boardRef = useRef<HTMLDivElement | null>(null);
   const leftPaddleRef = useRef<HTMLDivElement | null>(null);
@@ -222,10 +222,10 @@ export default function Board({
     };
 
     if (playerOneScore > 5 && playerOneScore - playerTwoScore >= 2) {
-      lostPlayer = "rightPlayer";
+      setLostPlayer ("right Player");
       handleWin("playerOne");
     } else if (playerTwoScore > 5 && playerTwoScore - playerOneScore >= 2) {
-      lostPlayer = "leftPlayer";
+      setLostPlayer("left Player");
       handleWin("playerTwo");
     }
   }, [playerOneScore, playerTwoScore]);
@@ -246,7 +246,7 @@ export default function Board({
     <p
       className="text-white font-extrabold text-[10vw] z-50 text-center"
     >
-      Player {lostPlayer} is underdog
+      {lostPlayer} is underdog
     </p>
   </div>
 )}
