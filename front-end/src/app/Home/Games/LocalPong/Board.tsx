@@ -10,6 +10,7 @@ type BoardProps =
 };
 
 export default function Board({playerOneScore, playerTwoScore, setPlayerOneScore, setPlayerTwoScore} : BoardProps) {
+
   const boardRef = useRef<HTMLDivElement | null>(null);
   const leftPaddleRef = useRef<HTMLDivElement | null>(null);
   const rightPaddleRef = useRef<HTMLDivElement | null>(null);
@@ -20,7 +21,9 @@ export default function Board({playerOneScore, playerTwoScore, setPlayerOneScore
   const ballYRef = useRef(0);
   const leftPaddlePosRef = useRef(0);
   const rightPaddlePosRef = useRef(0);
-
+  let nextX = 0;
+  let nextY = 0;
+  const [startGame, setStartGame] = useState(false);
   const [startGameCounter, setStartGameCounter] = useState(5);
   const [leftPaddleOffset, setLeftPaddleOffset] = useState(0);
   const [rightPaddleOffset, setRightPaddleOffset] = useState(0);
@@ -33,14 +36,17 @@ export default function Board({playerOneScore, playerTwoScore, setPlayerOneScore
     leftMax: 0,
     rightMax: 0,
   });
-
+  const handleGameStartClick = () =>
+  {
+    setStartGame(true);
+  };
   useEffect(() => {
-    if (startGameCounter <= 0) return;
+    if (startGameCounter <= 0 || !startGame) return;
     const intervalId = setInterval(() => {
       setStartGameCounter((prev) => prev - 1);
     }, 1000);
     return () => clearInterval(intervalId);
-  }, [startGameCounter]);
+  }, [startGameCounter, startGame]);
 
   useEffect(() => {
     function updateBounds() {
@@ -120,13 +126,13 @@ export default function Board({playerOneScore, playerTwoScore, setPlayerOneScore
   useEffect(() => {
     if (startGameCounter > 0) return;
     const interval = setInterval(() => {
-      let nextY = ballYRef.current + dyRef.current;
+       nextY = ballYRef.current + dyRef.current;
       if (nextY >= ballLimits.bottomMax || nextY <= ballLimits.topMax) {
         dyRef.current = -dyRef.current;
         nextY = ballYRef.current + dyRef.current;
       }
 
-      let nextX = ballXRef.current + dxRef.current;
+       nextX = ballXRef.current + dxRef.current;
       const ball = ballRef.current;
       const leftPaddle = leftPaddleRef.current;
       const rightPaddle = rightPaddleRef.current;
@@ -183,6 +189,28 @@ export default function Board({playerOneScore, playerTwoScore, setPlayerOneScore
     return () => clearInterval(interval);
   }, [ballLimits, startGameCounter]);
 
+  useEffect (() => {
+    if (playerOneScore > 5 && playerOneScore - playerTwoScore >= 2)
+    {
+      nextX = 0;
+      nextY = 0;
+      dxRef.current = 3;
+      dyRef.current = 3;
+      setPlayerTwoScore(0);
+      setPlayerOneScore(0);
+      setStartGame(false);
+    }
+    else if (playerTwoScore > 5 && playerTwoScore - playerOneScore >= 2)
+    {
+      nextX = 0;
+      nextY = 0;
+      dxRef.current = 3;
+      dyRef.current = 3;
+      setPlayerTwoScore(0);
+      setPlayerOneScore(0);
+      setStartGame(false);
+    }
+  },[playerOneScore, playerTwoScore]);
   return (
     <div ref={boardRef} className="relative m-auto w-[80vw] h-[75vh]" style={{ backgroundColor: "#0A0F2A" }}>
       <div
@@ -191,25 +219,35 @@ export default function Board({playerOneScore, playerTwoScore, setPlayerOneScore
         style={{ backgroundColor: "#FF007F", transform: `translateY(-50%) translateY(${leftPaddleOffset}px)` }}
       ></div>
 
-      <div className="absolute left-1/2 top-0 h-full w-[1%] -translate-x-1/2 bg-white-smoke"></div>
+      <div className="absolute left-1/2 top-0 h-full w-[0.5%] -translate-x-1/2 bg-white-smoke"></div>
 
       <div
         ref={ballRef}
-        className="absolute left-1/2 top-1/2 w-[33px] h-[33px] rounded-full"
+        className="absolute left-1/2 top-1/2 w-[24px] h-[24px] rounded-full"
         style={{ backgroundColor: "#FF007F", transform: `translate(-50%, -50%) translate(${ballOffsetX}px, ${ballOffsetY}px)` }}
       ></div>
-
+      {!startGame && (
+<button onClick={handleGameStartClick}
+  className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[10%] h-[8%] rounded-md bg-[#FF007F]"
+>
+  Start a New Game
+</button>
+      )}
       <div
         ref={rightPaddleRef}
         className="absolute right-0 top-1/2 w-[19px] h-[20%] rounded-sm"
         style={{ backgroundColor: "#FF007F", transform: `translateY(-50%) translateY(${rightPaddleOffset}px)` }}
       ></div>
 
-      {startGameCounter > 0 && (
-        <p className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 font-extrabold text-white opacity-80 transition-all duration-200" style={{ fontSize: "15vh", lineHeight: "1" }}>
-          {startGameCounter}
-        </p>
-      )}
+{startGame && startGameCounter > 0 && (
+  <p
+    className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 font-extrabold text-white opacity-80 transition-all duration-200"
+    style={{ fontSize: "15vh", lineHeight: "1" }}
+  >
+    {startGameCounter}
+  </p>
+)}
+
     </div>
   );
 }
