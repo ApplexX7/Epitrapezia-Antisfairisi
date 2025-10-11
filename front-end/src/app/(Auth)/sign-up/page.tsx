@@ -121,8 +121,9 @@ export default function SignUp() {
                     <LoginButton 
                     types="submit" 
                     className="inline-flex justify-center mt-3"
+                    onClicks={() => (window.location.href = "http://localhost:8080/auth/google")}
                     >
-                      <Image className="mr-3" src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google" width={32} height={32}/>
+                      <Image className="mr-3" src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google" width={32} height={32} priority/>
                       Sign Up with Google
                     </LoginButton>
                     <p className="text-md sm:text-[18px] text-[12px] text-center mt-4 sm:mt-5">Already have an acoount? <Link className="ml-1 font-bold text-blue-murder hover:underline underline-offset-2 
@@ -133,7 +134,9 @@ export default function SignUp() {
                   <InputOTPWithSeparator email={emailData.email} player_id={emailData.player_id}/>
                 )}
                 </div>
-                <Image className="z-0 hidden md:w-[700px] left-10 h-full  md:block absolute"  alt="Logo for  a ping pong" src="/images/logo-S.png" width={500} height={500}/>
+                <Image className="z-0 hidden md:w-[700px] left-10 h-full  md:block absolute"
+                  alt="Logo for  a ping pong" src="/images/logo-S.png" 
+                  width={500} height={500} priority/>
                 </div>
                 </div>
                 </LoginPageWrapper>

@@ -10,7 +10,7 @@ export default function Intro() {
           ring-amber-50/20 backdrop-brightness-[150%] rounded-[35px] 
           shadow-[10px_10px_10px_10px_rgba(0,0,0,0.3)] 
           flex flex-col  justify-center items-center px-">
-            <Image className="w-80 "  alt="Logo for  a ping pong" src="/images/logo.png" width={500} height={400}/>
+            <Image className="w-80 "  alt="Logo for  a ping pong" src="/images/logo.png" width={500} height={400} priority/>
             <h1 className="-mt-10 text-center block text-[32px] sm:text-[48px] text-white-smoke/80 
             text-shadow-lg/30 font-semibold" >Welcome, champ.<br/>Let’s ping. Let’s pong.</h1>
             <p className="text-md font-medium text-shadow-sm text-white-smoke/50  text-h"> No paddles, no fun! Jump in—sign up or log in.</p>

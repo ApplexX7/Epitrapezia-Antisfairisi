@@ -24,7 +24,7 @@ export default function BarProgressionLevel({ level, progression }: UserInfo) {
         </div>
         <CustomButton className="self-center font-medium 
         shadow-none text-xl bg-[#D9D9D9]/5 h-15 w-70 
-        transition-transform duration-300 ease-in-out focus:scale-110">
+        transition-transform duration-300 ease-in-out active:scale-110">
             View Status
         </CustomButton>
     </div>

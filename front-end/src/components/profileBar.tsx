@@ -33,6 +33,7 @@ import api from "@/lib/axios"
                     height={84}
                     alt="Avatar"
                     className="w-full h-full object-cover"
+                    priority
                     />
                 </div>
             </NavigationMenuTrigger>

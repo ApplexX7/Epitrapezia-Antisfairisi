@@ -39,12 +39,12 @@ const chartConfig = {
 
 export function ChartBarDefault() {
   return (
-    <Card className="bg-transparent text-black w-full h-[400px] border-none shadow-none">
+    <Card className="bg-transparent text-black   w-full h-[400px] border-none shadow-none">
       <CardHeader>
         <CardTitle className=" flex gap-2 leading-none text-shadow-xs ml-3 font-semibold 
         text-2xl justify-center" >Weekly Attendance</CardTitle>
       </CardHeader>
-      <CardContent className="h-full w-full">
+      <CardContent className="h-full w-full ">
         <ChartContainer config={chartConfig} className="h-full w-full">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart accessibilityLayer data={chartData}>

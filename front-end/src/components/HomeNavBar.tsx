@@ -8,8 +8,8 @@ import {NavigationMenuDemo } from "@/components/profileBar"
 
 export default function HomeNavBar (){
     return (
-        <div className="-mt-5 flex justify-center items-center w-full  gap-5">
-            <Image className="hidden ml-10 xl:block w-[180px] h-[200px]"  alt="Logo for  a ping pong" src="/images/logo-S.png" width={500} height={500}/>
+        <div className="mt-10 min-[1400px]:-mt-5 min-[1400px]:mb-0 mb-10 flex justify-center items-center gap-5 w-full px-10">
+            <Image className="hidden ml-10 min-[1400px]:block w-[180px] h-[200px]"  alt="Logo for  a ping pong" src="/images/logo-S.png" width={500} height={500} priority/>
             <div className="ml-10 xl:ml-0 w-full rounded-full h-[70px] mt-15 xl:mt-0">
                 <NavBar />
             </div>

@@ -27,6 +27,12 @@
     #100C46); /* blue-purple */
 }
 
+
+@theme {
+  --screen-xs: 480px;
+  --screen-3xl: 1800px;
+}
+
 .card {
   @apply bg-white-smoke/40 border-white backdrop-blur-none ring-1
     ring-amber-50/20 backdrop-brightness-[150%] rounded-[35px]

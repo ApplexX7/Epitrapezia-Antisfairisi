@@ -103,7 +103,7 @@ export default function Login() {
               <p className="text-md sm:text-[18px] text-center mt-4 sm:mt-8"> Dont Have an account? <Link className="ml-1 font-bold text-blue-murder hover:underline underline-offset-2 
               cursor-pointer" href="./sign-up">Sign Up!</Link></p>
         </div>
-        <Image className="hidden md:-z-50 md:w-[700px] right-10 h-full  md:block absolute"  alt="Logo for  a ping pong" src="/images/logo-S.png" width={500} height={500}/>
+        <Image className="hidden md:-z-50 md:w-[700px] right-10 h-full  md:block absolute"  alt="Logo for  a ping pong" src="/images/logo-S.png" width={500} height={500} priority/>
       </div>
     </div>
   </LoginPageWrapper>

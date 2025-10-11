@@ -22,6 +22,7 @@ export default function Playerinfo(){
           height={180}
           className="rounded-full object-cover"
           quality={100}
+          priority
         />
         <p className="text-black font-medium text-wrap text-center ">
           {`${user?.des ?

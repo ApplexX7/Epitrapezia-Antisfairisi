@@ -9,7 +9,7 @@ export const CustomButton: React.FC<CustomButtonProps> = ({ className = '', bgIm
       <button
         className={`shadow-[2px_1px_2px_1px_rgba(0,0,0,0.2)] flex backdrop-blur-lg 
          justify-center items-center ${brightness}
-        hover:opacity-85 rounded-full ${className}`}
+        hover:opacity-85 rounded-full cursor-pointer ${className}`}
         style={style}
         type="button"
       >
