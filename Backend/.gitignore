@@ -18,11 +18,7 @@ out/
 .serverless/
 
 # dotenv environment variables file
-.env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
+
 
 # Next.js static files (these are built by default)
 public/.next/

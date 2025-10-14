@@ -3,7 +3,7 @@ import { db } from "../databases/db";
 import { generateAccessToken } from "../modules/generateTokens";
 import jwt from "jsonwebtoken";
 
-async function refreshTokenDate(token:string) {
+export async function refreshTokenDate(token:string) {
     try{
         const secret = process.env.REFRESH_TOKEN
         if (!secret) {
@@ -50,6 +50,8 @@ export function RefreshToken() {
           id: user.id,
           username: user.username,
           email: user.email,
+          firstname : user.firstName,
+          lastName : user.lastName,
         });
   
         return reply.send({

@@ -1,11 +1,12 @@
 import { Server } from "./server";
-import {createTable, createOTPTable ,db} from './databases/db'
+import {createTable, createOTPTable ,createUserInfo,db} from './databases/db'
 import { authRouters } from "./routers/auth";
 import fastifyCors from '@fastify/cors';
 
 
 createTable();
 createOTPTable();
+createUserInfo()
 authRouters();
 
 

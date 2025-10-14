@@ -121,7 +121,7 @@ export default function SignUp() {
                     <LoginButton 
                     types="submit" 
                     className="inline-flex justify-center mt-3"
-                    onClicks={() => (window.location.href = "http://localhost:8080/auth/google")}
+                    onClicks={() => (window.location.href = "http://e3r9p3.1337.ma:8080/auth/google")}
                     >
                       <Image className="mr-3" src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google" width={32} height={32} priority/>
                       Sign Up with Google

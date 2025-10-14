@@ -19,7 +19,7 @@ export default function AuthWrapper({ children }: AuthWrapperProps) {
 
   useEffect(() => {
     if (!checkingAuth && !accessToken) {
-      router.replace("/login");
+      router.replace("/");
     }
   }, [checkingAuth, accessToken, router]);
 

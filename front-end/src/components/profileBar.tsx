@@ -18,7 +18,7 @@ import api from "@/lib/axios"
     async function handleLogout(){
         clearAuth();
         await  api.post("/auth/logout");
-        router.replace("/login")
+        router.replace("/")
     }
     return (
       <NavigationMenu>

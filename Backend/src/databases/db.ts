@@ -14,6 +14,29 @@ export const db = new Database(dbPath, (err) => {
     }
 });
 
+
+export function createUserInfo() {
+    db.run(
+        `CREATE TABLE IF NOT EXISTS player_infos (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            player_id INTEGER NOT NULL,
+            date_joined TEXT DEFAULT (datetime('now')),
+            desp TEXT NOT NULL,
+            socials TEXT NULL,
+            FOREIGN KEY (player_id) REFERENCES players(id) ON DELETE CASCADE
+        )`,
+        (err) => {
+            if (err) {
+                console.error("Error creating player_infos table:", err.message);
+            } else {
+                console.log('Table "player_infos" created or already exists.');
+            }
+        }
+    );
+}
+
+
+
 export function createOTPTable() {
     db.run(
         `CREATE TABLE IF NOT EXISTS player_otps (
