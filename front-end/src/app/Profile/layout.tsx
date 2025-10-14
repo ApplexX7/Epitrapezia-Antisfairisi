@@ -8,19 +8,6 @@ import AuthWrapper from "@/components/AuthCheck";
 
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
-  // const router = useRouter();
-  // const pathname = usePathname()
-  // const { accessToken, checkingAuth, refreshAuth } = useAuth();
-  // useEffect(() => {
-  //   refreshAuth();
-  // }, [refreshAuth]);
-  // useEffect(() => {
-  //   if (!checkingAuth && accessToken && pathname === "/login") {
-  //     router.replace("/Home");
-  //   }
-  // }, [checkingAuth, accessToken, router]);
-
-  // if (checkingAuth) return <LoadingComp />;
   return (
     <AuthWrapper>
       <div className="custom-gradient h-screen w-full 
