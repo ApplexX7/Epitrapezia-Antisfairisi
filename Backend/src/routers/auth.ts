@@ -6,20 +6,7 @@ import { Logout } from "../controllers/logout";
 import {VerifyOtp} from "../controllers/verifyOtp"
 import { ResendOtp } from "../controllers/resendOtp";
 import { GoogleAuthRedirection, GoogleAuthCallback } from "../controllers/googleAuth";
-
-
-type LoginBody = {
-  login: string;
-  password: string;
-};
-
-type SignUpBody = {
-  firstName: string;
-  lastName: string;
-  username: string;
-  email: string;
-  password: string;
-};
+import { LoginBody, SignUpBody } from "../interfaces/types";
 
 const loginSchema = {
   type: "object",

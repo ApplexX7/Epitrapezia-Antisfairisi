@@ -10,7 +10,7 @@ import { storeRefrechTokenInDb } from "../modules/storeRefreshTokenInDb";
 const CLIENT_ID = process.env.GOOGLE_CLIENT_ID!;
 const CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET!;
 const REDIRECT_URI = process.env.GOOGLE_REDIRECT_URI!;
-const FRONTEND_REDIRECT = "http://e3r9p3.1337.ma:3000/Home";
+const FRONTEND_REDIRECT = "http://localhost:3000/Home";
 
 const googleClient = new OAuth2Client(CLIENT_ID);
 

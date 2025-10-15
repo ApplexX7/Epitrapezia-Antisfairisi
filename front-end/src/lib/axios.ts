@@ -2,7 +2,7 @@ import axios from "axios";
 import { useAuth } from "@/components/hooks/authProvider";
 
 const api = axios.create({
-  baseURL: "http://e3r9p3.1337.ma:8080",
+  baseURL: "http://localhost:8080",
   withCredentials: true,
 });
 
