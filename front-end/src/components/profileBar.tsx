@@ -21,7 +21,7 @@ import api from "@/lib/axios"
         router.replace("/")
     }
     return (
-      <NavigationMenu>
+      <NavigationMenu className="hidden sm:block">
         <NavigationMenuList>
           <NavigationMenuItem>
             <NavigationMenuTrigger>

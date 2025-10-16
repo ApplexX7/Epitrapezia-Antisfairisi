@@ -1,6 +1,6 @@
 import { Server } from "../server"
-import { Getfriend } from "../controllers/GetFriends";
+import { Getfriends } from "../controllers/GetFriends";
 
 export function friends (){
-    Server.instance().get("/friends/", Getfriend());
+    Server.instance().get("/friends/", Getfriends());
 }

@@ -14,13 +14,13 @@ export default function Home() {
       <h1
         className="text-shadow-md sm:-mt-10 ml-10 text-2xl font-semibold
         bg-gradient-to-l from-white-smoke to-white-smoke/85
-        text-transparent bg-clip-text z-10" 
+        text-transparent bg-clip-text z-1" 
       >
        {`Welcome ${user?.username}`}
       </h1>
       <div className="-mt-4 grid grid-cols-4 
-        gap-5 w-full h-[calc(100%-232px)] p-5 z-0 grid-rows-[200px_200px_400px_250px]">
-        <BoxLayout className="grid gap-5 grid-cols-3 col-span-3 row-span-1">
+        gap-5 w-full h-[calc(100%-232px)] p-5  auto-rows-min">
+        <BoxLayout className="grid grid-cols-1 md:grid-cols-3 row-span-10 gap-5 col-span-4">
           <BoxLayout className="card  h-full w-full col-span-1 bg-[url('/images/OneVSOne.png')] bg-no-repeat bg-center bg-cover hover:" >
             <div className="w-full h-full flex items-center justify-center backdrop-blur-sm rounded-[35px] 
               transition-transform duration-300 ease-in-out focus:scale-110 cursor-pointer hover:scale-110">
@@ -40,19 +40,19 @@ export default function Home() {
               </div>
           </BoxLayout>
         </BoxLayout>
-        <BoxLayout className="grid gap-5 col-span-1 row-span-auto" >
-          <BoxLayout className="card h-fit row-span-auto px-5" >
+        <BoxLayout className="card col-span-4  md:col-span-3 h-fit py-20">
+          <ChartBarDefault />
+        </BoxLayout>
+        <BoxLayout className="col-span-4 md:col-span-1 grid gap-5" >
+          <BoxLayout className="card px-5 h-fit" >
             <BarProgressionLevel level={20} progression={60}/>
           </BoxLayout>
-          <BoxLayout className="py-18 card h-full row-span-auto" >
+          <BoxLayout className="py-18 card h-full xl:row-span-auto" >
             <ChartLineDefault/>
           </BoxLayout>
         </BoxLayout>
-        <BoxLayout className="card items-center-safe h-full  col-span-3 row-span-2">
-          <ChartBarDefault />
-        </BoxLayout>
-        <BoxLayout className="col-span-4 row-span-1">
-          <div className="flex w-full flex-col h-full">
+        <BoxLayout className="col-span-3  w-full h-50 xl:-mt-50">
+          <div className="flex flex-col w-full h-full p-0">
             <h1 className="text-white-smoke text-shadow-md 
             ml-10 text-2xl font-semibold">
               Recent Games

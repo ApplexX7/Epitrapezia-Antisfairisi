@@ -40,10 +40,22 @@ const SlideTabs = () => {
     moveToActive();
   }, [pathname]);
 
+  useEffect(() => {
+    const handleResize = () => {
+      moveToActive();
+    };
+
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, [pathname]);
+
   return (
     <ul
       onMouseLeave={moveToActive} 
-      className="relative w-full h-full rounded-full border-white backdrop-blur-lg flex justify-around items-center ring-1 ring-white-smoke/40 backdrop-brightness-[150%] bg-white-smoke/30 shadow-[3px_2px_3px_1px_rgba(0,0,0,0.2)]"
+      className="relative w-full h-full rounded-full
+       border-white backdrop-blur-lg flex justify-around 
+       items-center ring-1 ring-white-smoke/40 backdrop-brightness-[150%] 
+       bg-white-smoke/30 shadow-[3px_2px_3px_1px_rgba(0,0,0,0.2)]"
     >
       <Tab setPosition={setPosition} link="/Home">Home</Tab>
       <Tab setPosition={setPosition} link="/Home/Chat">Chat</Tab>

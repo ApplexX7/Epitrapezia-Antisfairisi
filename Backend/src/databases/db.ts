@@ -1,7 +1,6 @@
 import Fastify from "fastify";
 import sqlite3 from "sqlite3";
 import path from "path";
-import { error } from "console";
 
 const fastify = Fastify({ logger: true });
 const { Database } = sqlite3;
