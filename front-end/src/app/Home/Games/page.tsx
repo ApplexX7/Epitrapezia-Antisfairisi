@@ -1,12 +1,15 @@
-export default function Home() {
+'use client'
+import "../../globals.css";
+import Tournament from "./Tournament";
+import PongGame from "./PongGame";
+import HandClash from "./HandClash";
+
+export default function Games() {
   return (
-    <div className="h-[calc(100%-232px)] flex flex-col items-center justify-center">
-      <h1 className="text-5xl text-white font-bold mb-8 animate-pulse">
-          Coming Soon
-      </h1>
-      <p className="text-white text-lg mb-8">
-          We&apos;re working hard to bring you something amazing. Stay tuned!
-      </p>
-    </div>
+    <>
+    <Tournament />
+    <PongGame />
+    <HandClash />
+    </>
   );
 }
