@@ -20,30 +20,30 @@ export default function Home() {
       </h1>
       <div className="-mt-4 grid grid-cols-4 
         gap-5 w-full h-[calc(100%-232px)] p-5  auto-rows-min">
-        <BoxLayout className="grid grid-cols-1 md:grid-cols-3 row-span-10 gap-5 col-span-4">
+        <BoxLayout className="grid grid-cols-1 xl:grid-cols-3 row-span-10 gap-5 col-span-4">
           <BoxLayout className="card  h-full w-full col-span-1 bg-[url('/images/OneVSOne.png')] bg-no-repeat bg-center bg-cover hover:" >
             <div className="w-full h-full flex items-center justify-center backdrop-blur-sm rounded-[35px] 
               transition-transform duration-300 ease-in-out focus:scale-110 cursor-pointer hover:scale-110">
               <h1 className="text-white-smoke font-bold text-5xl text-shadow-lg/30 hover:text-shadow-white-smoke/50" >Matchup</h1>
             </div>
           </BoxLayout>
-          <BoxLayout className="card col-span-1 bg-[url('/images/Tournaments.png')] bg-size-[500px] bg-no-repeat bg-center" >
+          <BoxLayout className="card col-span-1 bg-[url('/images/Tournaments.png')]  bg-no-repeat bg-cover bg-center" >
           <div className="w-full h-full flex items-center justify-center backdrop-blur-sm rounded-[35px] 
               transition-transform duration-300 ease-in-out focus:scale-110   cursor-pointer hover:scale-110">
               <h1 className="text-white-smoke font-bold text-5xl text-shadow-lg/30 hover:text-shadow-white-smoke/50" >Master Arena</h1>
             </div>
           </BoxLayout>
-          <BoxLayout className="card col-span-1 bg-[url('/images/rockPaper.png')] bg-size-[500px] bg-no-repeat bg-center" >
+          <BoxLayout className="card col-span-1 bg-[url('/images/rockPaper.png')]  bg-no-repeat  bg-cover bg-center" >
             <div className="w-full h-full flex items-center justify-center backdrop-blur-sm rounded-[35px] 
                 transition-transform duration-300 ease-in-out focus:scale-110  cursor-pointer hover:scale-110">
                 <h1 className="text-white-smoke font-bold text-5xl text-shadow-lg/30  hover:text-shadow-white-smoke/50" >TriStrike</h1>
               </div>
           </BoxLayout>
         </BoxLayout>
-        <BoxLayout className="card col-span-4  md:col-span-3 h-fit py-20">
+        <BoxLayout className="card col-span-4  xl:col-span-3 h-fit py-20">
           <ChartBarDefault />
         </BoxLayout>
-        <BoxLayout className="col-span-4 md:col-span-1 grid gap-5" >
+        <BoxLayout className="col-span-4 xl:col-span-1 grid gap-5" >
           <BoxLayout className="card px-5 h-fit" >
             <BarProgressionLevel level={20} progression={60}/>
           </BoxLayout>
@@ -51,7 +51,7 @@ export default function Home() {
             <ChartLineDefault/>
           </BoxLayout>
         </BoxLayout>
-        <BoxLayout className="col-span-3  w-full h-50 xl:-mt-50">
+        <BoxLayout className="col-span-4  w-full h-50 xl:-mt-60 xl:col-span-3">
           <div className="flex flex-col w-full h-full p-0">
             <h1 className="text-white-smoke text-shadow-md 
             ml-10 text-2xl font-semibold">
