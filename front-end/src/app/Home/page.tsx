@@ -12,7 +12,7 @@ export default function Home() {
   return (
     <>
       <h1
-        className="text-shadow-md sm:-mt-10 ml-10 text-2xl font-semibold
+        className="text-shadow-md sm:-mt-5 ml-10 text-2xl font-semibold
         bg-gradient-to-l from-white-smoke to-white-smoke/85
         text-transparent bg-clip-text z-1" 
       >

@@ -40,14 +40,14 @@ const SlideTabs = () => {
     moveToActive();
   }, [pathname]);
 
-  useEffect(() => {
-    const handleResize = () => {
-      moveToActive();
-    };
+  // useEffect(() => {
+  //   const handleResize = () => {
+  //     moveToActive();
+  //   };
 
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, [pathname]);
+  //   window.addEventListener("resize", handleResize);
+  //   return () => window.removeEventListener("resize", handleResize);
+  // }, [pathname]);
 
   return (
     <ul
