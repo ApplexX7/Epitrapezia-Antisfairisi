@@ -56,7 +56,6 @@ export function createUserInfo() {
 }
 
 
-
 export function createOTPTable() {
     db.run(
         `CREATE TABLE IF NOT EXISTS player_otps (
@@ -109,6 +108,3 @@ export function createsDbTabes(){
     createUserInfo();
     createFriendsTable();
 }
-
-
-
