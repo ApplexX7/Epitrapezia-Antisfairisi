@@ -20,8 +20,8 @@ export default function Board({
   const leftPaddleRef = useRef<HTMLDivElement | null>(null);
   const rightPaddleRef = useRef<HTMLDivElement | null>(null);
   const ballRef = useRef<HTMLDivElement | null>(null);
-  const dxRef = useRef(10);
-  const dyRef = useRef(10);
+  const dxRef = useRef(3);
+  const dyRef = useRef(3);
   const ballXRef = useRef(0);
   const ballYRef = useRef(0);
   const leftPaddlePosRef = useRef(0);
@@ -209,8 +209,8 @@ export default function Board({
     const handleWin = (winner: "playerOne" | "playerTwo") => {
       nextX = 0;
       nextY = 0;
-      dxRef.current = 10;
-      dyRef.current = 10;
+      dxRef.current = 3;
+      dyRef.current = 3;
       stepRef.current = 7;
       setStartGame(false);
       setShowVictoryVideo(true); 
