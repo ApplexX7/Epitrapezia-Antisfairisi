@@ -10,13 +10,32 @@ import Link from "next/link";
 
 export default function HomeNavBar (){
     const [clicked, isClicked] = useState(false);
+    const [search, isSearching] = useState(false);
     return (
         <div className="relative mt-10 min-[1400px]:-mt-5 min-[1400px]:mb-0 mb-10 flex justify-center items-center gap-5 w-full xl:px-10 px-5">
             <Image className="hidden ml-10 min-[1400px]:block w-[180px] h-[200px]"  alt="Logo for  a ping pong" src="/images/logo-S.png" width={500} height={500} priority/>
-            <div className="ml-10 hidden lg:block xl:ml-0 w-full rounded-full h-[70px]  xl:mt-0">
-                <NavBar />
+            <div className={`ml-10  lg:block hidden xl:ml-0 w-full rounded-full h-[70px]  xl:mt-0`}>
+                {
+                    search ? (
+
+                        <NavBar />
+                        ) : (
+                            <div className={`ml-10  rounded-full h-[70px]`}>
+                            <input  type="search"
+                            placeholder="Search"
+                            className="px-3 md:px-4 py-2 rounded-4xl focus:outline-none focus:ring-1
+                            focus:ring-white border-none
+                            bg-white-smoke/10 backdrop-blur-lg
+                            brightness-150 text-md font-medium
+                            w-full
+                            sm:h-full
+                            md:text-base"
+                            autoFocus/>
+                            </div>
+                )
+                }
             </div>
-            <div className="flex gap-5 h-[70px]  xl:mt-0 md:mr-10 items-center  justify-between w-full xl:w-150 xl:justify-center">
+            <div className={`flex gap-5 h-[70px]  xl:mt-0 md:mr-10 items-center  justify-between w-full xl:w-150 xl:justify-center`}>
                 <div className="relative">
                 <button
                     className={`items-center lg:hidden   left-0 ml-5`}
@@ -82,9 +101,28 @@ export default function HomeNavBar (){
                         <Link href="/Home/Games" className="active:bg-blue-purple hover:bg-blue-purple font-medium flex h-full items-center rounded-b-lg justify-center w-full py-2 hover:text-white">Games</Link>
                     </div>
                 </div>
-                <div className="flex items-center h-full gap-4">
-                <CustomButton className="bg-white-smoke/30 w-[48px] h-[48px] sm:w-[84px] sm:h-full "><MagnifyingGlass size={36} color="#0d0c22" weight="bold"/> </CustomButton>
-                <CustomButton className="bg-white-smoke/30 w-[48px] h-[48px] sm:w-[84px] sm:h-full "> <Bell size={36} color="#0d0c22" weight="bold" /> </CustomButton>
+                <div className={`ml-10  ${search ? "hidden" : "lg:hidden"} lg:hidden rounded-full h-[70px]`}>
+                            <input  type="search"
+                            placeholder="Search"
+                            className="px-3 md:px-4 py-2 rounded-4xl focus:outline-none focus:ring-1
+                            focus:ring-white border-none
+                            bg-white-smoke/10 backdrop-blur-lg
+                            brightness-150 text-md font-medium
+                            w-full
+                            sm:h-full
+                            md:text-base"
+                            autoFocus/>
+                            </div>
+                <div className={`flex items-center  h-full gap-4`}>
+                <CustomButton onClick={() => isSearching(!search)}
+                     className={`bg-white-smoke/30  w-[48px] 
+                     h-[48px] sm:w-[84px] sm:h-full transition-all duration-300 ease-in-out`}>
+                    <MagnifyingGlass size={36} color="#0d0c22" weight="bold"/>
+                </CustomButton>
+                <CustomButton
+                    className="bg-white-smoke/30 w-[48px] h-[48px] sm:w-[84px] sm:h-full "> 
+                    <Bell size={36} color="#0d0c22" weight="bold" /> 
+                </CustomButton>
                 <NavigationMenuDemo />
                 </div>
                 
