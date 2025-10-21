@@ -11,6 +11,7 @@ export type User = {
   des : string,
   dateJoined: string,
   exp: number,
+  isFriend ?: boolean,
 };
 
 type AuthState = {

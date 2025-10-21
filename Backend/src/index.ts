@@ -1,64 +1,65 @@
 import { Server } from "./server";
-import {createsDbTabes,db} from './databases/db'
+import { createsDbTabes, db } from "./databases/db";
 import { authRouters } from "./routers/auth";
-import fastifyCors from '@fastify/cors';
+import fastifyCors from "@fastify/cors";
 import { FastifyReply, FastifyRequest } from "fastify";
 import { refreshTokenDate } from "./controllers/authRefresh";
 import { playerSettings } from "./routers/player";
 
-
-
 createsDbTabes();
 
-Server.instance().register(fastifyCors, {
+const app = Server.instance();
+
+app.register(fastifyCors, {
   origin: true,
   credentials: true,
 });
 
-Server.instance().ready(err => {
-  if (err) throw err;
-  console.log(Server.instance().printRoutes());
-});
+app.addHook("onRequest", async (req: FastifyRequest, reply: FastifyReply) => {
+  const routeUrl = req.url;
 
-playerSettings()
+  const publicRoutes = [
+    "/auth/Login",
+    "/auth/Sign-up",
+    "/auth/google",
+    "/auth/google/callback",
+    "/auth/verify-otp",
+    "/auth/resend-otp",
+  ];
 
-Server.instance().addHook("onRequest", async (req: FastifyRequest, reply: FastifyReply) => {
-  const routeUrl = req.routeOptions.url;
-  
-  if (routeUrl === "/auth/Login" || routeUrl === "/auth/Sign-up" ||
-  routeUrl === "/auth/google" || routeUrl === "/auth/google/callback" ||
-  routeUrl == "/auth/verify-otp" || routeUrl === "/auth/resend-otp"
-) {
-  return;
-}
+  if (publicRoutes.some((r) => routeUrl.startsWith(r))) {
+    return;
+  }
 
-const refreshToken =
-  req.cookies?.refreshToken || (req.headers["x-refresh-token"] as string | undefined);
+  const refreshToken =
+    req.cookies?.refreshToken ||
+    (req.headers["x-refresh-token"] as string | undefined);
 
   if (!refreshToken) {
-    reply.code(400).send({ message: "Missing refresh token" });
-    return;
+    return reply.code(401).send({ message: "Missing refresh token" });
   }
 
   try {
     const decoded = refreshTokenDate(refreshToken);
-    if (!decoded) {
-      throw new Error("Invalid refresh token");
-    }
+    if (!decoded) throw new Error("Invalid refresh token");
+
     (req as any).user = decoded;
-    
   } catch (err) {
-    reply.code(401).send({ message: "Invalid or expired refresh token" });
+    return reply.code(401).send({ message: "Invalid or expired refresh token" });
   }
-  });
+});
 
 authRouters();
+playerSettings();
 
-Server.instance().get("/", async (req, reply) => {
-    return "hello";
-  });
+app.ready((err) => {
+  if (err) throw err;
+  console.log(app.printRoutes());
+});
 
-Server.start()
+app.get("/", async () => "hello");
+
+Server.start();
 
 process.on("exit", () => db.close());
 process.on("SIGINT", () => db.close(() => process.exit(0)));

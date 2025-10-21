@@ -47,6 +47,7 @@ export default function HomeNavBar (){
         .get(`/search?query=${debounceSearch}`, { signal: controller.signal })
         .then((res) => {
             setResults(res.data.result);
+            console.log(res.data.result);
         })
         .catch((err) => {
           if (err.name !== "CanceledError") {
@@ -76,7 +77,7 @@ export default function HomeNavBar (){
                             className="px-3 md:px-4 py-2 rounded-4xl focus:outline-none focus:ring-1
                             focus:ring-white border-none
                             bg-white-smoke/10 backdrop-blur-lg
-                            brightness-150 text-md font-medium
+                            brightness-150 text-xl font-bold
                             w-full
                             sm:h-full
                             md:text-base"
@@ -87,9 +88,10 @@ export default function HomeNavBar (){
                             {!isLoading && results.length === 0 && <p className="text-white">No results found</p>}
                             <ul className="w-full">
                                 {results.map((item : User, index) => (
-                                    <li key={index} className="z-10 w-full text-black py-1 px-2 
-                                    gap-2 font-medium  flex items-center
+                                    <li key={index} className="z-10 w-full text-black py-1 px-2
+                                    gap-2 font-medium justify-between  flex items-center
                                     hover:bg-blue-purple/20 rounded-md">
+                                    <div className="flex gap-3 items-center">
                                         <Image
                                         src={item.avatar ?? "/images/defaultAvatar.jpg"}
                                         alt={`${item.username} avatar`}
@@ -97,7 +99,21 @@ export default function HomeNavBar (){
                                         height={40}
                                         className="rounded-full object-cover"
                                         />
-                                    <span className="text-black-nave font-medium truncate max-w-[200px]" >{item.username}</span>
+                                        <span className="text-black-nave font-medium truncate max-w-[200px]">{item.username}</span>
+                                    </div>
+                                    <div className="flex items-center gap2">
+                                        {
+                                            !item.isFriend ? ( <button className="bg-green-500 active:bg-green-950 
+                                                cursor-pointer text-xl  text-white px-2 py-1 rounded">
+                                                INVITE
+                                            </button>):(
+                                                <button className="bg-red-500 active:bg-red-950
+                                                cursor-pointer text-xl  text-white px-2 py-1 rounded">
+                                                DELETE
+                                            </button>
+                                            )
+                                        }
+                                    </div>
                                 </li>
                                 ))}
                             </ul>
@@ -173,7 +189,7 @@ export default function HomeNavBar (){
                         <Link href="/Home/Games" className="active:bg-blue-purple hover:bg-blue-purple font-medium flex h-full items-center rounded-b-lg justify-center w-full py-2 hover:text-white">Games</Link>
                     </div>
                 </div>
-                <div className={`ml-10  relative ${!search ? "hidden" : "lg:hidden"} lg:hidden rounded-full h-[70px]`}>
+                <div className={`ml-10  relative flex items-center ${!search ? "hidden" : "lg:hidden"} lg:hidden rounded-full h-[70px]`}>
                             <input  type="search"
                              onChange={(e) => setSearchItems(e.target.value)}
                              value={searchItems}
@@ -181,20 +197,21 @@ export default function HomeNavBar (){
                             className="px-3 md:px-4 py-2 rounded-4xl focus:outline-none focus:ring-1
                             focus:ring-white border-none
                             bg-white-smoke/10 backdrop-blur-lg
-                            brightness-150 text-md font-medium
+                            brightness-150 text-md font-bold
                             w-full
                             sm:h-full
                             md:text-base"
                             autoFocus/>
                     {search && debounceSearch && (
-                    <div className="z-10 absolute top-full mt-3 w-full bg-white-smoke/30 rounded-xl backdrop-blur-sm p-3">
+                    <div className="z-10 absolute top-full mt-3 w-fit bg-white-smoke/30 rounded-xl backdrop-blur-sm p-3">
                     {isLoading && <p className="text-white">Loading...</p>}
                     {!isLoading && results.length === 0 && <p className="text-white">No results found</p>}
                     <ul>
                         {results.map((item : User, index) => (
-                        <li key={index} className="z-10 text-black py-1 px-2  gap-2 font-medium truncate max-w-[200px] flex items-center
-                            hover:bg-blue-purple/20 rounded-md">
-                                <Image
+                        <li key={index} className="z-10 text-black py-1 px-2 w-fit gap-2 font-medium flex items-center
+                            hover:bg-blue-purple/20  rounded-md">
+                            <div className="flex gap-3 items-center">
+                            <Image
                                 src={item.avatar ?? "/images/defaultAvatar.jpg"}
                                 alt={`${item.username} avatar`}
                                 width={40}
@@ -202,6 +219,20 @@ export default function HomeNavBar (){
                                 className="rounded-full object-cover"
                                 />
                             <span className="text-black-nave font-medium truncate max-w-[200px]" >{item.username}</span>
+                            </div>
+                            <div className="flex items-center gap2">
+                                {
+                                    !item.isFriend ? ( <button className="bg-green-500 active:bg-green-950 
+                                    cursor-pointer   text-white px-2 py-1 rounded">
+                                            INVITE
+                                    </button>):(
+                                    <button className="bg-red-500 active:bg-red-950
+                                        cursor-pointer  text-white px-2 py-1 rounded">
+                                        DELETE
+                                        </button>
+                                        )
+                                    }
+                            </div>
                         </li>
                         ))}
                     </ul>
@@ -210,13 +241,13 @@ export default function HomeNavBar (){
                 </div>
                 <div className={`flex items-center  w-fit h-full gap-4`}>
                 <CustomButton onClick={() => isSearching(!search)}
-                     className={`bg-white-smoke/30  w-[48px] 
-                     h-[48px] sm:w-[84px] sm:h-full transition-all duration-300 ease-in-out`}>
+                    className={`bg-white-smoke/30  w-[48px] 
+                    h-[48px] sm:w-[84px] sm:h-full transition-all duration-300 ease-in-out`}>
                     <MagnifyingGlass size={36} color="#0d0c22" weight="bold"/>
                 </CustomButton>
                 <CustomButton
                     className="bg-white-smoke/30 w-[48px] h-[48px] sm:w-[84px] sm:h-full "> 
-                    <Bell size={36} color="#0d0c22" weight="bold" /> 
+                    <Bell size={36} color="#0d0c22" weight="bold" />
                 </CustomButton>
                 <NavigationMenuDemo />
                 </div>
