@@ -27,11 +27,11 @@ export default function HomeNavBar (){
     const [debounceSearch] = useDebounce(searchItems, 500) ;
 
 
-    async function  handleClickedRequestFriendShip(friendId : number, status : string) {
+    async function handleClickedRequestFriendShip(friendId : number, status : string) {
         try{
 
             if (status == "INVITE"){
-                await api.post("/friends/Invite", friendId);
+                await api.post("/friends/Invite", {friendId});
                 console.log(`✅ Invited user ${friendId}`);
             }
             setResults(prev => prev.map(user =>

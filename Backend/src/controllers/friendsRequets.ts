@@ -14,8 +14,8 @@ export async function FriendRequest(req : FastifyRequest<{Body:{friendId : numbe
         const existing = await new Promise<any[]>((resolve, reject) => {
             db.all(
                 `SELECT * FROM friends
-                 WEHRE (player_id = ? AND  friend_id= ?)
-                 OR (player_id = ? AND friend_id = ?)`,
+                 WEHRE (player_id = ? AND  friend_id = ?)
+                 OR (player_id = ? AND friend_id = ?) `,
                  [user.id, friendId, friendId, user?.id],
                  (err, data) => {err ? reject(err) : resolve(data)}
             )
