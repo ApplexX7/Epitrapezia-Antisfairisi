@@ -5,6 +5,7 @@ import fastifyCors from "@fastify/cors";
 import { FastifyReply, FastifyRequest } from "fastify";
 import { refreshTokenDate } from "./controllers/authRefresh";
 import { playerSettings } from "./routers/player";
+import { friends } from "./routers/friends";
 
 createsDbTabes();
 
@@ -51,6 +52,7 @@ app.addHook("onRequest", async (req: FastifyRequest, reply: FastifyReply) => {
 
 authRouters();
 playerSettings();
+friends();
 
 app.ready((err) => {
   if (err) throw err;

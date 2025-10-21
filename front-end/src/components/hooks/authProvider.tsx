@@ -2,7 +2,7 @@ import { create } from "zustand";
 import api from "@/lib/axios";
 
 export type User = {
-  id: string;
+  id: number;
   firstName: string;
   lastName: string;
   username: string;

@@ -9,7 +9,7 @@ import { NavigationMenuDemo } from "@/components/profileBar"
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useDebounce } from "use-debounce";
-import { useParams, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { useRouter } from "next/navigation";
 import { usePathname } from "next/navigation";
 import api from "@/lib/axios";
@@ -22,9 +22,28 @@ export default function HomeNavBar (){
     const pathname = usePathname();
     const {replace } = useRouter();
     const [searchItems, setSearchItems] = useState(searchParams.get('query') || '');
-    const [results, setResults] = useState([]);
+    const [results, setResults] = useState<User[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const [debounceSearch] = useDebounce(searchItems, 500) ;
+
+
+    async function  handleClickedRequestFriendShip(friendId : number, status : string) {
+        try{
+
+            if (status == "INVITE"){
+                await api.post("/friends/Invite", friendId);
+                console.log(`✅ Invited user ${friendId}`);
+            }
+            setResults(prev => prev.map(user =>
+                user.id === friendId
+                ? { ...user, isFriend: status === "invite" ? true : false }
+                : user
+            )
+        );
+        }catch(err){
+            console.log("Errror for sending friend invite : ", err);
+        }
+    }
 
     useEffect(() => {
         const params = new URLSearchParams(searchParams);
@@ -47,7 +66,6 @@ export default function HomeNavBar (){
         .get(`/search?query=${debounceSearch}`, { signal: controller.signal })
         .then((res) => {
             setResults(res.data.result);
-            console.log(res.data.result);
         })
         .catch((err) => {
           if (err.name !== "CanceledError") {
@@ -103,7 +121,8 @@ export default function HomeNavBar (){
                                     </div>
                                     <div className="flex items-center gap2">
                                         {
-                                            !item.isFriend ? ( <button className="bg-green-500 active:bg-green-950 
+                                            !item.isFriend ? ( <button onClick={() =>handleClickedRequestFriendShip(item.id, "INVITE")}
+                                                className="bg-green-500 active:bg-green-950 
                                                 cursor-pointer text-xl  text-white px-2 py-1 rounded">
                                                 INVITE
                                             </button>):(
