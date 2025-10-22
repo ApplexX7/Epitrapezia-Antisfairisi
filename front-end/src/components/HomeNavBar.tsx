@@ -27,24 +27,27 @@ export default function HomeNavBar (){
     const [debounceSearch] = useDebounce(searchItems, 500) ;
 
 
-    async function handleClickedRequestFriendShip(friendId : number, status : string) {
-        try{
-
-            if (status == "INVITE"){
-                await api.post("/friends/Invite", {friendId});
-                console.log(`✅ Invited user ${friendId}`);
-            }
-            setResults(prev => prev.map(user =>
-                user.id === friendId
-                ? { ...user, isFriend: status === "invite" ? true : false }
-                : user
-            )
-        );
-        }catch(err){
-            console.log("Errror for sending friend invite : ", err);
+    async function handleClickedRequestFriendShip(friendId: number, action: string) {
+        try {
+          if (action === "INVITE") {
+            await api.post("/friends/Invite", { friendId });
+            setResults(prev =>
+              prev.map(user =>
+                user.id === friendId ? { ...user, friendstatus: "pending" } : user
+              )
+            );
+          } else if (action === "REMOVE") {
+            await api.post("/friends/Remove", { friendId });
+            setResults(prev =>
+              prev.map(user =>
+                user.id === friendId ? { ...user, friendstatus: "none" } : user
+              )
+            );
+          }
+        } catch (err) {
+          console.error("Error updating friend status:", err);
         }
-    }
-
+      }
     useEffect(() => {
         const params = new URLSearchParams(searchParams);
         if (debounceSearch) {
@@ -120,18 +123,23 @@ export default function HomeNavBar (){
                                         <span className="text-black-nave font-medium truncate max-w-[200px]">{item.username}</span>
                                     </div>
                                     <div className="flex items-center gap2">
-                                        {
-                                            !item.isFriend ? ( <button onClick={() =>handleClickedRequestFriendShip(item.id, "INVITE")}
-                                                className="bg-green-500 active:bg-green-950 
-                                                cursor-pointer text-xl  text-white px-2 py-1 rounded">
-                                                INVITE
-                                            </button>):(
-                                                <button className="bg-red-500 active:bg-red-950
-                                                cursor-pointer text-xl  text-white px-2 py-1 rounded">
-                                                DELETE
-                                            </button>
-                                            )
-                                        }
+                                    {item.friendstatus === "none" && (
+                                    <button
+                                        onClick={() => handleClickedRequestFriendShip(item.id, "INVITE")}
+                                        className="w-[90px] px-3 py-1 rounded text-white bg-green-500 hover:bg-green-600 active:bg-green-950 transition"
+                                        >
+                                        INVITE
+                                    </button>
+                                    )}
+                                    {item.friendstatus === "pending" && (
+                                        <button
+                                        onClick={() => handleClickedRequestFriendShip(item.id, "REMOVE")}
+                                        className="w-[90px] px-3 py-1 rounded text-white bg-red-500 hover:bg-red-600 active:bg-red-950 transition"
+                                        >
+                                        REMOVE
+                                        </button>
+                                     )}
+                                    {item.friendstatus === "accepted" && null}
                                     </div>
                                 </li>
                                 ))}
@@ -227,7 +235,7 @@ export default function HomeNavBar (){
                     {!isLoading && results.length === 0 && <p className="text-white">No results found</p>}
                     <ul>
                         {results.map((item : User, index) => (
-                        <li key={index} className="z-10 text-black py-1 px-2 w-fit gap-2 font-medium flex items-center
+                        <li key={index} className="z-10 text-black py-1 px-2 w-full gap-2 justify-between font-medium flex  items-center
                             hover:bg-blue-purple/20  rounded-md">
                             <div className="flex gap-3 items-center">
                             <Image
@@ -240,17 +248,24 @@ export default function HomeNavBar (){
                             <span className="text-black-nave font-medium truncate max-w-[200px]" >{item.username}</span>
                             </div>
                             <div className="flex items-center gap2">
-                                {
-                                    !item.isFriend ? ( <button className="bg-green-500 active:bg-green-950 
-                                    cursor-pointer   text-white px-2 py-1 rounded">
-                                            INVITE
-                                    </button>):(
-                                    <button className="bg-red-500 active:bg-red-950
-                                        cursor-pointer  text-white px-2 py-1 rounded">
-                                        DELETE
-                                        </button>
-                                        )
-                                    }
+                            {item.friendstatus === "none" && (
+                                <button
+                                onClick={() => handleClickedRequestFriendShip(item.id, "INVITE")}
+                                className="w-[90px] px-3 py-1 rounded text-white bg-green-500 hover:bg-green-600 active:bg-green-950 transition"
+                                >
+                                INVITE
+                                </button>
+                            )}
+
+                            {item.friendstatus === "pending" && (
+                                <button
+                                onClick={() => handleClickedRequestFriendShip(item.id, "REMOVE")}
+                                className="w-[90px] px-3 py-1 rounded text-white bg-red-500 hover:bg-red-600 active:bg-red-950 transition"
+                                >
+                                REMOVE
+                                </button>
+                            )}
+                            {item.friendstatus === "accepted" && null}
                             </div>
                         </li>
                         ))}

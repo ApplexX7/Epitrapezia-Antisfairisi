@@ -24,27 +24,31 @@ export function  UserSearch(){
                             resolve(list as User[]);
                     });
             })
-            const friends : number[] = await new Promise<number[]>((resolve, reject) => {
+            const friends = await new Promise<{ friend_id: number; status: string }[]>((resolve, reject) => {
                 db.all(
-                    "SELECT friend_id FROM friends WHERE player_id = ?",
+                    "SELECT friend_id, status FROM friends WHERE player_id = ?",
                     [user.id],
                     (err, friends) => {
                         if (err)
                             reject(err);
                         else
-                            resolve(friends.map((r : any) => r.friend_id));
+                            resolve(friends as { friend_id: number; status: string }[]);
                     }
                 );
             })
             const filtered = result
             .filter(u => u.id !== user.id)
-            .map(u => ({
-              id: u.id,
-              username: u.username,
-              firstname: u.firstname,
-              avatar: u.avatar,
-              isFriend: friends.includes(u.id),
-            }));
+            .map(u => {
+              const f = friends.find(f => f.friend_id === u.id);
+              return {
+                id: u.id,
+                username: u.username,
+                firstname: u.firstname,
+                avatar: u.avatar,
+                friendstatus: f?.status ?? "none",
+              };
+            });
+            console.log(filtered);
             return reply.send({
                 result : filtered,
             })

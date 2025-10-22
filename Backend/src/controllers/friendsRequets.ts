@@ -2,14 +2,13 @@ import { FastifyRequest, FastifyReply } from "fastify";
 import { db } from "../databases/db";
 import { User } from "../interfaces/userInterface";
 
-export async function FriendRequest(req : FastifyRequest<{Body:{friendId : number}}>, reply : FastifyReply){
+export async function FriendRequest(req : FastifyRequest<{Body:{friendId : number}}>, reply : FastifyReply){    
     const { id } = (req as any).user as User;
     const { friendId }  = req.body;
     if (!id)
         return reply.code(400).send({message : "Not Authorized"});
     if (!friendId)
         return reply.code(400).send({message : " Cant not invite yourself "});
-
     try{
         const existing = await new Promise<any[]>((resolve, reject) => {
             db.all(
@@ -20,7 +19,6 @@ export async function FriendRequest(req : FastifyRequest<{Body:{friendId : numbe
               (err, data) => (err ? reject(err) : resolve(data))
             );
           });
-          console.log("=================== : " , id);
         if (existing.length > 0)
             return reply.code(400).send({message : "Request already  send"});
         await new Promise<void>((resolve, reject) => {
@@ -34,6 +32,31 @@ export async function FriendRequest(req : FastifyRequest<{Body:{friendId : numbe
         return reply.send({ success: true, message: "Friend request sent" });
     } catch(err){
         console.log(err);
+        return reply.code(500).send({ message: "Database error" });
+    }
+}
+
+export async function RemoveFriendRequest(req : FastifyRequest<{Body:{friendId : number}}>, reply : FastifyReply) {
+    const { id } = (req as any ).user as User;
+    const { friendId } = req.body
+    if (!id)
+        return reply.code(400).send({message : "Not Authorized"});
+    if (!friendId)
+        return reply.code(400).send({message : " Cant not invite yourself "});
+    try {
+        await new Promise<void>((resolve, reject) => {
+            db.run(
+                `
+                DELETE FROM friends
+                WHERE ((player_id = ? AND friend_id = ?)
+                OR (player_id = ? AND friend_id = ?))
+                AND status = 'pending'
+                `, [id, friendId, friendId, id],
+                (err) => err ? reject(err) : resolve()
+            );
+        })
+        return reply.send({ message : "Friend Request rejected successfully"});
+    }catch {
         return reply.code(500).send({ message: "Database error" });
     }
 }

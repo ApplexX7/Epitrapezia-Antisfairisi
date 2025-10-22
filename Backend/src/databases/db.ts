@@ -20,7 +20,7 @@ export function createFriendsTable (){
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             player_id INTEGER NOT NULL,
             friend_id INTEGER NOT NULL,
-            status TEXT DEFAULT 'pending', -- pending | accepted | blocked
+            status TEXT DEFAULT 'pending', -- pending | accepted | blocked | none
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (player_id) REFERENCES players(id) ON DELETE CASCADE,
             FOREIGN KEY (friend_id) REFERENCES players(id) ON DELETE CASCADE,
