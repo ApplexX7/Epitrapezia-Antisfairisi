@@ -3,9 +3,9 @@ import { db } from "../databases/db";
 import { User } from "../interfaces/userInterface";
 
 export async function FriendRequest(req : FastifyRequest<{Body:{friendId : number}}>, reply : FastifyReply){
-    const user = (req as any).user as User;
+    const { id } = (req as any).user as User;
     const { friendId }  = req.body;
-    if (!user)
+    if (!id)
         return reply.code(400).send({message : "Not Authorized"});
     if (!friendId)
         return reply.code(400).send({message : " Cant not invite yourself "});
@@ -13,25 +13,27 @@ export async function FriendRequest(req : FastifyRequest<{Body:{friendId : numbe
     try{
         const existing = await new Promise<any[]>((resolve, reject) => {
             db.all(
-                `SELECT * FROM friends
-                 WEHRE (player_id = ? AND  friend_id = ?)
-                 OR (player_id = ? AND friend_id = ?) `,
-                 [user.id, friendId, friendId, user?.id],
-                 (err, data) => {err ? reject(err) : resolve(data)}
-            )
-        })
+              `SELECT * FROM friends
+               WHERE (player_id = ? AND friend_id = ?)
+               OR (player_id = ? AND friend_id = ?)`,
+              [id, friendId, friendId, id],
+              (err, data) => (err ? reject(err) : resolve(data))
+            );
+          });
+          console.log("=================== : " , id);
         if (existing.length > 0)
             return reply.code(400).send({message : "Request already  send"});
         await new Promise<void>((resolve, reject) => {
             db.run(
                 `INSERT INTO friends (player_id, friend_id, status)
                 VALUES (?, ?, 'pending')`,
-            [user.id, friendId],
+            [id, friendId],
             (err) => {err ? reject(err) : resolve()}
             )
         });
         return reply.send({ success: true, message: "Friend request sent" });
     } catch(err){
+        console.log(err);
         return reply.code(500).send({ message: "Database error" });
     }
 }

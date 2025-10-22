@@ -6,6 +6,7 @@ import { FastifyReply, FastifyRequest } from "fastify";
 import { refreshTokenDate } from "./controllers/authRefresh";
 import { playerSettings } from "./routers/player";
 import { friends } from "./routers/friends";
+import { verifyRefreshToken } from "./controllers/authRefresh";
 
 createsDbTabes();
 
@@ -43,16 +44,15 @@ app.addHook("onRequest", async (req: FastifyRequest, reply: FastifyReply) => {
   try {
     const decoded = refreshTokenDate(refreshToken);
     if (!decoded) throw new Error("Invalid refresh token");
-
-    (req as any).user = decoded;
+    (req as any).user = await verifyRefreshToken(refreshToken);
   } catch (err) {
     return reply.code(401).send({ message: "Invalid or expired refresh token" });
   }
 });
 
 authRouters();
-playerSettings();
 friends();
+playerSettings();
 
 app.ready((err) => {
   if (err) throw err;

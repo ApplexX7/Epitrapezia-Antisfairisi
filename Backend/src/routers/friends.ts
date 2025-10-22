@@ -4,5 +4,5 @@ import { FriendRequest } from "../controllers/friendsRequets";
 
 export function friends (){
     Server.instance().get("/friends/", Getfriends());
-    Server.instance().post("/friends/Invite", FriendRequest);
+    Server.instance().post("/friends/Invite",  FriendRequest);
 }
