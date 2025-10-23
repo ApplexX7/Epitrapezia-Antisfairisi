@@ -30,6 +30,7 @@ export default function PongGame() {
         <Link href='/Home/Games/OnlinePong'>
           <div
            className="
+           rounded-[2vw]
            absolute inset-0
            backdrop-brightness-120
            backdrop-blur-sm hover:backdrop-blur-none
@@ -62,6 +63,7 @@ export default function PongGame() {
             <Link href='/Home/Games/LocalPong'>
           <div
             className="
+            rounded-[2vw]
             absolute inset-0
             backdrop-blur-sm backdrop-brightness-80
             hover:backdrop-blur-none hover:brightness-200
