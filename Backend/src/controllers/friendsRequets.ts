@@ -1,7 +1,6 @@
 import { FastifyRequest, FastifyReply } from "fastify";
 import { db } from "../databases/db";
 import { User } from "../interfaces/userInterface";
-import { Console, error } from "console";
 
 export async function FriendRequest(req : FastifyRequest<{Body:{friendId : number}}>, reply : FastifyReply){    
     const { id } = (req as any).user as User;

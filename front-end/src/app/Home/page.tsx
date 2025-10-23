@@ -24,19 +24,19 @@ export default function Home() {
           <BoxLayout className="card  h-full w-full col-span-1 bg-[url('/images/OneVSOne.png')] bg-no-repeat bg-center bg-cover hover:" >
             <div className="w-full h-full flex items-center justify-center backdrop-blur-sm rounded-[35px] 
               transition-transform duration-300 ease-in-out focus:scale-110 cursor-pointer hover:scale-110">
-              <h1 className="text-white-smoke font-bold text-5xl text-shadow-lg/30 hover:text-shadow-white-smoke/50" >Matchup</h1>
+              <h1 className="text-white-smoke font-bold text-2xl md:text-5xl text-shadow-lg/30 hover:text-shadow-white-smoke/50" >Matchup</h1>
             </div>
           </BoxLayout>
           <BoxLayout className="card col-span-1 bg-[url('/images/Tournaments.png')]  bg-no-repeat bg-cover bg-center" >
           <div className="w-full h-full flex items-center justify-center backdrop-blur-sm rounded-[35px] 
               transition-transform duration-300 ease-in-out focus:scale-110   cursor-pointer hover:scale-110">
-              <h1 className="text-white-smoke font-bold text-5xl text-shadow-lg/30 hover:text-shadow-white-smoke/50" >Master Arena</h1>
+              <h1 className="text-white-smoke font-bold  text-2xl  md:text-5xl text-shadow-lg/30 hover:text-shadow-white-smoke/50" >Master Arena</h1>
             </div>
           </BoxLayout>
           <BoxLayout className="card col-span-1 bg-[url('/images/rockPaper.png')]  bg-no-repeat  bg-cover bg-center" >
             <div className="w-full h-full flex items-center justify-center backdrop-blur-sm rounded-[35px] 
                 transition-transform duration-300 ease-in-out focus:scale-110  cursor-pointer hover:scale-110">
-                <h1 className="text-white-smoke font-bold text-5xl text-shadow-lg/30  hover:text-shadow-white-smoke/50" >TriStrike</h1>
+                <h1 className="text-white-smoke font-bold text-2xl  md:text-5xl text-shadow-lg/30  hover:text-shadow-white-smoke/50" >TriStrike</h1>
               </div>
           </BoxLayout>
         </BoxLayout>

@@ -13,6 +13,7 @@ import SearchCompo from "./searchComp";
 export default function HomeNavBar (){
     const [clicked, isClicked] = useState(false);
     const [search, isSearching] = useState(false);
+    const [notif, isnotif] = useState(false);
     return (
         <div className="relative mt-10 min-[1400px]:-mt-5 min-[1400px]:mb-0 mb-10 flex justify-center items-center gap-5 w-full xl:px-10 px-5">
             <Image className="hidden ml-10 min-[1400px]:block w-[180px] h-[200px]"  alt="Logo for  a ping pong" src="/images/logo-S.png" width={500} height={500} priority/>
@@ -103,10 +104,21 @@ export default function HomeNavBar (){
                     h-[48px] sm:w-[84px] sm:h-full transition-all duration-300 ease-in-out`}>
                     <MagnifyingGlass size={36} color="#0d0c22" weight="bold"/>
                 </CustomButton>
-                <CustomButton
-                    className="bg-white-smoke/30 w-[48px] h-[48px] sm:w-[84px] sm:h-full "> 
-                    <Bell size={36} color="#0d0c22" weight="bold" />
-                </CustomButton>
+                <div className="relative">
+                    <CustomButton onClick={() => isnotif(!notif)}
+                        className="bg-white-smoke/30 w-[48px] h-[48px] sm:w-[84px] sm:h-full"> 
+                      <Bell size={36} color="#0d0c22" weight="bold" />
+                    </CustomButton>
+
+                    {notif && (
+                      <div className="absolute top-full mt-3 right-0 z-10
+                          w-fit md:w-fit lg:w-full
+                          bg-white-smoke/30 rounded-xl 
+                          backdrop-blur-sm p-3">
+                        <p className="text-black">No notifications</p>
+                      </div>
+                    )}
+                  </div>
                 <NavigationMenuDemo />
                 </div>
                 

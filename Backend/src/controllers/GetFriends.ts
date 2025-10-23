@@ -1,7 +1,5 @@
 import { FastifyRequest, FastifyReply } from "fastify";
 import { db } from "../databases/db";
-import { playerExist } from "../modules/playerExist";
-import { getPlayerById } from "./verifyOtp";
 import { acceptedFriends } from "../modules/friends";
 
 export function Getfriends(){
