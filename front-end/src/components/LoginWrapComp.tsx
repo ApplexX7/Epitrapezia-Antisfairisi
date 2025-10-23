@@ -13,7 +13,7 @@ export default function LoginPageWrapper({ children }: { children: React.ReactNo
   useEffect(() => {
     async function init() {
       await refreshAuth();
-      setInitialized(true); // mark refresh attempt done
+      setInitialized(true); 
     }
     init();
   }, [refreshAuth]);
@@ -23,9 +23,6 @@ export default function LoginPageWrapper({ children }: { children: React.ReactNo
       router.replace("/Home");
     }
   }, [initialized, accessToken, router]);
-
-  console.log("checkingAuth", checkingAuth);
-  console.log("accessToken", accessToken);
 
   if (checkingAuth || accessToken) {
     return <LoadingComp />;

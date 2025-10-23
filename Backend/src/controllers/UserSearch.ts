@@ -24,31 +24,46 @@ export function  UserSearch(){
                             resolve(list as User[]);
                     });
             })
-            const friends = await new Promise<{ friend_id: number; status: string }[]>((resolve, reject) => {
+            const friends = await new Promise<{ friend_id: number; player_id: number; status: string }[]>((resolve, reject) => {
                 db.all(
-                    "SELECT friend_id, status FROM friends WHERE player_id = ?",
-                    [user.id],
-                    (err, friends) => {
-                        if (err)
-                            reject(err);
-                        else
-                            resolve(friends as { friend_id: number; status: string }[]);
-                    }
+                  `
+                  SELECT player_id, friend_id, status
+                  FROM friends
+                  WHERE player_id = ? OR friend_id = ?
+                  `,
+                  [user.id, user.id],
+                  (err, friends) => {
+                    if (err) reject(err);
+                    else resolve(friends as { friend_id: number; player_id: number; status: string }[]);
+                  }
                 );
-            })
+            });
             const filtered = result
             .filter(u => u.id !== user.id)
             .map(u => {
-              const f = friends.find(f => f.friend_id === u.id);
+              const f = friends.find(
+                f =>
+                  (f.player_id === user.id && f.friend_id === u.id) ||
+                  (f.friend_id === user.id && f.player_id === u.id)
+              );
+          
+              let friendstatus = "none";
+              if (f) {
+                if (f.status === "pending" && f.player_id === user.id)
+                  friendstatus = "pending";
+                else if (f.status === "pending" && f.friend_id === user.id)
+                  friendstatus = "incoming";
+                else if (f.status === "accepted")
+                  friendstatus = "accepted";
+              }
               return {
                 id: u.id,
                 username: u.username,
                 firstname: u.firstname,
                 avatar: u.avatar,
-                friendstatus: f?.status ?? "none",
+                friendstatus,
               };
             });
-            console.log(filtered);
             return reply.send({
                 result : filtered,
             })

@@ -30,7 +30,6 @@ export default function Login() {
         setFailedLog("Login failed: Invalid server response");
       }
     } catch (err: any) {
-      console.log("Axios error", err.response?.data);
       if (err.response) {
         setFailedLog(err.response.data?.message || "Login failed");
       } else {
