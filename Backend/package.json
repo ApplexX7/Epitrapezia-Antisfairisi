@@ -7,6 +7,7 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "tsc -p tsconfig.json",
     "start": "npx nodemon src/index.ts",
+    "start:socket": "npx nodemon src/socket.ts",
     "dev": "nodemon --exec ts-node src/index.ts"
   },
   "keywords": [],
@@ -29,6 +30,7 @@
     "jsonwebtoken": "^9.0.2",
     "nodemailer": "^7.0.6",
     "pump": "^3.0.3",
+    "socket.io": "^4.8.1",
     "sqlite3": "^5.1.7"
   },
   "devDependencies": {
@@ -36,6 +38,7 @@
     "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^24.5.2",
     "@types/nodemailer": "^7.0.2",
+    "@types/socket.io": "^3.0.1",
     "@types/sqlite3": "^5.1.0",
     "nodemon": "^3.1.10",
     "ts-node": "^10.9.2",

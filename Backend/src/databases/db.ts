@@ -5,7 +5,7 @@ import path from "path";
 const fastify = Fastify({ logger: true });
 const { Database } = sqlite3;
 
-const dbPath = path.resolve(__dirname, "./mydatabase.sqlite");    
+const dbPath = path.resolve(__dirname, "./mydatabase.sqlite");
 export const db = new Database(dbPath, (err) => {
     if (err) {
         console.error("Error opening database:", err.message);
