@@ -1,8 +1,7 @@
-import Fastify from "fastify";
 import sqlite3 from "sqlite3";
 import path from "path";
 
-const fastify = Fastify({ logger: true });
+sqlite3.verbose();
 const { Database } = sqlite3;
 
 const dbPath = path.resolve(__dirname, "./mydatabase.sqlite");    

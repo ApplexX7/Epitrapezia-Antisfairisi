@@ -104,7 +104,7 @@ export default function HomeNavBar (){
                     h-[48px] sm:w-[84px] sm:h-full transition-all duration-300 ease-in-out`}>
                     <MagnifyingGlass size={36} color="#0d0c22" weight="bold"/>
                 </CustomButton>
-                <div className="relative">
+                <div className="relative h-full flex items-center">
                     <CustomButton onClick={() => isnotif(!notif)}
                         className="bg-white-smoke/30 w-[48px] h-[48px] sm:w-[84px] sm:h-full"> 
                       <Bell size={36} color="#0d0c22" weight="bold" />

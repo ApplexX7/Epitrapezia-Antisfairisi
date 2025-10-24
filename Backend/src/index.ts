@@ -12,6 +12,7 @@ createsDbTabes();
 
 const app = Server.instance();
 
+
 app.register(fastifyCors, {
   origin: true,
   credentials: true,
@@ -50,10 +51,8 @@ app.addHook("onRequest", async (req: FastifyRequest, reply: FastifyReply) => {
   }
 });
 
-authRouters();
 friends();
 playerSettings();
-
 app.ready((err) => {
   if (err) throw err;
   console.log(app.printRoutes());
@@ -61,7 +60,18 @@ app.ready((err) => {
 
 app.get("/", async () => "hello");
 
-Server.start();
+async function bootstrap() {
+  await authRouters();
+  await Server.start();
+}
 
-process.on("exit", () => db.close());
-process.on("SIGINT", () => db.close(() => process.exit(0)));
+bootstrap();
+
+process.on("SIGINT", () => {
+  console.log("Closing database...");
+  db.close(() => {
+    console.log("Database closed");
+    process.exit(0);
+  });
+});
+
