@@ -84,11 +84,11 @@ export default function SearchCompo( { search }: { search: boolean }){
             onChange={(e) => setSearchItems(e.target.value)}
             placeholder="Search"
             value={searchItems}
-            className="px-3 md:px-4 py-2 rounded-4xl focus:outline-none focus:ring-1
+            className="px-4  md:px-6 py-2 rounded-4xl focus:outline-none focus:ring-1
               focus:ring-white border-none
               bg-white-smoke/10 backdrop-blur-lg
-              brightness-150 text-xl font-bold
-              w-full sm:h-full md:text-base"
+              brightness-150  text-md font-bold
+              w-full sm:h-full md:text-xl"
             autoFocus
           />
 
