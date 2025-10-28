@@ -31,6 +31,7 @@ export default function Login() {
         toast.error("Login failed: Invalid server response 😕");
         setFailedLog("Login failed: Invalid server response");
       }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       if (err.response) {
         toast.error(err.response.data?.message || "Incorrect credentials ❌");

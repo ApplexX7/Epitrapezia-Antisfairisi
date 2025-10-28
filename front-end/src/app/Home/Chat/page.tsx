@@ -4,8 +4,11 @@ import { MagnifyingGlass, Plus, ArrowLeft } from "@phosphor-icons/react/ssr";
 import { CustomButton } from "@/components/CostumButton"
 import { useEffect, useState, useRef } from "react";
 import { io } from "socket.io-client";
+import { useAuth } from "@/components/hooks/authProvider";
+import { User } from "@/components/hooks/authProvider";
 
 export default function Home() {
+  const user  = useAuth.getState().user as User;
   const [socket, setSocket] = useState(null);
   const [currentUser, setCurrentUser] = useState("");
   const [onlineUsers, setOnlineUsers] = useState([]);
@@ -15,22 +18,22 @@ export default function Home() {
   });
 
   useEffect(() => {
-    // Connect to Fastify backend running on port 8080
-    const username = new URLSearchParams(window.location.search).get("username") || "guest";
+
+    if (!user)
+        return;
+    const username = user.username || "guest";
     setCurrentUser(username);
 
     const newSocket = io("http://localhost:8080", {
-      query: { username },
+      auth: { username: user.username, id: user.id },
     });
 
     newSocket.on("connect", () => {
       console.log("🟢 Connected to backend:", newSocket.id);
     });
 
-    // Listen for online users list from backend
     newSocket.on("users-list", (users) => {
-      console.log("👥 Online users:", users);
-      setOnlineUsers(users.filter(u => u !== username)); // Exclude current user
+      setOnlineUsers(users.filter(u => u.id !== user.id));
     });
 
     // Handle incoming messages
@@ -41,11 +44,11 @@ export default function Home() {
         ...prev,
         [data.from]: [
           ...(prev[data.from] || []),
-          { 
-            id: Date.now(), 
-            user: "other", 
-            text: data.text, 
-            time: new Date(data.time) 
+          {
+            id: data.id,
+            user: "other",
+            text: data.text,
+            time: new Date(data.time)
           },
         ],
       }));
@@ -70,7 +73,7 @@ export default function Home() {
 
     // Local update
     const newMessage = {
-      id: Date.now(),
+      id: user.id,
       user: "me",
       text: inputMessage.trim(),
       time: new Date(),
@@ -81,7 +84,6 @@ export default function Home() {
       [selectedChat]: [...(prev[selectedChat] || []), newMessage],
     }));
 
-    // Emit to server
     if (socket && selectedChat) {
       socket.emit("message", { to: selectedChat, text: inputMessage.trim() });
       console.log(`Sending message to ${selectedChat}:`, inputMessage.trim());
