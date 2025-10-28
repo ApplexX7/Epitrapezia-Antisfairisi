@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import api from "@/lib/axios";
+import toast from "react-hot-toast";
 
 export type User = {
   id: number;
@@ -30,23 +31,26 @@ export const useAuth = create<AuthState>((set) => {
   return {
     user: null,
     accessToken: null,
-    checkingAuth: true, // start as "checking"
+    checkingAuth: true, 
     setAuth: (user, token) => set({ user, accessToken: token, checkingAuth: false }),
-    clearAuth: () => set({ user: null, accessToken: null, checkingAuth: false }),
+    clearAuth: () =>{ 
+      set({ user: null, accessToken: null, checkingAuth: false })
+    },
     refreshAuth: async () => {
-      if (refreshPromise) return refreshPromise; // avoid multiple calls
+      if (refreshPromise) return refreshPromise;
       refreshPromise = (async () => {
         try {
           const res = await api.get("/auth/refresh");
           if (res.data?.token?.accessToken && res.data.user) {
             set({ user: res.data.user, accessToken: res.data.token.accessToken, checkingAuth: false });
           } else {
+            toast.error("Session expired. Please sign in again ⚠️");
             set({ user: null, accessToken: null, checkingAuth: false });
           }
         } catch {
           set({ user: null, accessToken: null, checkingAuth: false });
         } finally {
-          refreshPromise = null; // reset
+          refreshPromise = null;
         }
       })();
       return refreshPromise;

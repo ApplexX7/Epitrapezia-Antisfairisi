@@ -2,10 +2,10 @@
 import api from "@/lib/axios";
 import Image from "next/image";
 import Link from "next/link";
-import { useGoogleAuth } from "@/components/useGoogleAuth";
 import {useState} from "react";
 import { useRouter } from "next/navigation";
 import {InputLogin} from "@/components/LoginInput"
+import toast from "react-hot-toast";
 import {LoginButton} from "@/components/loginButton"
 import { useAuth } from "@/components/hooks/authProvider";
 import LoginPageWrapper from "@/components/LoginWrapComp";
@@ -25,14 +25,18 @@ export default function Login() {
         const { accessToken } = res.data.token;
         const user = res.data.user;
         useAuth.getState().setAuth(user, accessToken);
+        toast.success(`Welcome back, ${user.username || "User"}! 👋`);
         router.push("/Home");
       } else {
+        toast.error("Login failed: Invalid server response 😕");
         setFailedLog("Login failed: Invalid server response");
       }
     } catch (err: any) {
       if (err.response) {
+        toast.error(err.response.data?.message || "Incorrect credentials ❌");
         setFailedLog(err.response.data?.message || "Login failed");
       } else {
+        toast.error("Server not responding 🚨");
         setFailedLog("Login failed: No response from server");
       }
     }

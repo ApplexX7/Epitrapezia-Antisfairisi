@@ -17,7 +17,6 @@ api.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config as any; 
 
-    const isLoginRequest = originalRequest.url?.includes("/auth/Login");
     const isRefreshReq = originalRequest.url?.includes("/auth/refresh");
 
     if (error.response?.status === 401 && !originalRequest._retry && !isRefreshReq) {

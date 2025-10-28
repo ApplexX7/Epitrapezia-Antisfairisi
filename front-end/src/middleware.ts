@@ -1,13 +1,13 @@
 import { NextResponse, NextRequest } from "next/server";
 
 export async function middleware(request: NextRequest) {
-  const hasRefreshToken = request.cookies.has("refreshToken");
+  const refresh = request.cookies.get("refreshToken");
+
   const protectedRoutes = ["/Home", "/Profile"];
   const isProtected = protectedRoutes.some((path) =>
     request.nextUrl.pathname.startsWith(path)
   );
-
-  if (isProtected && !hasRefreshToken) {
+  if (isProtected && !refresh) {
     const loginUrl = new URL("/", request.url);
     loginUrl.searchParams.set("redirect", request.nextUrl.pathname);
     return NextResponse.redirect(loginUrl);
@@ -15,7 +15,3 @@ export async function middleware(request: NextRequest) {
 
   return NextResponse.next();
 }
-
-export const config = {
-  matcher: ["/Home/:path*", "/Profile/:path*"],
-};
