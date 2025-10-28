@@ -7,7 +7,7 @@ export class Server {
   private static readonly host = "0.0.0.0";
   private static readonly serv: FastifyInstance = fastify({ logger: true });
   private static io: IOServer;
-  private static connected_client: Map<string, string> = new Map();
+  private static connectedClients: Map<string, { socketId: string; username: string }> = new Map();
 
   public static async start() {
     try {
@@ -32,26 +32,23 @@ export class Server {
       this.io.on("connection", (socket) => {
         console.log("🟢 Client connected:", socket.id);
 
-        const user_name: string = socket.handshake.query.username as string;
-        if (user_name) {
-          this.connected_client.set(user_name, socket.id);
-          
-          // Broadcast updated users list to ALL clients
+        const {id ,username} = socket.handshake.auth;
+        if (id && username) {
+          this.connectedClients.set(id, { socketId: socket.id, username: username });
+          console.log(username),
           this.broadcastUsersList();
         }
 
         // Listen for messages
-        socket.on("message", (data: { to: string; text: string }) => {
-          const { to, text } = data;
-          console.log(`📩 ${user_name} -> ${to}: ${text}`);
+        socket.on("message", (data: { toId: string; text: string }) => {
+          const { toId, text } = data;
+          console.log(`📩 ${username} (${id}) -> ${toId}: ${text}`);
 
-          // Get recipient socket id from the map
-          const recipientSocketId = this.connected_client.get(to);
-
-          if (recipientSocketId) {
-            // Send message to recipient only
-            this.io.to(recipientSocketId).emit("message", {
-              from: user_name,
+          const receiver = this.connectedClients.get(toId);
+          if (receiver) {
+            this.io.to(receiver.socketId).emit("message", {
+              from: id,
+              username: username,
               text,
               time: new Date(),
             });
@@ -60,10 +57,8 @@ export class Server {
 
         socket.on("disconnect", () => {
           console.log("🔴 Client disconnected:", socket.id);
-          // Remove user from map
-          if (user_name) {
-            this.connected_client.delete(user_name);
-            // Broadcast updated users list to ALL remaining clients
+          if (username) {
+            this.connectedClients.delete(id);
             this.broadcastUsersList();
           }
         });
@@ -76,9 +71,9 @@ export class Server {
     }
   }
 
-  // New method to broadcast online users
-  private static broadcastUsersList() {
-    const users = Array.from(this.connected_client.keys());
+
+  private static  broadcastUsersList() {
+    const users = Array.from(this.connectedClients.keys());
     console.log("👥 Broadcasting users list:", users);
     this.io.emit("users-list", users);
   }
