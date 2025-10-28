@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { usePathname } from "next/navigation";
 import api from "@/lib/axios";
 import { User } from "./hooks/authProvider";
+import toast from "react-hot-toast";
 
 export default function SearchCompo( { search }: { search: boolean }){
     const searchParams = useSearchParams();
@@ -20,6 +21,7 @@ export default function SearchCompo( { search }: { search: boolean }){
         try {
           if (action === "INVITE") {
             await api.post("/friends/Invite", { friendId });
+            toast.success("Friend request sent ✅");
             setResults(prev =>
               prev.map(user =>
                 user.id === friendId ? { ...user, friendstatus: "pending" } : user
@@ -27,6 +29,7 @@ export default function SearchCompo( { search }: { search: boolean }){
             );
           } else if (action === "REMOVE") {
             await api.post("/friends/Remove", { friendId });
+            toast("Friend removed 🗑️", { icon: "👋" });
             setResults(prev =>
               prev.map(user =>
                 user.id === friendId ? { ...user, friendstatus: "none" } : user
@@ -34,14 +37,17 @@ export default function SearchCompo( { search }: { search: boolean }){
             );
           }else if (action == "ACCEPT"){
             await api.post("/friends/Accept", { friendId });
+            toast.success("Friend request accepted 🤝");
             setResults(prev =>
               prev.map(user =>
                 user.id === friendId ? { ...user, friendstatus: "accepted" } : user
               )
             );
           }
-        } catch (err) {
+        } catch (err : any) {
           console.error("Error updating friend status:", err);
+          const message = err || "Something went wrong ❌";
+          toast.error(message);
         }
       }
     useEffect(() => {
@@ -68,6 +74,7 @@ export default function SearchCompo( { search }: { search: boolean }){
         })
         .catch((err) => {
           if (err.name !== "CanceledError") {
+            toast.error("Failed to search users ❌");
             console.error("Axios search error:", err);
           }
         })

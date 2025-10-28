@@ -50,8 +50,15 @@ app.addHook("onRequest", async (req: FastifyRequest, reply: FastifyReply) => {
   }
 });
 
+async function bootstrap() {
+  await authRouters();
+  await Server.start();
+}
+
+bootstrap();
 friends();
 playerSettings();
+
 app.ready((err) => {
   if (err) throw err;
   console.log(app.printRoutes());
@@ -59,12 +66,7 @@ app.ready((err) => {
 
 app.get("/", async () => "hello");
 
-async function bootstrap() {
-  await authRouters();
-  await Server.start();
-}
 
-bootstrap();
 
 process.on("SIGINT", () => {
   console.log("Closing database...");

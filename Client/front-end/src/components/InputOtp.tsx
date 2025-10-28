@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useAuth } from "./hooks/authProvider";
 import api from "@/lib/axios";
 import { useRouter } from "next/navigation";
+import toast from "react-hot-toast";
 
 import {
   InputOTP,
@@ -40,6 +41,7 @@ export function InputOTPWithSeparator({ email, player_id }: OTPProps) {
         const user = res.data.user;
         useAuth.getState().setAuth(user, accessToken);
         setSuccess(true);
+        toast.success(`Welcome, ${user.username || "User"}! 👋`);
         router.push("/Home");
       }
     } catch (err: any) {
