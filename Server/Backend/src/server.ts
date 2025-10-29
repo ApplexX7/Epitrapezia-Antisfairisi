@@ -7,6 +7,7 @@ export class Server {
   private static readonly host = "0.0.0.0";
   private static readonly serv: FastifyInstance = fastify({ logger: true });
   private static io: IOServer;
+  private static connectedClients: Map<string, { socketId: string; username: string }> = new Map();
 
   public static async start() {
     try {
@@ -22,29 +23,58 @@ export class Server {
         }),
       });
       await this.serv.listen({ port: this.port, host: this.host });
-      console.log(`🚀 Server listening at http://${this.host}:${this.port}`);
+      console.log(`🚀 Hello! Server running on http://${this.host}:${this.port}`);
 
       this.io = new IOServer(this.serv.server, {
         cors: { origin: "*" },
+        path: "/socket/",
       });
 
       this.io.on("connection", (socket) => {
         console.log("🟢 Client connected:", socket.id);
 
-        socket.on("message", (msg) => {
-          console.log("📩 Message received:", msg);
-          this.io.emit("message", msg);
+        const {id ,username} = socket.handshake.auth;
+        if (id && username) {
+          this.connectedClients.set(id, { socketId: socket.id, username: username });
+          console.log(username),
+          this.broadcastUsersList();
+        }
+
+        // Listen for messages
+        socket.on("message", (data: { to: string; text: string }) => {
+          const { to, text } = data;
+          const receiver = this.connectedClients.get(to);
+          if (receiver) {
+            this.io.to(receiver.socketId).emit("message", {
+              from: id,
+              username: username,
+              text,
+              time: new Date(),
+            });
+          }
         });
+        
 
         socket.on("disconnect", () => {
           console.log("🔴 Client disconnected:", socket.id);
+          if (username) {
+            this.connectedClients.delete(id);
+            this.broadcastUsersList();
+          }
         });
       });
 
     } catch (err) {
-      console.error(err);
+      console.error("❌ Server failed to start:", err);
       process.exit(1);
     }
+  }
+
+
+  private static  broadcastUsersList() {
+    const users = Array.from(this.connectedClients.values()).map(u => u.username);
+    this.io.emit("users-list", users);
+    
   }
 
   public static route(
@@ -60,9 +90,8 @@ export class Server {
   }
 
   public static socket(): IOServer {
-    if (!this.io) 
+    if (!this.io)
       throw new Error("Socket.IO not initialized. Call start() first.");
     return this.io;
   }
-
 }

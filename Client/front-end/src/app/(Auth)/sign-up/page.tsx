@@ -7,7 +7,12 @@ import {InputLogin} from "@/components/LoginInput"
 import {LoginButton} from "@/components/loginButton"
 import LoginPageWrapper from "@/components/LoginWrapComp";
 import { InputOTPWithSeparator } from "@/components/InputOtp";
-import {isStrongPassword, getPasswordStrengthMessage, isValidUsername, getUsernameErrorMessage} from "@/lib/sanitize";
+import {isStrongPassword,
+  getPasswordStrengthMessage,
+  isValidUsername, 
+  getUsernameErrorMessage
+} from "@/lib/sanitize";
+import toast from "react-hot-toast";
 
 
 export default function SignUp() {
@@ -24,12 +29,16 @@ export default function SignUp() {
     const data = Object.fromEntries(formData.entries()); 
     const rawUsername = data.username?.toString() || "";
     if (!isValidUsername(rawUsername)) {
-      setFailedLog(getUsernameErrorMessage(rawUsername));
+      const msg = getUsernameErrorMessage(rawUsername);
+      toast.error(msg);
+      setFailedLog(msg);
       return;
     }
     const password = data.password?.toString() || "";
     if (!isStrongPassword(password)) {
-      setFailedLog(getPasswordStrengthMessage(password));
+      const msg = getPasswordStrengthMessage(password);
+      setFailedLog(msg);
+      toast.error(msg);
       return;
     }
     try{
@@ -37,14 +46,18 @@ export default function SignUp() {
       if (res.data?.user){
         setEmailVef({ email: res.data.user.email as string , player_id: res.data.user.id as number });
         setShowOtp(true);
+        toast.success("Account created! Check your email for the OTP 🔐");
       }
       else {
+        toast.error("Login failed: Invalid server response 😕");
         setFailedLog("Login failed: Invalid server response");
       }
     } catch (err: any) {
       if (err.response) {
-        setFailedLog(err.response.data?.message || "Login failed");
+        toast.error(err.response.data?.message || "Incorrect credentials ❌");
+        setFailedLog(err.response.data?.message || "Sign-Up failed");
       } else {
+        toast.error("Server not responding 🚨");
         setFailedLog("Login failed: No response from server");
       }
     }
@@ -133,13 +146,13 @@ export default function SignUp() {
                 (
                   <InputOTPWithSeparator email={emailData.email} player_id={emailData.player_id}/>
                 )}
-                </div>
-                <Image className="z-0 hidden md:w-[700px] left-10 h-full  md:block absolute"
-                  alt="Logo for  a ping pong" src="/images/logo-S.png" 
-                  width={500} height={500} priority/>
-                </div>
-                </div>
-                </LoginPageWrapper>
-              );
-            }
+            </div>
+              <Image className="z-0 hidden md:w-[700px] left-10 h-full  md:block absolute"
+                alt="Logo for  a ping pong" src="/images/logo-S.png" 
+                width={500} height={500} priority/>
+          </div>
+        </div>
+    </LoginPageWrapper>
+  );
+}
             

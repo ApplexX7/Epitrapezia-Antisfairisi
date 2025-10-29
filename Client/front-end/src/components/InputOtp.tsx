@@ -1,7 +1,9 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, use } from "react";
 import { useAuth } from "./hooks/authProvider";
 import api from "@/lib/axios";
 import { useRouter } from "next/navigation";
+import toast from "react-hot-toast";
+import { useSocketStore } from "./hooks/SocketIOproviders";
 
 import {
   InputOTP,
@@ -22,6 +24,7 @@ export function InputOTPWithSeparator({ email, player_id }: OTPProps) {
   const [resendMessage, setResendMessage] = useState("");
   const [cooldown, setCooldown] = useState(0);
   const router = useRouter();
+  const initSocket = useSocketStore((state) => state.initSocket)
 
   const handleSubmit = async () => {
     if (otp.length !== 6) {
@@ -39,7 +42,9 @@ export function InputOTPWithSeparator({ email, player_id }: OTPProps) {
         const { accessToken } = res.data.token;
         const user = res.data.user;
         useAuth.getState().setAuth(user, accessToken);
+        initSocket(user);
         setSuccess(true);
+        toast.success(`Welcome, ${user.username || "User"}! 👋`);
         router.push("/Home");
       }
     } catch (err: any) {

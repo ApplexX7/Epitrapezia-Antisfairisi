@@ -11,14 +11,27 @@ import {
 import { useRouter } from "next/navigation"
 import { useAuth } from "./hooks/authProvider"
 import api from "@/lib/axios"
+import toast from "react-hot-toast"
+import { useSocketStore } from "./hooks/SocketIOproviders"
   
-  export function NavigationMenuDemo() {
+export function NavigationMenuDemo() {
+    const disconnectSocket = useSocketStore((state) => state.disconnectSocket);
     const router = useRouter()
     const {clearAuth, user} = useAuth()
-    async function handleLogout(){
+    async function handleLogout() {
+      try {
+        await api.post("/auth/logout");
+        disconnectSocket();
         clearAuth();
-        await  api.post("/auth/logout");
-        router.replace("/")
+  
+        toast.success(`Goodbye ${user?.username || ""}! 👋`, {
+          icon: "🚪",
+        });
+        router.replace("/");
+      } catch (err) {
+        console.error("Logout failed:", err);
+        toast.error("Something went wrong during logout ❌");
+      }
     }
     return (
       <NavigationMenu className="hidden sm:block">

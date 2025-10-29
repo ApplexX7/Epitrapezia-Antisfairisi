@@ -101,9 +101,33 @@ export function createTable(){
     );
 }
 
+export function createTableMessage() {
+    const createTableQuery = `
+        CREATE TABLE IF NOT EXISTS message (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            sender_id INTEGER,
+            receiver_id INTEGER,
+            content TEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+            FOREIGN KEY (sender_id) REFERENCES players(id) ON DELETE CASCADE,
+            FOREIGN KEY (receiver_id) REFERENCES players(id) ON DELETE CASCADE
+        )
+    `;
+
+    db.run(createTableQuery, (err) => {
+        if (err) {
+            console.error("Error creating message table:", err.message);
+        } else {
+            console.log('Table "message" created or already exists.');
+        }
+    });
+}
+
 export function createsDbTabes(){
     createTable();
     createOTPTable();
     createUserInfo();
     createFriendsTable();
+    createTableMessage();
 }

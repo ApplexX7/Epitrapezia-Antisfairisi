@@ -32,16 +32,16 @@ const signUpSchema = {
 
 export async function authRouters() {
   const server = Server.instance();
-  await server.register(rateLimit, {
-    max: 10,
-    timeWindow: "1 minute",
-    ban: 2,
-    errorResponseBuilder: (req, context) => ({
-      code: 429,
-      error: "Too Many Auth Attempts",
-      message: `Try again in ${Math.ceil(context.ttl / 1000)} seconds`,
-    }),
-  });
+  // await server.register(rateLimit, {
+  //   max: 10,
+  //   timeWindow: "1 minute",
+  //   ban: 2,
+  //   errorResponseBuilder: (req, context) => ({
+  //     code: 429,
+  //     error: "Too Many Auth Attempts",
+  //     message: `Try again in ${Math.ceil(context.ttl / 1000)} seconds`,
+  //   }),
+  // });
   Server.instance().post<{ Body: LoginBody }>(
     "/auth/Login",
     { schema: { body: loginSchema } },
