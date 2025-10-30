@@ -42,7 +42,7 @@ export function InputOTPWithSeparator({ email, player_id }: OTPProps) {
         const { accessToken } = res.data.token;
         const user = res.data.user;
         useAuth.getState().setAuth(user, accessToken);
-        initSocket(user);
+        initSocket(user, accessToken);
         setSuccess(true);
         toast.success(`Welcome, ${user.username || "User"}! 👋`);
         router.push("/Home");

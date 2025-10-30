@@ -89,6 +89,7 @@ export function createTable(){
             is_verified INTEGER DEFAULT 0,
             avatar TEXT NULL,
             refreshToken TEXT,
+            is_online INTEGER DEFAULT 0,
             auth_Provider TEXT DEFAULT 'local'
         )`,
         (err) => {

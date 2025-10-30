@@ -1,37 +1,57 @@
-import { Server as IOServer } from "socket.io";
+import { Server } from "socket.io";
 import { registerChatSocket } from "./chatSocket";
-import jwt from "jsonwebtoken";
 // import { registerGameSocket } from "./gameSocket";
 // import { registerNotifSocket } from "./notifSocket";
+import jwt from "jsonwebtoken";
 
-export function registerSocketHandlers(io: IOServer) {
-    io.use((socket : any, next : any) => {
-        try {
-        const cookieHeader = socket.request.headers.cookie;
-          if (!cookieHeader) return next(new Error("Missing auth cookieHeader"));
-    
-          const decoded = jwt.verify(cookieHeader, process.env.REFRESH_TOKEN!);
-          (socket as any).user = decoded;
-          next();
-        } catch (err : any) {
-          console.error("❌ Invalid socket token:", err);
-          next(new Error("Unauthorized"));
-        }
-      });
-    
-      io.on("connection", (socket: any) => {
-        const user = (socket as any).user;
-        console.log(`🟢 ${user.username} connected via socket`);
-    
-        socket.on("message", (data : any) => {
-          console.log("💬 Message from", user.username, data);
-        });
-      });
-    io.on("connection", (socket : any) => {
-    console.log("🟢 Client connected:", socket.id);
-    registerChatSocket(io, socket);
+interface UserPayload {
+  id: number;
+  username: string;
+}
+
+const onlineUsers: Record<number, any[]> = {};
+
+export function registerSocketHandlers(io: Server) {
+  io.use((socket: any, next) => {
+    const token = socket.handshake.auth.token;
+    if (!token) return next(new Error("Authentication error"));
+
+    try {
+      const decoded = jwt.verify(token, process.env.ACCESS_TOKEN!) as UserPayload;
+      socket.user = decoded;
+      next();
+    } catch (err) {
+      console.error("❌ Invalid socket token:", err);
+      next(new Error("Unauthorized"));
+    }
+  });
+
+  io.on("connection", (socket: any) => {
+    const user = socket.user;
+    if (!onlineUsers[user.id]) onlineUsers[user.id] = [];
+    onlineUsers[user.id].push(socket);
+
+    console.log(`🟢 ${user.username} connected. Total connections: ${onlineUsers[user.id].length}`);
+
+    const usersList = Object.keys(onlineUsers).map(id => ({
+      id: Number(id),
+      username: onlineUsers[Number(id)][0].user.username
+    }));
+    io.emit("users-list", usersList);
+    registerChatSocket(io, socket, onlineUsers);
+    // registerGameSocket(io, socket, onlineUsers);
+    // registerNotifSocket(io, socket, onlineUsers);
     socket.on("disconnect", () => {
-      console.log("🔴 Client disconnected:", socket.id);
+      onlineUsers[user.id] = onlineUsers[user.id].filter(s => s.id !== socket.id);
+      if (onlineUsers[user.id].length === 0) delete onlineUsers[user.id];
+
+      console.log(`🔴 ${user.username} disconnected. Remaining connections: ${onlineUsers[user.id]?.length || 0}`);
+
+      const updatedUsers = Object.keys(onlineUsers).map(id => ({
+        id: Number(id),
+        username: onlineUsers[Number(id)][0].user.username
+      }));
+      io.emit("users-list", updatedUsers);
     });
   });
 }

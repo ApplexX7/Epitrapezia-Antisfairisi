@@ -3,96 +3,114 @@ import Image from "next/image";
 import { MagnifyingGlass, Plus, ArrowLeft } from "@phosphor-icons/react/ssr";
 import { CustomButton } from "@/components/CostumButton"
 import { useEffect, useState, useRef } from "react";
-import { io } from "socket.io-client";
 import { useAuth } from "@/components/hooks/authProvider";
+import { useSocketStore } from "@/components/hooks/SocketIOproviders";
 import { User } from "@/components/hooks/authProvider";
+import api from "@/lib/axios";
 
 export default function Home() {
-  const user  = useAuth.getState().user as User;
-  const [socket, setSocket] = useState(null);
-  const [currentUser, setCurrentUser] = useState("");
-  const [onlineUsers, setOnlineUsers] = useState([]);
-  const [time, setTime] = useState({
-    clock: new Date().toLocaleTimeString([], { hour:"2-digit", minute: "2-digit" }),
-    date: new Date().toLocaleDateString([], { month:"2-digit", day: "2-digit" })
-  });
-
-  useEffect(() => {
-    if (!user)
-        return;
-    const username = user.username || "guest";
-    setCurrentUser(username);
-
-    const newSocket = io("", {
-      path: "/socket/",
-      transports: ["websocket"],
-      auth: { id: user.id, username: user.username },
-    });
-    
-
-    newSocket.on("connect", () => {
-      console.log("🟢 Connected to backend:", newSocket.id);
-    });
-
-    newSocket.on("users-list", (users) => {
-      setOnlineUsers(users.filter(u => u.id !== user.id));
-    });
-
-    // Handle incoming messages
-    newSocket.on("message", (data) => {
-      console.log("📩 Message received:", data);
-      
-      setMessages((prev) => ({
-        ...prev,
-        [data.from]: [
-          ...(prev[data.from] || []),
-          {
-            id: data.id,
-            user: "other",
-            text: data.text,
-            time: new Date(data.time)
-          },
-        ],
-      }));
-    });
-
-    setSocket(newSocket);
-
-    return () => {
-      newSocket.disconnect();
-    };
-  }, []);
-
   const [messages, setMessages] = useState({});
   const [selectedChat, setSelectedChat] = useState(null);
   const [inputMessage, setInputMessage] = useState("");
   const [isSearchActive, setIsSearchActive] = useState(false);
   const [showChatList, setShowChatList] = useState(false);
   const searchRef = useRef(null);
+  const { user, accessToken } = useAuth.getState();
+  const { socket, initSocket } = useSocketStore();
+  const [onlineUsers, setOnlineUsers] = useState([]);
+  const [friends, setFriends] = useState<User[]>([]);
+  const friendsRef = useRef<User[]>([]);
+  
+  const [time, setTime] = useState({
+    clock: new Date().toLocaleTimeString([], { hour:"2-digit", minute: "2-digit" }),
+    date: new Date().toLocaleDateString([], { month:"2-digit", day: "2-digit" })
+  });
+  
+
+  useEffect(() => {
+    async function init() {
+      if (!user) return;
+      try {
+        const { data } = await api.put("/friends/friendship", { id: user.id });
+        setFriends(data.friendList);
+        friendsRef.current = data.friendList;
+        initSocket(user, accessToken);
+      } catch (err) {
+        console.error(err);
+      }
+    }
+    init();
+  }, [user, accessToken]);
+  
+  useEffect(() => {
+    if (!socket) return;
+  
+    const handleUsersList = (users: any[]) => {
+      const filtered = users.filter(u => u.id !== user.id);
+  
+      setFriends(prev => {
+        const updatedFriends = prev.map(friend => ({
+          ...friend,
+          isOnline: filtered.some(u => u.id === friend.id),
+        }));
+  
+        friendsRef.current = updatedFriends; 
+        setOnlineUsers(updatedFriends.filter(f => f.isOnline));
+        return updatedFriends;
+      });
+    };
+  
+    const handleChatMessage = (data: any) => {
+      const sender = friendsRef.current.find(f => f.id === data.from);
+      const senderUsername = sender ? sender.username : "Unknown";
+  
+      setMessages(prev => ({
+        ...prev,
+        [senderUsername]: [
+          ...(prev[senderUsername] || []),
+          {
+            id: `${data.from}-${new Date(data.time).getTime()}`,
+            text: data.text,
+            time: new Date(data.time),
+            user: data.from === user.id ? "me" : "other",
+          },
+        ],
+      }));
+    };
+  
+    socket.on("users-list", handleUsersList);
+    socket.on("chat-message", handleChatMessage);
+  
+    return () => {
+      socket.off("users-list", handleUsersList);
+      socket.off("chat-message", handleChatMessage);
+    };
+  }, [socket, user]);
+  
 
   const handleSendMessage = () => {
     if (!inputMessage.trim() || !selectedChat) return;
-
-    // Local update
+  
+    const recipient = onlineUsers.find(u => u.username === selectedChat);
+    if (!recipient || !socket) return;
+  
     const newMessage = {
-      id: user.id,
-      user: "me",
+      id: `${user.id}-${new Date().getTime()}`,
       text: inputMessage.trim(),
       time: new Date(),
+      user: "me",
     };
-
+  
     setMessages(prev => ({
       ...prev,
       [selectedChat]: [...(prev[selectedChat] || []), newMessage],
     }));
-
-    if (socket && selectedChat) {
-      socket.emit("message", { to: selectedChat, text: inputMessage.trim() });
-      console.log(`Sending message to ${selectedChat}:`, inputMessage.trim());
-    }
-
+  
+    socket.emit("chat-message", { to: recipient.id, text: inputMessage.trim() });
+  
     setInputMessage("");
   };
+  
 
   const handleKeyPress = (e) => {
     if (e.key === 'Enter') {
@@ -100,7 +118,6 @@ export default function Home() {
     }
   };
 
-  // Function to group messages by date
   const groupMessagesByDate = (msgs) => {
     const groups = [];
     let currentDate = null;
@@ -214,22 +231,22 @@ export default function Home() {
               <p className="text-sm mt-2">Waiting for users to connect...</p>
             </div>
           ) : (
-            onlineUsers.map((username) => (
+            onlineUsers.map((u: any) => (
               <div
-                key={username}
-                onClick={() => handleSelectChat(username)}
-                className={`flex items-center gap-2 md:gap-3 m-0 p-3 md:p-4 ${selectedChat === username ? "bg-white/20" : "hover:bg-white/20 cursor-pointer"}`}
+                key={`${u.id}-${u.username}`}
+                onClick={() => handleSelectChat(u.username)}
+                className={`flex items-center gap-2 md:gap-3 m-0 p-3 md:p-4 ${selectedChat === u.username ? "bg-white/20" : "hover:bg-white/20 cursor-pointer"}`}
               > 
                 <div className="relative">
-                  <Image src="/images/defaultAvatare.jpg" alt="Profile" width={40} height={40}
+                  <Image src={u.avatar} alt="Profile" width={40} height={40}
                   className="rounded-full gap-2 ml-3 md:ml-7" />
                   <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-none rounded-full"></div>
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-white font-medium text-sm md:text-base">{username}</p>
-                  <p className="text-gray-300 text-xs md:text-sm truncate">{getLastMessage(username)}</p>
+                  <p className="text-white font-medium text-sm md:text-base">{u.username}</p>
+                  <p className="text-gray-300 text-xs md:text-sm truncate">{getLastMessage(u.username)}</p>
                 </div>
-                <span className="text-xs text-gray-200 mr-3 md:mr-7">{getLastMessageTime(username) || time.clock}</span>
+                <span className="text-xs text-gray-200 mr-3 md:mr-7">{getLastMessageTime(u.username) || time.clock}</span>
               </div>
             ))
           )}

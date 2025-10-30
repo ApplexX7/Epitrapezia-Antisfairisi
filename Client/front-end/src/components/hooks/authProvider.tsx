@@ -45,10 +45,9 @@ export const useAuth = create<AuthState>((set) => {
           if (res.data?.token?.accessToken && res.data.user) {
             const initSocket = useSocketStore.getState().initSocket;
             const currentSocket = useSocketStore.getState().socket;
-            
             set({ user: res.data.user, accessToken: res.data.token.accessToken, checkingAuth: false });
             if (!currentSocket) {
-                initSocket(res.data.user);
+                initSocket(res.data.user,res.data.token.accessToken);
             }
           } else {
             toast.error("Session expired. Please sign in again ⚠️");

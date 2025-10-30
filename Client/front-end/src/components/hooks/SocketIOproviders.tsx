@@ -5,7 +5,7 @@ import { User } from "@/components/hooks/authProvider";
 interface SocketStore {
   socket: Socket | null;
   isConnected: boolean;
-  initSocket: (user: User) => void;
+  initSocket: (user: User, token: string) => void;
   disconnectSocket: () => void;
 }
 
@@ -13,32 +13,33 @@ export const useSocketStore = create<SocketStore>((set, get) => ({
   socket: null,
   isConnected: false,
 
-  initSocket: (user: User) => {
-    if (get().socket) return;
+  initSocket: (user: User, token: string) => {
+    if (get().socket) return; 
 
-    const newSocket = io("", {
+    const socket = io("", {
       path: "/socket/",
       transports: ["websocket"],
-      auth: { id: user.id, username: user.username },
+      auth: { token },
+      autoConnect: true,
     });
 
-    newSocket.on("connect", () => {
-      console.log("🟢 Socket connected:", newSocket.id);
+    socket.on("connect", () => {
+      console.log("🟢 Socket connected:", socket.id);
       set({ isConnected: true });
     });
 
-    newSocket.on("disconnect", () => {
+    socket.on("disconnect", () => {
       console.log("🔴 Socket disconnected");
       set({ isConnected: false });
     });
 
-    set({ socket: newSocket });
+    set({ socket });
   },
 
   disconnectSocket: () => {
-    const s = get().socket;
-    if (s) {
-      s.disconnect();
+    const socket = get().socket;
+    if (socket) {
+      socket.disconnect();
       set({ socket: null, isConnected: false });
     }
   },
