@@ -156,14 +156,16 @@ export default function Home() {
 
   const getLastMessage = (username) => {
     const chatMessages = messages[username] || [];
-    if (chatMessages.length === 0) return "No messages yet";
+    if (chatMessages.length === 0) 
+      return "No messages yet";
     const lastMsg = chatMessages[chatMessages.length - 1];
     return lastMsg.text.length > 30 ? lastMsg.text.substring(0, 30) + "..." : lastMsg.text;
   };
 
   const getLastMessageTime = (username) => {
     const chatMessages = messages[username] || [];
-    if (chatMessages.length === 0) return "";
+    if (chatMessages.length === 0) 
+      return "";
     const lastMsg = chatMessages[chatMessages.length - 1];
     return lastMsg.time.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
   };
