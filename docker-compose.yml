@@ -1,0 +1,52 @@
+services:
+  nginx:
+    image : nginx:latest
+    container_name: nginx
+    build: ./nginx
+    ports:
+      - "443:443"
+    depends_on:
+      - client
+      - server
+    networks:
+      - webpong
+
+  client:
+    image : client:latest
+    container_name: front-end
+    build:
+      context: ./Client
+      args:
+        MODE: ${MODE}
+    volumes:
+      - ./Client/front-end:/app
+      - /app/node_modules
+    environment:
+      - NODE_ENV=${MODE}
+    command: >
+      sh -c "if [ \"$MODE\" = \"dev\" ]; then npm run dev; else npm run start; fi"
+    networks:
+      - webpong
+
+  server:
+    image : server:latest
+    container_name: back-end
+    build:
+      context: ./Server
+      args:
+        MODE: ${MODE}
+    volumes:
+      - ./Server/Backend:/app
+      - /app/node_modules  
+    env_file:
+      - ./env/.env_api
+    command: >
+      sh -c "if [ \"$MODE\" = \"dev\" ]; then nodemon --watch src --exec ts-node src/index.ts; else node dist/index.js; fi"
+    networks:
+      - webpong
+    depends_on:
+      - client
+
+networks:
+  webpong:
+    driver: bridge
