@@ -56,33 +56,39 @@ export default function GameCostum() {
 </div>
 
       <div>
-        <div>
-          <h1>
-            Choose Your Board Color
-          </h1><br></br>
-        <Button className="cursor-pointer">Purple </Button>
-        <Button className="cursor-pointer"> Black</Button>
-        <Button className="cursor-pointer"> White</Button>
-
-        </div>
-        <div>
-          <h1>
-            Choose Your The Ball Color
-          </h1><br></br>
-          <Button className="cursor-pointer">Purple </Button>
-        <Button className="cursor-pointer"> Black</Button>
-        <Button className="cursor-pointer"> White</Button>
-
-        </div>
-        <div>
-          <h1>
-            Choose Your Paddles Color
-          </h1><br></br>
-          <Button className="cursor-pointer">Purple </Button>
-        <Button className="cursor-pointer"> Black</Button>
-        <Button className="cursor-pointer"> White</Button>
-
-        </div>
+      <div className="">
+      <h1 className="text-2xl font-bold text-white tracking-wide mb-4">
+  Choose Your Board Color
+</h1>
+  <br />
+  <div className="flex gap-4">
+    <Button className="cursor-pointer px-4 py-2">Purple</Button>
+    <Button className="cursor-pointer px-4 py-2">Black</Button>
+    <Button className="cursor-pointer px-4 py-2">White</Button>
+  </div>
+</div>
+        <div className="">
+        <h1 className="text-2xl font-bold text-white tracking-wide mb-4">
+  Choose Your Ball Color
+</h1>
+  <br />
+  <div className="flex gap-4">
+    <Button className="cursor-pointer px-4 py-2">Purple</Button>
+    <Button className="cursor-pointer px-4 py-2">Black</Button>
+    <Button className="cursor-pointer px-4 py-2">White</Button>
+  </div>
+</div>
+<div className="">
+<h1 className="text-2xl font-bold text-white tracking-wide mb-4">
+  Choose Your Paddles Color
+</h1>
+  <br />
+  <div className="flex gap-4">
+    <Button className="cursor-pointer px-4 py-2">Purple</Button>
+    <Button className="cursor-pointer px-4 py-2">Black</Button>
+    <Button className="cursor-pointer px-4 py-2">White</Button>
+  </div>
+</div>
       </div>
         <div className="flex-1 flex flex-col justify-end">
           <DialogFooter className="flex justify-end gap-2">
