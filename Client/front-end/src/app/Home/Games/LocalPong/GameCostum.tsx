@@ -1,6 +1,6 @@
 'use client';
 import "@/app/globals.css";
-import { useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -10,14 +10,20 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-
 export default function GameCostum() {
   const [isOpen, setIsOpen] = useState(true);
-  let handleDiff = useState[["easy" , "medium"]]
+  const easyRef = useRef<HTMLButtonElement>(null);
   const handleResetDev = () => {
     // here i have to put back the old values 
   };
-
+  let [currentBoard, setCurrentBoard] = useState("default");
+  let handleBoardClick = (color: string) =>
+  {
+    setCurrentBoard(color);
+  };
+  useEffect(() => {
+    
+  },[currentBoard]);
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogContent
@@ -66,9 +72,9 @@ export default function GameCostum() {
         Choose Your Board Color
       </h1>
       <div className="flex gap-4">
-        <Button className="cursor-pointer px-4 py-2">Black</Button>
-        <Button className="cursor-pointer px-4 py-2">Blue</Button>
-        <Button className="cursor-pointer px-4 py-2">Red</Button>
+        <Button className="cursor-pointer px-4 py-2" onClick={() => handleBoardClick("Black")}>Black</Button>
+        <Button className="cursor-pointer px-4 py-2" onClick={() => handleBoardClick("Black")}>Blue</Button>
+        <Button className="cursor-pointer px-4 py-2" onClick={() => handleBoardClick("Black")}>Red</Button>
       </div>
     </div>
 
@@ -103,7 +109,7 @@ export default function GameCostum() {
   </h1>
 
   <div className="flex flex-col w-[70%] gap-4">
-  <Button className="w-full h-14 text-lg cursor-pointer bg-green-700" >Easy</Button>
+  <Button className="w-full h-14 text-lg cursor-pointer" ref={easyRef} >Easy</Button>
   <Button className="w-full h-14 text-lg cursor-pointer ">Medium</Button>
   <Button className="w-full h-14 text-lg cursor-pointer">Hard</Button>
 </div>
