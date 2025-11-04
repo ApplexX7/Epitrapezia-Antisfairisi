@@ -6,6 +6,10 @@ type BoardProps = {
   playerTwoScore: number;
   setPlayerOneScore: React.Dispatch<React.SetStateAction<number>>;
   setPlayerTwoScore: React.Dispatch<React.SetStateAction<number>>;
+  _boardColor: string;
+  _ballColor: string;
+  _gameDiff: string;
+  _paddleColor: string;
 };
 
 export default function Board({
@@ -13,15 +17,40 @@ export default function Board({
   playerTwoScore,
   setPlayerOneScore,
   setPlayerTwoScore,
+  _boardColor,
+  _ballColor,
+  _gameDiff,
+  _paddleColor
 }: BoardProps) {
   let [lostPlayer, setLostPlayer] = useState("");
-  let stepRef = useRef(7);
   const boardRef = useRef<HTMLDivElement | null>(null);
   const leftPaddleRef = useRef<HTMLDivElement | null>(null);
   const rightPaddleRef = useRef<HTMLDivElement | null>(null);
   const ballRef = useRef<HTMLDivElement | null>(null);
-  const dxRef = useRef(10);
-  const dyRef = useRef(10);
+  const dxRef = useRef(0);
+  const dyRef = useRef(0);
+  const stepRef = useRef(0);
+
+
+  const getInitialSpeeds = (diff: string) => {
+    switch (diff) {
+      case "easy":
+        return { dx: 7, dy: 7, step: 7 };
+      case "medium":
+        return { dx: 10, dy: 11, step: 11 };
+      case "hard":
+        return { dx: 14, dy: 15, step: 15 };
+      default:
+        return { dx: 7, dy: 7, step: 7 };
+    }
+  };
+  useEffect(() => {
+    const { dx, dy, step } = getInitialSpeeds(_gameDiff);
+    dxRef.current = dx;
+    dyRef.current = dy;
+    stepRef.current = step;
+  }, [_gameDiff]);  
+
   const ballXRef = useRef(0);
   const ballYRef = useRef(0);
   const leftPaddlePosRef = useRef(0);
@@ -231,7 +260,19 @@ export default function Board({
   }, [playerOneScore, playerTwoScore]);
 
   return (
-    <div className="relative m-auto w-[80vw] h-[75vh]" style={{ backgroundColor: "#0A0F2A" }}>
+    <div className="relative m-auto w-[80vw] h-[75vh]" style={{
+      backgroundColor:
+        _boardColor === "default"
+          ? "#0A0F2A"
+          : _boardColor === "blue"
+          ? "blue"
+          : _boardColor === "black"
+          ? "black"
+          : _boardColor === "red"
+          ? "firebrick"
+          : "#0A0F2A",
+    }}
+  >
       <div ref={boardRef} className="relative w-full h-full">
       {showVictoryVideo && (
   <div className="absolute inset-0 w-full h-full flex flex-col items-center justify-center z-40">
@@ -255,7 +296,16 @@ export default function Board({
         <div
           ref={leftPaddleRef}
           className="absolute left-0 top-1/2 w-[19px] h-[20%] rounded-sm z-20"
-          style={{ backgroundColor: "#FF007F", transform: `translateY(-50%) translateY(${leftPaddleOffset}px)` }}
+          style={{ backgroundColor:
+            _paddleColor === "default"
+              ? "#FF007F"
+              : _paddleColor === "white"
+              ? "white"
+              : _paddleColor === "green"
+              ? "green"
+              : _paddleColor === "yellow"
+              ? "yellow"
+              : "#FF007F", transform: `translateY(-50%) translateY(${leftPaddleOffset}px)` }}
         ></div>
 
         <div className="absolute left-1/2 top-0 h-full w-[0.5%] -translate-x-1/2 bg-white-smoke z-20"></div>
@@ -271,13 +321,31 @@ export default function Board({
         <div
           ref={ballRef}
           className="absolute left-1/2 top-1/2 w-[24px] h-[24px] rounded-full z-20"
-          style={{ backgroundColor: "#FF007F", transform: `translate(-50%, -50%) translate(${ballOffsetX}px, ${ballOffsetY}px)` }}
+          style={{ backgroundColor:
+            _ballColor === "default"
+              ? "#FF007F"
+              : _ballColor === "white"
+              ? "white"
+              : _ballColor === "green"
+              ? "green"
+              : _ballColor === "yellow"
+              ? "yellow"
+              : "#FF007F", transform: `translate(-50%, -50%) translate(${ballOffsetX}px, ${ballOffsetY}px)` }}
         ></div>
 
         <div
           ref={rightPaddleRef}
           className="absolute right-0 top-1/2 w-[19px] h-[20%] rounded-sm z-20"
-          style={{ backgroundColor: "#FF007F", transform: `translateY(-50%) translateY(${rightPaddleOffset}px)` }}
+          style={{ backgroundColor:
+            _paddleColor === "default"
+              ? "#FF007F"
+              : _paddleColor === "white"
+              ? "white"
+              : _paddleColor === "green"
+              ? "green"
+              : _paddleColor === "yellow"
+              ? "yellow"
+              : "#FF007F", transform: `translateY(-50%) translateY(${rightPaddleOffset}px)` }}
         ></div>
 
 {!startGame && !showVictoryVideo && (
