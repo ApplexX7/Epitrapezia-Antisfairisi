@@ -1,6 +1,6 @@
 import { Server } from "socket.io";
 import { registerChatSocket } from "./chatSocket";
-// import { registerGameSocket } from "./gameSocket";
+import { registerGameSocket } from "./gameSocket";
 // import { registerNotifSocket } from "./notifSocket";
 import jwt from "jsonwebtoken";
 
@@ -39,7 +39,7 @@ export function registerSocketHandlers(io: Server) {
     }));
     io.emit("users-list", usersList);
     registerChatSocket(io, socket, onlineUsers);
-    // registerGameSocket(io, socket, onlineUsers);
+    registerGameSocket(io, socket, onlineUsers);
     // registerNotifSocket(io, socket, onlineUsers);
     socket.on("disconnect", () => {
       onlineUsers[user.id] = onlineUsers[user.id].filter(s => s.id !== socket.id);
