@@ -14,6 +14,8 @@ interface GameRoom {
   ball: { x: number; y: number; dx: number; dy: number };
   paddles: { [userId: number]: number };
   scores: { [userId: number]: number };
+  paddleStep?: number;
+  loop?: ReturnType<typeof setInterval> | null;
 }
 
 const matchmakingQueue: UserSocket[] = [];
@@ -35,7 +37,8 @@ export function registerGameSocket(io: Server, socket: UserSocket) {
     const room: GameRoom = {
       id: roomId,
       players: [socket, opponent],
-      ball: { x: 0, y: 0, dx: 8, dy: 8 },
+      // start with a slightly reduced ball speed compared to before
+      ball: { x: 0, y: 0, dx: 6, dy: 6 },
       paddles: {
         [socket.user.id]: 0,
         [opponent.user.id]: 0,
@@ -44,6 +47,8 @@ export function registerGameSocket(io: Server, socket: UserSocket) {
         [socket.user.id]: 0,
         [opponent.user.id]: 0,
       },
+      paddleStep: 24,
+      loop: null,
     };
 
     activeRooms[roomId] = room;
@@ -68,7 +73,7 @@ export function registerGameSocket(io: Server, socket: UserSocket) {
     if (!room) return;
 
     const current = room.paddles[socket.user.id] ?? 0;
-    const step = 20;
+    const step = room.paddleStep ?? 24;
     let next = current;
     if (direction === "up") next = current - step;
     else if (direction === "down") next = current + step;
@@ -95,8 +100,14 @@ export function registerGameSocket(io: Server, socket: UserSocket) {
 }
 
 function startGameLoop(io: Server, room: GameRoom) {
+  // clear any existing loop (restart)
+  if (room.loop) {
+    clearInterval(room.loop as any);
+    room.loop = null;
+  }
+
   const interval = setInterval(() => {
-  const { ball, paddles, players } = room;
+    const { ball, paddles, players } = room;
     // Move the ball using sub-steps to avoid tunneling when speed is high.
     // This ensures collisions are detected even when dx/dy are large.
     const maxDelta = Math.max(Math.abs(ball.dx), Math.abs(ball.dy));
@@ -148,12 +159,41 @@ function startGameLoop(io: Server, room: GameRoom) {
     }
 
     if (scored) {
-      // Reset ball to center and slightly increase speed
+      // Pause the loop and send a 3-second countdown to clients
+      clearInterval(interval);
+      room.loop = null;
+
+      // Send immediate updated gameState with ball centered
       ball.x = 0;
       ball.y = 0;
-      // boost speed but keep sign
-      ball.dx = (ball.dx >= 0 ? 1 : -1) * Math.abs(ball.dx) * 1.12;
-      ball.dy = (ball.dy >= 0 ? 1 : -1) * Math.abs(ball.dy) * 1.12;
+      io.to(room.id).emit("gameState", {
+        ball,
+        paddles,
+        scores: room.scores,
+        playerOrder: [leftPlayer.user.id, rightPlayer.user.id],
+      });
+
+      // countdown: 3 -> 1
+      let countdown = 3;
+      const countdownInterval = setInterval(() => {
+        io.to(room.id).emit("countdown", { remaining: countdown });
+        countdown -= 1;
+        if (countdown === 0) {
+          clearInterval(countdownInterval);
+
+          // After countdown, slightly reduce ball speed and increase paddle speed
+          const minSpeed = 4;
+          ball.dx = (ball.dx >= 0 ? 1 : -1) * Math.max(minSpeed, Math.abs(ball.dx) * 0.9);
+          ball.dy = (ball.dy >= 0 ? 1 : -1) * Math.max(minSpeed, Math.abs(ball.dy) * 0.9);
+
+          // Increase paddle responsiveness a bit
+          room.paddleStep = Math.min(40, (room.paddleStep ?? 24) + 4);
+
+          // Restart the game loop
+          room.loop = null;
+          startGameLoop(io, room);
+        }
+      }, 1000);
 
       // Check win condition: first to >5 with at least 2 point lead
       const leftScore = room.scores[leftPlayer.user.id] ?? 0;
@@ -162,7 +202,8 @@ function startGameLoop(io: Server, room: GameRoom) {
       if ((leftScore > 5 || rightScore > 5) && Math.abs(leftScore - rightScore) >= 2) {
         const winner = leftScore > rightScore ? leftPlayer.user.username : rightPlayer.user.username;
         io.to(room.id).emit("gameOver", { message: `${winner} wins!` });
-        clearInterval(interval);
+        // ensure countdown cleared and do not restart
+        try { clearInterval(countdownInterval); } catch {}
         delete activeRooms[room.id];
         return;
       }

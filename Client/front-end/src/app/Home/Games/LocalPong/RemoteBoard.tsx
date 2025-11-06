@@ -16,6 +16,7 @@ type RemoteBoardProps = {
   _ballColor?: string;
   _paddleColor?: string;
   winnerMessage?: string | null;
+  countdownRemaining?: number | null;
 };
 
 export default function RemoteBoard({
@@ -26,6 +27,7 @@ export default function RemoteBoard({
   _ballColor = "default",
   _paddleColor = "default",
   winnerMessage = null,
+  countdownRemaining = null,
 }: RemoteBoardProps) {
   const ball = gameState.ball ?? { x: 0, y: 0 };
   const paddles = gameState.paddles ?? {};
@@ -123,6 +125,13 @@ export default function RemoteBoard({
         {/* Scores */}
         <div className="absolute left-4 top-4 text-white z-30 font-bold text-2xl">{leftScore}</div>
         <div className="absolute right-4 top-4 text-white z-30 font-bold text-2xl">{rightScore}</div>
+
+        {/* Countdown overlay (higher priority) */}
+        {countdownRemaining != null && (
+          <div className="absolute inset-0 w-full h-full flex flex-col items-center justify-center z-40">
+            <p className="text-white font-extrabold text-[8vw] z-50 text-center">Resuming in {countdownRemaining}...</p>
+          </div>
+        )}
 
         {/* Victory overlay */}
         {winnerMessage && (

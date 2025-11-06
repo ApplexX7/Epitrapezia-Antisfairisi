@@ -46,6 +46,7 @@ export default function Page() {
   const [role, setRole] = useState<"left" | "right" | null>(null);
   const [gameState, setGameState] = useState<GameState | null>(null);
   const [gameOver, setGameOver] = useState<GameOverPayload | null>(null);
+  const [countdown, setCountdown] = useState<number | null>(null);
 
   // Register socket listeners
   useEffect(() => {
@@ -61,6 +62,10 @@ export default function Page() {
     };
 
     const handleGameState = (state: GameState) => setGameState(state);
+    const handleGameStateWrapped = (state: GameState) => {
+      setGameState(state);
+      setCountdown(null);
+    };
 
     const handleGameOver = (payload: GameOverPayload) =>
       setStatus(`❌ ${payload.message}`);
@@ -71,14 +76,17 @@ export default function Page() {
 
     socket.on("waiting", handleWaiting);
     socket.on("matched", handleMatched);
-    socket.on("gameState", handleGameState);
-  socket.on("gameOver", handleGameOverWrapped);
+  socket.on("gameState", handleGameStateWrapped);
+    socket.on("gameOver", handleGameOverWrapped);
+  const handleCountdown = (p: { remaining: number }) => setCountdown(p.remaining);
+  socket.on("countdown", handleCountdown);
 
     return () => {
       socket.off("waiting", handleWaiting);
-      socket.off("matched", handleMatched);
-      socket.off("gameState", handleGameState);
+  socket.off("matched", handleMatched);
+  socket.off("gameState", handleGameStateWrapped);
       socket.off("gameOver", handleGameOverWrapped);
+      socket.off("countdown", handleCountdown);
     };
   }, [socket]);
 
@@ -135,6 +143,7 @@ export default function Page() {
               _ballColor="default"
               _paddleColor="default"
               winnerMessage={gameOver?.message ?? null}
+              countdownRemaining={countdown}
             />
           ) : (
             <div className="relative w-[800px] h-[500px] bg-black overflow-hidden border-2 border-white">
