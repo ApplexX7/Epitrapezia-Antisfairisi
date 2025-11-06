@@ -39,7 +39,7 @@ export function registerSocketHandlers(io: Server) {
     }));
     io.emit("users-list", usersList);
     registerChatSocket(io, socket, onlineUsers);
-    registerGameSocket(io, socket, onlineUsers);
+    registerGameSocket(io, socket);
     // registerNotifSocket(io, socket, onlineUsers);
     socket.on("disconnect", () => {
       onlineUsers[user.id] = onlineUsers[user.id].filter(s => s.id !== socket.id);

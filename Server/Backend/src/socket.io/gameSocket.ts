@@ -1,4 +1,5 @@
 import { Server, Socket } from "socket.io";
+import { v4 as uuidv4 } from "uuid";
 
 interface UserSocket extends Socket {
   user: {
@@ -7,45 +8,110 @@ interface UserSocket extends Socket {
   };
 }
 
-// global matchmaking queue: one entry per user
-const matchmakingQueue: Record<number, UserSocket> = {};
+interface GameRoom {
+  id: string;
+  players: UserSocket[];
+  ball: { x: number; y: number; dx: number; dy: number };
+  paddles: { [userId: number]: number };
+}
 
-export function registerGameSocket(io: Server, socket: UserSocket, onlineUsers: Record<number, any[]>) {
+const matchmakingQueue: UserSocket[] = [];
+const activeRooms: Record<string, GameRoom> = {};
+
+export function registerGameSocket(io: Server, socket: UserSocket) {
   socket.on("joinmatchup", () => {
-    const userId = socket.user.id;
+    console.log(`🎮 ${socket.user.username} joined matchmaking`);
 
-    // if user is already in queue, ignore
-    if (matchmakingQueue[userId]) {
-      socket.emit("waiting", { message: "You are already in the queue" });
-      return;
-    }
+    // Add to queue
+    matchmakingQueue.push(socket);
+    socket.emit("waiting", { message: "Searching for opponent..." });
 
-    // add user to queue
-    matchmakingQueue[userId] = socket;
-    socket.emit("waiting", { message: "Searching for an opponent..." });
+    // Match with first different user
+    const opponent = matchmakingQueue.find((s) => s.user.id !== socket.user.id);
+    if (!opponent) return;
 
-    // try to match with any other user
-    const otherUserId = Object.keys(matchmakingQueue)
-      .map(Number)
-      .find(id => id !== userId);
+    const roomId = `room-${uuidv4()}`;
+    const room: GameRoom = {
+      id: roomId,
+      players: [socket, opponent],
+      ball: { x: 0, y: 0, dx: 8, dy: 8 },
+      paddles: {
+        [socket.user.id]: 0,
+        [opponent.user.id]: 0,
+      },
+    };
 
-    if (otherUserId !== undefined) {
-      const opponentSocket = matchmakingQueue[otherUserId];
+    activeRooms[roomId] = room;
+    matchmakingQueue.splice(matchmakingQueue.indexOf(socket), 1);
+    matchmakingQueue.splice(matchmakingQueue.indexOf(opponent), 1);
 
-      // emit matched to both users
-      socket.emit("matched", { opponent: opponentSocket.user.username });
-      opponentSocket.emit("matched", { opponent: socket.user.username });
+    // Join room
+    socket.join(roomId);
+    opponent.join(roomId);
 
-      // remove both from queue
-      delete matchmakingQueue[userId];
-      delete matchmakingQueue[otherUserId];
-    }
+    // Emit matched
+    socket.emit("matched", { opponent: opponent.user.username, role: "left", roomId });
+    opponent.emit("matched", { opponent: socket.user.username, role: "right", roomId });
+
+    console.log(`🏓 Room created: ${roomId} (${socket.user.username} vs ${opponent.user.username})`);
+
+    startGameLoop(io, room);
+  });
+
+  socket.on("movePaddle", ({ roomId, direction }: { roomId: string; direction: "up" | "down" }) => {
+    const room = activeRooms[roomId];
+    if (!room) return;
+
+    const current = room.paddles[socket.user.id] ?? 0;
+    const step = 20;
+    if (direction === "up") room.paddles[socket.user.id] = current - step;
+    else if (direction === "down") room.paddles[socket.user.id] = current + step;
   });
 
   socket.on("disconnect", () => {
-    const userId = socket.user.id;
-    if (matchmakingQueue[userId] === socket) {
-      delete matchmakingQueue[userId];
+    // Remove from rooms
+    for (const [id, room] of Object.entries(activeRooms)) {
+      if (room.players.includes(socket)) {
+        io.to(id).emit("gameOver", { message: `${socket.user.username} disconnected` });
+        delete activeRooms[id];
+      }
     }
+
+    // Remove from queue if waiting
+    const idx = matchmakingQueue.indexOf(socket);
+    if (idx !== -1) matchmakingQueue.splice(idx, 1);
+  });
+}
+
+function startGameLoop(io: Server, room: GameRoom) {
+  const interval = setInterval(() => {
+    const { ball, paddles, players } = room;
+
+    // Update ball
+    ball.x += ball.dx;
+    ball.y += ball.dy;
+
+    // Wall collision
+    if (ball.y > 250 || ball.y < -250) ball.dy *= -1;
+
+    // Paddle collision
+    const leftPlayer = players[0];
+    const rightPlayer = players[1];
+    const leftY = paddles[leftPlayer.user.id];
+    const rightY = paddles[rightPlayer.user.id];
+
+    if (ball.x < -380 && Math.abs(ball.y - leftY) < 80) ball.dx *= -1;
+    if (ball.x > 380 && Math.abs(ball.y - rightY) < 80) ball.dx *= -1;
+
+    // Emit game state
+    io.to(room.id).emit("gameState", {
+      ball,
+      paddles,
+    });
+  }, 1000 / 60);
+
+  // Stop loop on disconnect
+  room.players.forEach((s) => {
+    s.once("disconnect", () => clearInterval(interval));
   });
 }
