@@ -19,7 +19,8 @@ type WaitingPayload = {
 
 type GameState = {
   ball: { x: number; y: number };
-  paddles: Record<number, number>; // key = userId, value = y position
+  paddles: Record<string, number>; // key = userId (stringified), value = y position
+  playerOrder?: number[]; // [leftId, rightId]
 };
 
 type GameOverPayload = {
@@ -76,7 +77,8 @@ export default function Page() {
 
   // Handle paddle movement (arrow keys)
   useEffect(() => {
-    if (!socket || !roomId) return;
+    // Only bind key handlers once we're in a room and we know our role
+    if (!socket || !roomId || !role) return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "ArrowUp") {
@@ -90,7 +92,8 @@ export default function Page() {
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [roomId, socket]);
+  }, [roomId, socket, role]);
+
 
   // Join matchmaking
   const handleJoin = () => {
@@ -129,17 +132,27 @@ export default function Page() {
               />
 
               {/* Paddles */}
-              {Object.entries(gameState.paddles).map(([id, y]) => (
-                <div
-                  key={id}
-                  className="absolute w-[20px] h-[100px] bg-pink-500"
-                  style={{
-                    left: id === String(user?.id) ? "20px" : "760px",
-                    top: `${250 + y}px`,
-                    transform: "translateY(-50%)",
-                  }}
-                />
-              ))}
+              {Object.entries(gameState.paddles).map(([id, y]) => {
+                const isOwn = id === String(user?.id);
+
+                // Use our assigned role to determine left/right positions.
+                const leftForOwn = role === "left" ? "20px" : "760px";
+                const leftForOpponent = role === "left" ? "760px" : "20px";
+
+                const left = isOwn ? leftForOwn : leftForOpponent;
+
+                return (
+                  <div
+                    key={id}
+                    className="absolute w-[20px] h-[100px] bg-pink-500"
+                    style={{
+                      left,
+                      top: `${250 + y}px`,
+                      transform: "translateY(-50%)",
+                    }}
+                  />
+                );
+              })}
             </>
           )}
 

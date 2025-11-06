@@ -64,8 +64,14 @@ export function registerGameSocket(io: Server, socket: UserSocket) {
 
     const current = room.paddles[socket.user.id] ?? 0;
     const step = 20;
-    if (direction === "up") room.paddles[socket.user.id] = current - step;
-    else if (direction === "down") room.paddles[socket.user.id] = current + step;
+    let next = current;
+    if (direction === "up") next = current - step;
+    else if (direction === "down") next = current + step;
+
+    // Clamp paddle movement so it stays within visible play area.
+    // Board height is 500px, center=0, paddle half-height ~=50 -> max offset = 250 - 50 = 200
+    const clamp = (v: number, min = -200, max = 200) => Math.max(min, Math.min(max, v));
+    room.paddles[socket.user.id] = clamp(next);
   });
 
   socket.on("disconnect", () => {
@@ -104,9 +110,11 @@ function startGameLoop(io: Server, room: GameRoom) {
     if (ball.x > 380 && Math.abs(ball.y - rightY) < 80) ball.dx *= -1;
 
     // Emit game state
+    // Emit game state along with player order so clients can map left/right consistently
     io.to(room.id).emit("gameState", {
       ball,
       paddles,
+      playerOrder: [leftPlayer.user.id, rightPlayer.user.id], // [leftId, rightId]
     });
   }, 1000 / 60);
 
