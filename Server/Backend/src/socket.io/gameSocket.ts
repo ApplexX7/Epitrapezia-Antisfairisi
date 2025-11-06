@@ -110,8 +110,9 @@ function startGameLoop(io: Server, room: GameRoom) {
     const { ball, paddles, players } = room;
     // Move the ball using sub-steps to avoid tunneling when speed is high.
     // This ensures collisions are detected even when dx/dy are large.
-    const maxDelta = Math.max(Math.abs(ball.dx), Math.abs(ball.dy));
-    const subSteps = Math.max(1, Math.ceil(maxDelta / 8));
+  const maxDelta = Math.max(Math.abs(ball.dx), Math.abs(ball.dy));
+  // Increase sub-steps resolution to avoid tunneling at high speeds
+  const subSteps = Math.max(1, Math.ceil(maxDelta / 4));
 
     let scored = false;
     const leftPlayer = players[0];
@@ -131,9 +132,9 @@ function startGameLoop(io: Server, room: GameRoom) {
       const rightY = paddles[rightPlayer.user.id] ?? 0;
 
       // Paddle collision (check each sub-step)
-      if (ball.x < -380 && Math.abs(ball.y - leftY) < 80) {
+      if (ball.x < -390 && Math.abs(ball.y - leftY) < 80) {
         // Nudge ball outside paddle to avoid repeated collisions (sticking)
-        ball.x = -380;
+        ball.x = -390;
 
         // Simple horizontal reflection (old behavior). Preserve dy.
         ball.dx = Math.abs(ball.dx);
@@ -141,8 +142,8 @@ function startGameLoop(io: Server, room: GameRoom) {
         // continue to next substep
         continue;
       }
-      if (ball.x > 380 && Math.abs(ball.y - rightY) < 80) {
-        ball.x = 380;
+      if (ball.x > 390 && Math.abs(ball.y - rightY) < 80) {
+        ball.x = 390;
 
         // Simple horizontal reflection (old behavior). Preserve dy.
         ball.dx = -Math.abs(ball.dx);
