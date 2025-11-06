@@ -127,20 +127,32 @@ function startGameLoop(io: Server, room: GameRoom) {
       const leftY = paddles[leftPlayer.user.id] ?? 0;
       const rightY = paddles[rightPlayer.user.id] ?? 0;
 
-      // swept collision: check if segment [prevX, prevX+sx] crosses paddle face X
-      const leftPaddleX = -390;
-      const rightPaddleX = 390;
-      const paddleHalfH = 80;
+      // geometry constants (match client): paddle width and ball size
+      const paddleWidth = 19; // px
+      const paddleHalfH = 80; // vertical half-height used earlier
+      const ballRadius = 12; // ball diameter 24px -> radius 12
+
+      // Paddle center X positions
+      const leftPaddleCenterX = -400 + paddleWidth / 2; // -390.5
+      const rightPaddleCenterX = 400 - paddleWidth / 2; // 390.5
+
+      // Paddle face X (outer edge matching visual paddle face)
+      const leftFaceX = leftPaddleCenterX + paddleWidth / 2; // -381
+      const rightFaceX = rightPaddleCenterX - paddleWidth / 2; // 381
+
+      // collision plane for ball center (ball touches paddle when center reaches face +/- radius)
+      const leftCollisionX = leftFaceX + ballRadius; // -369
+      const rightCollisionX = rightFaceX - ballRadius; // 369
 
       let collided = false;
 
       // Check left paddle crossing (ball moving left)
-      if (sx < 0 && prevX >= leftPaddleX && prevX + sx <= leftPaddleX) {
-        const t = (leftPaddleX - prevX) / sx; // fraction along this substep
+      if (sx < 0 && prevX >= leftCollisionX && prevX + sx <= leftCollisionX) {
+        const t = (leftCollisionX - prevX) / sx; // fraction along this substep
         const impactY = prevY + sy * t;
         if (Math.abs(impactY - leftY) <= paddleHalfH) {
-          // collision: place ball at paddle face and reflect dx
-          ball.x = leftPaddleX;
+          // collision: place ball center at collision X and set y to impactY, reflect dx
+          ball.x = leftCollisionX;
           ball.y = impactY;
           ball.dx = Math.abs(ball.dx);
           collided = true;
@@ -148,11 +160,11 @@ function startGameLoop(io: Server, room: GameRoom) {
       }
 
       // Check right paddle crossing (ball moving right)
-      if (!collided && sx > 0 && prevX <= rightPaddleX && prevX + sx >= rightPaddleX) {
-        const t = (rightPaddleX - prevX) / sx;
+      if (!collided && sx > 0 && prevX <= rightCollisionX && prevX + sx >= rightCollisionX) {
+        const t = (rightCollisionX - prevX) / sx;
         const impactY = prevY + sy * t;
         if (Math.abs(impactY - rightY) <= paddleHalfH) {
-          ball.x = rightPaddleX;
+          ball.x = rightCollisionX;
           ball.y = impactY;
           ball.dx = -Math.abs(ball.dx);
           collided = true;
@@ -172,8 +184,8 @@ function startGameLoop(io: Server, room: GameRoom) {
       if (ball.y > 250 || ball.y < -250) ball.dy *= -1;
 
       // Goal detection: if ball passes beyond playable area, award point to opponent
-      const leftGoal = -400;
-      const rightGoal = 400;
+      const leftGoal = -400 - ballRadius; // require ball fully past left edge
+      const rightGoal = 400 + ballRadius;
 
       if (ball.x <= leftGoal) {
         // Right player scores
