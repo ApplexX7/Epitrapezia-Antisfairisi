@@ -121,35 +121,55 @@ function startGameLoop(io: Server, room: GameRoom) {
     for (let step = 0; step < subSteps; step++) {
       const sx = ball.dx / subSteps;
       const sy = ball.dy / subSteps;
+      const prevX = ball.x;
+      const prevY = ball.y;
 
+      const leftY = paddles[leftPlayer.user.id] ?? 0;
+      const rightY = paddles[rightPlayer.user.id] ?? 0;
+
+      // swept collision: check if segment [prevX, prevX+sx] crosses paddle face X
+      const leftPaddleX = -390;
+      const rightPaddleX = 390;
+      const paddleHalfH = 80;
+
+      let collided = false;
+
+      // Check left paddle crossing (ball moving left)
+      if (sx < 0 && prevX >= leftPaddleX && prevX + sx <= leftPaddleX) {
+        const t = (leftPaddleX - prevX) / sx; // fraction along this substep
+        const impactY = prevY + sy * t;
+        if (Math.abs(impactY - leftY) <= paddleHalfH) {
+          // collision: place ball at paddle face and reflect dx
+          ball.x = leftPaddleX;
+          ball.y = impactY;
+          ball.dx = Math.abs(ball.dx);
+          collided = true;
+        }
+      }
+
+      // Check right paddle crossing (ball moving right)
+      if (!collided && sx > 0 && prevX <= rightPaddleX && prevX + sx >= rightPaddleX) {
+        const t = (rightPaddleX - prevX) / sx;
+        const impactY = prevY + sy * t;
+        if (Math.abs(impactY - rightY) <= paddleHalfH) {
+          ball.x = rightPaddleX;
+          ball.y = impactY;
+          ball.dx = -Math.abs(ball.dx);
+          collided = true;
+        }
+      }
+
+      if (collided) {
+        // continue to next substep after collision (prevents tunneling)
+        continue;
+      }
+
+      // No paddle collision this substep: advance normally
       ball.x += sx;
       ball.y += sy;
 
       // Wall collision (top/bottom)
       if (ball.y > 250 || ball.y < -250) ball.dy *= -1;
-
-      const leftY = paddles[leftPlayer.user.id] ?? 0;
-      const rightY = paddles[rightPlayer.user.id] ?? 0;
-
-      // Paddle collision (check each sub-step)
-      if (ball.x < -390 && Math.abs(ball.y - leftY) < 80) {
-        // Nudge ball outside paddle to avoid repeated collisions (sticking)
-        ball.x = -390;
-
-        // Simple horizontal reflection (old behavior). Preserve dy.
-        ball.dx = Math.abs(ball.dx);
-
-        // continue to next substep
-        continue;
-      }
-      if (ball.x > 390 && Math.abs(ball.y - rightY) < 80) {
-        ball.x = 390;
-
-        // Simple horizontal reflection (old behavior). Preserve dy.
-        ball.dx = -Math.abs(ball.dx);
-
-        continue;
-      }
 
       // Goal detection: if ball passes beyond playable area, award point to opponent
       const leftGoal = -400;
