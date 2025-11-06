@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useSocketStore } from "@/components/hooks/SocketIOproviders";
 import { useAuth } from "@/components/hooks/authProvider";
+import RemoteBoard from "../LocalPong/RemoteBoard";
 
 // -------------------
 // TYPES
@@ -21,6 +22,7 @@ type GameState = {
   ball: { x: number; y: number };
   paddles: Record<string, number>; // key = userId (stringified), value = y position
   playerOrder?: number[]; // [leftId, rightId]
+  scores?: Record<string, number>;
 };
 
 type GameOverPayload = {
@@ -43,6 +45,7 @@ export default function Page() {
   const [roomId, setRoomId] = useState<string | null>(null);
   const [role, setRole] = useState<"left" | "right" | null>(null);
   const [gameState, setGameState] = useState<GameState | null>(null);
+  const [gameOver, setGameOver] = useState<GameOverPayload | null>(null);
 
   // Register socket listeners
   useEffect(() => {
@@ -61,17 +64,21 @@ export default function Page() {
 
     const handleGameOver = (payload: GameOverPayload) =>
       setStatus(`❌ ${payload.message}`);
+    const handleGameOverWrapped = (payload: GameOverPayload) => {
+      setGameOver(payload);
+      setStatus(`❌ ${payload.message}`);
+    };
 
     socket.on("waiting", handleWaiting);
     socket.on("matched", handleMatched);
     socket.on("gameState", handleGameState);
-    socket.on("gameOver", handleGameOver);
+  socket.on("gameOver", handleGameOverWrapped);
 
     return () => {
       socket.off("waiting", handleWaiting);
       socket.off("matched", handleMatched);
       socket.off("gameState", handleGameState);
-      socket.off("gameOver", handleGameOver);
+      socket.off("gameOver", handleGameOverWrapped);
     };
   }, [socket]);
 
@@ -118,42 +125,21 @@ export default function Page() {
           <p className="mt-4 text-lg">{status}</p>
         </>
       ) : (
-        <div className="relative w-[800px] h-[500px] bg-black overflow-hidden border-2 border-white mt-6">
-          {gameState && (
-            <>
-              {/* Ball */}
-              <div
-                className="absolute w-[20px] h-[20px] bg-white rounded-full"
-                style={{
-                  left: `${400 + gameState.ball.x}px`,
-                  top: `${250 + gameState.ball.y}px`,
-                  transform: "translate(-50%, -50%)",
-                }}
-              />
-
-              {/* Paddles */}
-              {Object.entries(gameState.paddles).map(([id, y]) => {
-                const isOwn = id === String(user?.id);
-
-                // Use our assigned role to determine left/right positions.
-                const leftForOwn = role === "left" ? "20px" : "760px";
-                const leftForOpponent = role === "left" ? "760px" : "20px";
-
-                const left = isOwn ? leftForOwn : leftForOpponent;
-
-                return (
-                  <div
-                    key={id}
-                    className="absolute w-[20px] h-[100px] bg-pink-500"
-                    style={{
-                      left,
-                      top: `${250 + y}px`,
-                      transform: "translateY(-50%)",
-                    }}
-                  />
-                );
-              })}
-            </>
+        <div className="mt-6">
+          {gameState ? (
+            <RemoteBoard
+              gameState={gameState}
+              role={role}
+              userId={user?.id ?? null}
+              _boardColor="default"
+              _ballColor="default"
+              _paddleColor="default"
+              winnerMessage={gameOver?.message ?? null}
+            />
+          ) : (
+            <div className="relative w-[800px] h-[500px] bg-black overflow-hidden border-2 border-white">
+              <p className="absolute inset-0 flex items-center justify-center text-white">Waiting for game state...</p>
+            </div>
           )}
 
           {/* Info overlay */}

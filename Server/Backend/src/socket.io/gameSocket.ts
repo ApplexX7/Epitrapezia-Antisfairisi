@@ -13,6 +13,7 @@ interface GameRoom {
   players: UserSocket[];
   ball: { x: number; y: number; dx: number; dy: number };
   paddles: { [userId: number]: number };
+  scores: { [userId: number]: number };
 }
 
 const matchmakingQueue: UserSocket[] = [];
@@ -36,6 +37,10 @@ export function registerGameSocket(io: Server, socket: UserSocket) {
       players: [socket, opponent],
       ball: { x: 0, y: 0, dx: 8, dy: 8 },
       paddles: {
+        [socket.user.id]: 0,
+        [opponent.user.id]: 0,
+      },
+      scores: {
         [socket.user.id]: 0,
         [opponent.user.id]: 0,
       },
@@ -91,29 +96,63 @@ export function registerGameSocket(io: Server, socket: UserSocket) {
 
 function startGameLoop(io: Server, room: GameRoom) {
   const interval = setInterval(() => {
-    const { ball, paddles, players } = room;
-
+  const { ball, paddles, players } = room;
     // Update ball
     ball.x += ball.dx;
     ball.y += ball.dy;
 
-    // Wall collision
+    // Wall collision (top/bottom)
     if (ball.y > 250 || ball.y < -250) ball.dy *= -1;
 
     // Paddle collision
     const leftPlayer = players[0];
     const rightPlayer = players[1];
-    const leftY = paddles[leftPlayer.user.id];
-    const rightY = paddles[rightPlayer.user.id];
+    const leftY = paddles[leftPlayer.user.id] ?? 0;
+    const rightY = paddles[rightPlayer.user.id] ?? 0;
 
     if (ball.x < -380 && Math.abs(ball.y - leftY) < 80) ball.dx *= -1;
     if (ball.x > 380 && Math.abs(ball.y - rightY) < 80) ball.dx *= -1;
 
-    // Emit game state
-    // Emit game state along with player order so clients can map left/right consistently
+    // Goal detection: if ball passes beyond playable area, award point to opponent
+    const leftGoal = -420;
+    const rightGoal = 420;
+
+    let scored = false;
+    if (ball.x <= leftGoal) {
+      // Right player scores
+      room.scores[rightPlayer.user.id] = (room.scores[rightPlayer.user.id] ?? 0) + 1;
+      scored = true;
+    } else if (ball.x >= rightGoal) {
+      // Left player scores
+      room.scores[leftPlayer.user.id] = (room.scores[leftPlayer.user.id] ?? 0) + 1;
+      scored = true;
+    }
+
+    if (scored) {
+      // Reset ball to center and slightly increase speed
+      ball.x = 0;
+      ball.y = 0;
+      ball.dx = ball.dx * 1.12;
+      ball.dy = ball.dy * 1.12;
+
+      // Check win condition: first to >5 with at least 2 point lead
+      const leftScore = room.scores[leftPlayer.user.id] ?? 0;
+      const rightScore = room.scores[rightPlayer.user.id] ?? 0;
+
+      if ((leftScore > 5 || rightScore > 5) && Math.abs(leftScore - rightScore) >= 2) {
+        const winner = leftScore > rightScore ? leftPlayer.user.username : rightPlayer.user.username;
+        io.to(room.id).emit("gameOver", { message: `${winner} wins!` });
+        clearInterval(interval);
+        delete activeRooms[room.id];
+        return;
+      }
+    }
+
+    // Emit game state along with player order and scores so clients can map left/right and display score
     io.to(room.id).emit("gameState", {
       ball,
       paddles,
+      scores: room.scores,
       playerOrder: [leftPlayer.user.id, rightPlayer.user.id], // [leftId, rightId]
     });
   }, 1000 / 60);
