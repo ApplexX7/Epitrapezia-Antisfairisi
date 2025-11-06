@@ -47,7 +47,7 @@ export default function RemoteBoard({
 
   return (
     <div
-      className="relative m-auto w-[80vw] h-[75vh]"
+      className="relative m-auto w-[800px] h-[500px]"
       style={{
         backgroundColor:
           _boardColor === "default"
