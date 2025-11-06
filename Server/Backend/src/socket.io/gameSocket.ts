@@ -135,31 +135,17 @@ function startGameLoop(io: Server, room: GameRoom) {
         // Nudge ball outside paddle to avoid repeated collisions (sticking)
         ball.x = -380;
 
-        // reflect horizontal velocity
+        // Simple horizontal reflection (old behavior). Preserve dy.
         ball.dx = Math.abs(ball.dx);
-
-        // Add angular deflection based on hit position on paddle
-        // If ball hits near paddle center -> small dy change; near edge -> larger deflection
-        const hitOffset = ball.y - leftY; // positive = below center
-        const deflectFactor = 0.06; // tuned factor
-        ball.dy += hitOffset * deflectFactor;
-
-        // clamp dy so ball doesn't become too vertical/horizontal
-        const maxDy = 20;
-        if (Math.abs(ball.dy) > maxDy) ball.dy = (ball.dy >= 0 ? 1 : -1) * maxDy;
 
         // continue to next substep
         continue;
       }
       if (ball.x > 380 && Math.abs(ball.y - rightY) < 80) {
         ball.x = 380;
-        ball.dx = -Math.abs(ball.dx);
 
-        const hitOffset = ball.y - rightY;
-        const deflectFactor = 0.06;
-        ball.dy += hitOffset * deflectFactor;
-        const maxDy = 20;
-        if (Math.abs(ball.dy) > maxDy) ball.dy = (ball.dy >= 0 ? 1 : -1) * maxDy;
+        // Simple horizontal reflection (old behavior). Preserve dy.
+        ball.dx = -Math.abs(ball.dx);
 
         continue;
       }
