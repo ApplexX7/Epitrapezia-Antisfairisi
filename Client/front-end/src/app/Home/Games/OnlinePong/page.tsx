@@ -4,10 +4,8 @@ import { useEffect, useState } from "react";
 import { useSocketStore } from "@/components/hooks/SocketIOproviders";
 import { useAuth } from "@/components/hooks/authProvider";
 import RemoteBoard from "../LocalPong/RemoteBoard";
+import GameCostum from "./GameCostum";
 
-// -------------------
-// TYPES
-// -------------------
 type MatchedPayload = {
   opponent: string;
   roomId: string;
@@ -38,6 +36,10 @@ type MovePaddlePayload = {
 // COMPONENT
 // -------------------
 export default function Page() {
+  let [boardColor, setBoardColor] = useState("default");
+    let [ballColor, setBallColor] = useState("default");
+    let [paddleColor, setPaddleColor] = useState("default");
+    let [gameDiff, setGameDiff] = useState("easy");
   const { socket, isConnected } = useSocketStore();
   const { user } = useAuth();
 
@@ -47,7 +49,7 @@ export default function Page() {
   const [gameState, setGameState] = useState<GameState | null>(null);
   const [gameOver, setGameOver] = useState<GameOverPayload | null>(null);
   const [countdown, setCountdown] = useState<number | null>(null);
-
+  let [MatchupText, setMatchupText] = useState("Join Matchup");
   // Register socket listeners
   useEffect(() => {
     if (!socket) return;
@@ -73,7 +75,7 @@ export default function Page() {
       setGameOver(payload);
       setStatus(`❌ ${payload.message}`);
     };
-
+    socket.on("stopmatchmaking", handleStopMatchMacking);
     socket.on("waiting", handleWaiting);
     socket.on("matched", handleMatched);
   socket.on("gameState", handleGameStateWrapped);
@@ -89,7 +91,11 @@ export default function Page() {
       socket.off("countdown", handleCountdown);
     };
   }, [socket]);
-
+  let handleStopMatchMacking = () =>
+    {
+      setMatchupText("Join Matchup");
+      setStatus("");
+    }
   // Handle paddle movement (arrow keys)
   useEffect(() => {
     // Only bind key handlers once we're in a room and we know our role
@@ -113,48 +119,59 @@ export default function Page() {
   // Join matchmaking
   const handleJoin = () => {
     if (!socket || !isConnected) {
-      setStatus("❌ Socket not connected");
+      setStatus("Socket not connected");
       return;
     }
     socket.emit("joinmatchup");
-    setStatus("⚡ Searching for opponent...");
+    setMatchupText("Cancel Matchup");
+    setStatus("Searching for opponent...");
   };
 
   return (
-    <main className="flex flex-col items-center justify-center min-h-screen bg-gray-900 text-white">
+    <main className="flex flex-col items-center justify-center min-h-screen ">
       {!roomId ? (
         <>
+            <GameCostum 
+       currentBoard = {boardColor}
+       currentBall = {ballColor}
+       currentPaddle = {paddleColor}
+       currentDiff = {gameDiff}
+       setCurrentBall={setBallColor}
+       setCurrentBoard={setBoardColor}
+       setCurrentDiff={setGameDiff}
+       setCurrentPaddle={setPaddleColor}
+       />
           <button
-            className="px-6 py-3 bg-blue-600 rounded hover:bg-blue-700 transition"
+            className="px-6 py-3 bg-purple-600 rounded hover:bg-purple-800 cursor-pointer transition"
             onClick={handleJoin}
           >
-            Join Matchup
+            {MatchupText}
           </button>
           <p className="mt-4 text-lg">{status}</p>
         </>
       ) : (
         <div className="mt-6">
+      
           {gameState ? (
             <RemoteBoard
               gameState={gameState}
               role={role}
               userId={user?.id ?? null}
-              _boardColor="default"
-              _ballColor="default"
-              _paddleColor="default"
+              _boardColor={boardColor}
+              _ballColor={ballColor}
+              _paddleColor={paddleColor}
               winnerMessage={gameOver?.message ?? null}
               countdownRemaining={countdown}
             />
           ) : (
             <div className="relative w-[800px] h-[500px] bg-black overflow-hidden border-2 border-white">
-              <p className="absolute inset-0 flex items-center justify-center text-white">Waiting for game state...</p>
+              <p className="absolute inset-0 flex items-center justify-center text-white">Waiting for game state</p>
             </div>
           )}
 
-          {/* Info overlay */}
-          <p className="absolute top-0 left-1/2 -translate-x-1/2 text-white mt-2">
+          {/* <p className="absolute top-0 left-1/2 -translate-x-1/2 text-white mt-2">
             Room: {roomId} | Role: {role}
-          </p>
+          </p> */}
         </div>
       )}
     </main>

@@ -129,7 +129,7 @@ export default function RemoteBoard({
         {/* Countdown overlay (higher priority) */}
         {countdownRemaining != null && (
           <div className="absolute inset-0 w-full h-full flex flex-col items-center justify-center z-40">
-            <p className="text-white font-extrabold text-[8vw] z-50 text-center">Resuming in {countdownRemaining}...</p>
+            <p className="text-white font-extrabold text-[8vw] z-50 text-center"> {countdownRemaining}</p>
           </div>
         )}
 

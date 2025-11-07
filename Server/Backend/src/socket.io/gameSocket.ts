@@ -18,7 +18,7 @@ interface GameRoom {
   loop?: ReturnType<typeof setInterval> | null;
 }
 
-const matchmakingQueue: UserSocket[] = [];
+let matchmakingQueue: UserSocket[] = [];
 const activeRooms: Record<string, GameRoom> = {};
 
 export function registerGameSocket(io: Server, socket: UserSocket) {
@@ -26,11 +26,27 @@ export function registerGameSocket(io: Server, socket: UserSocket) {
     console.log(`🎮 ${socket.user.username} joined matchmaking`);
 
     // Add to queue
-    matchmakingQueue.push(socket);
-    socket.emit("waiting", { message: "Searching for opponent..." });
 
+    const alreadyInQueue = matchmakingQueue.some(
+      (s) => s.id === socket.id
+    );
+  
+    if (alreadyInQueue) {
+      console.log(`⚠️ ${socket.user.username} already in matchmaking, stopping...`);
+      socket.emit("stopmatchmaking", { message: "Matchmaking cancelled" });
+      // Optionally remove from queue
+      matchmakingQueue = matchmakingQueue.filter((s) => s.id !== socket.id);
+      return;
+    }
+  
+    // Add to queue
+    matchmakingQueue.push(socket);
+    socket.emit("waiting", { message: "searching for opponent" });
+  
     // Match with first different user
-    const opponent = matchmakingQueue.find((s) => s.user.id !== socket.user.id);
+    const opponent = matchmakingQueue.find(
+      (s) => s.user.id !== socket.user.id
+    );
     if (!opponent) return;
 
     const roomId = `room-${uuidv4()}`;
@@ -242,8 +258,8 @@ function startGameLoop(io: Server, room: GameRoom) {
       const rightScore = room.scores[rightPlayer.user.id] ?? 0;
 
       if ((leftScore > 5 || rightScore > 5) && Math.abs(leftScore - rightScore) >= 2) {
-        const winner = leftScore > rightScore ? leftPlayer.user.username : rightPlayer.user.username;
-        io.to(room.id).emit("gameOver", { message: `${winner} wins!` });
+        const loser = leftScore < rightScore ? leftPlayer.user.username : rightPlayer.user.username;
+        io.to(room.id).emit("gameOver", { message: `${loser} is underdog!` });
         // ensure countdown cleared and do not restart
         try { clearInterval(countdownInterval); } catch {}
         delete activeRooms[room.id];
