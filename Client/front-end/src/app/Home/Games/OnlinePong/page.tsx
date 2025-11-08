@@ -126,7 +126,19 @@ export default function Page() {
     setMatchupText("Cancel Matchup");
     setStatus("Searching for opponent...");
   };
-
+  useEffect(() => {
+    if (!socket) return;
+  
+    const handleBeforeUnload = () => {
+      if (roomId) socket.disconnect();
+    };
+  
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => {
+      if (roomId) socket.disconnect();
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+    };
+  }, [socket, roomId]);
   return (
     <main className="flex flex-col items-center justify-center min-h-screen ">
       {!roomId ? (
