@@ -273,7 +273,7 @@ export default function Board({
           : "#0A0F2A",
     }}
   >
-      <div ref={boardRef} className="relative w-full h-full">
+      <div ref={boardRef} className="relative w-full h-full ">
       {showVictoryVideo && (
   <div className="absolute inset-0 w-full h-full flex flex-col items-center justify-center z-40">
     <video
