@@ -154,7 +154,10 @@ export default function Page() {
   // re-registering handlers on every render.
   const keysRefMap = useRef<Record<string, boolean>>({ ArrowUp: false, ArrowDown: false });
   const repeatRef = useRef<number | null>(null);
-
+  const HandleRePlay = () =>
+  {
+    window.location.reload();
+  }
 
   // Join matchmaking
   const handleJoin = () => {
@@ -202,7 +205,7 @@ export default function Page() {
           <p className="mt-4 text-lg">{status}</p>
         </>
       ) : (
-        <div className="mt-6">
+        <div className="mt-6 flex gap-8 flex-col">
       
           {gameState ? (
             <RemoteBoard
@@ -220,7 +223,14 @@ export default function Page() {
               <p className="absolute inset-0 flex items-center justify-center text-white">Waiting for game state</p>
             </div>
           )}
-
+          {
+            (gameOver &&
+            <>
+              <button className="bg-purple-700 hover:bg-purple-950 transition-transform cursor-pointer font-bold  m-auto rounded-xl text-white-smoke w-40 h-12" onClick={HandleRePlay}> RePlay </button>
+            </>
+            )
+            
+          }
           {/* <p className="absolute top-0 left-1/2 -translate-x-1/2 text-white mt-2">
             Room: {roomId} | Role: {role}
           </p> */}

@@ -139,7 +139,7 @@ export default function RemoteBoard({
             <video className="absolute top-0 left-0 w-full h-full object-cover z-0" autoPlay muted loop>
               <source src="/lost.mp4" type="video/mp4" />
             </video>
-            <p className="text-white font-extrabold text-[6vw] z-50 text-center">{winnerMessage}</p>
+            <p className="text-white font-extrabold text-[50px] z-50 text-center">{winnerMessage}</p>
           </div>
         )}
       </div>
