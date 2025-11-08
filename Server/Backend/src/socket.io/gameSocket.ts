@@ -196,8 +196,13 @@ function startGameLoop(io: Server, room: GameRoom) {
       ball.x += sx;
       ball.y += sy;
 
-      // Wall collision (top/bottom)
-      if (ball.y > 250 || ball.y < -250) ball.dy *= -1;
+      // Wall collision (top/bottom) - account for ball radius so the bounce
+      // occurs when the ball's outer edge (corner) hits the board limits,
+      // not when its center reaches them.
+      const boardHalfH = 250; // half the board height (visual: 500px)
+      if (ball.y > boardHalfH - ballRadius || ball.y < -boardHalfH + ballRadius) {
+        ball.dy *= -1;
+      }
 
       // Goal detection: if ball passes beyond playable area, award point to opponent
       const leftGoal = -400 - ballRadius; // require ball fully past left edge

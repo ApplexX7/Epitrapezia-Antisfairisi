@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useSocketStore } from "@/components/hooks/SocketIOproviders";
 import { useAuth } from "@/components/hooks/authProvider";
 import RemoteBoard from "../LocalPong/RemoteBoard";
@@ -50,6 +50,7 @@ export default function Page() {
   const [gameOver, setGameOver] = useState<GameOverPayload | null>(null);
   const [countdown, setCountdown] = useState<number | null>(null);
   let [MatchupText, setMatchupText] = useState("Join Matchup");
+  
   // Register socket listeners
   useEffect(() => {
     if (!socket) return;
@@ -100,20 +101,59 @@ export default function Page() {
   useEffect(() => {
     // Only bind key handlers once we're in a room and we know our role
     if (!socket || !roomId || !role) return;
+    // Instead of only sending on keydown (which is affected by the OS repeat
+    // delay and causes a brief pause before repeat), track key state and
+    // repeatedly emit movement while the key is held. This yields smooth,
+    // continuous paddle movement.
+    const keysRef = keysRefMap.current;
 
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "ArrowUp") {
-        const payload: MovePaddlePayload = { roomId, direction: "up" };
-        socket.emit("movePaddle", payload);
-      } else if (e.key === "ArrowDown") {
-        const payload: MovePaddlePayload = { roomId, direction: "down" };
-        socket.emit("movePaddle", payload);
+      if (e.key !== "ArrowUp" && e.key !== "ArrowDown") return;
+      // If this is the first keydown (no prior state), mark pressed and
+      // send an immediate move to avoid initial delay.
+      if (!keysRef[e.key]) {
+        keysRef[e.key] = true;
+        const direction = e.key === "ArrowUp" ? "up" : "down";
+        socket.emit("movePaddle", { roomId, direction } as MovePaddlePayload);
       }
+      // prevent default to avoid scrolling
+      e.preventDefault();
+    };
+
+    const handleKeyUp = (e: KeyboardEvent) => {
+      if (e.key !== "ArrowUp" && e.key !== "ArrowDown") return;
+      keysRef[e.key] = false;
+      e.preventDefault();
     };
 
     window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
+    window.addEventListener("keyup", handleKeyUp);
+
+    // Polling interval to re-emit moves while a key is held.
+    // 60ms is responsive without being excessive.
+    repeatRef.current = window.setInterval(() => {
+      if (!socket || !roomId) return;
+      if (keysRef["ArrowUp"]) socket.emit("movePaddle", { roomId, direction: "up" });
+      if (keysRef["ArrowDown"]) socket.emit("movePaddle", { roomId, direction: "down" });
+    }, 60);
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("keyup", handleKeyUp);
+      if (repeatRef.current) {
+        clearInterval(repeatRef.current);
+        repeatRef.current = null;
+      }
+      // reset key state
+      keysRef["ArrowUp"] = false;
+      keysRef["ArrowDown"] = false;
+    };
   }, [roomId, socket, role]);
+
+  // key state shared between handler and interval; kept in ref to avoid
+  // re-registering handlers on every render.
+  const keysRefMap = useRef<Record<string, boolean>>({ ArrowUp: false, ArrowDown: false });
+  const repeatRef = useRef<number | null>(null);
 
 
   // Join matchmaking
