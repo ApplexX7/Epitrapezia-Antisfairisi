@@ -6,18 +6,18 @@ type RemoteGameState = {
     paddles: Record<string, number>;
     playerOrder?: number[];
     scores?: Record<string, number>;
-    role: "left" | "right" | null;
-  };
+};
 type ScoreBarProps = {
     gameState: RemoteGameState;
     rightPlayer : string;
     leftPlayer : string;
+    role: "left" | "right" | null;
 
 };
 
 
 
-export default function RemoteScoreBoard({ gameState , rightPlayer , leftPlayer }:ScoreBarProps) {
+export default function RemoteScoreBoard({ gameState , rightPlayer , leftPlayer , role}:ScoreBarProps) {
   const playerOneName = "asedoun";
   const playerTwoName = "asedoun";
 
@@ -48,7 +48,7 @@ export default function RemoteScoreBoard({ gameState , rightPlayer , leftPlayer 
           style={{ left: `${imageWidth / 2 + 10}px` }}
         >
         {
-            gameState.role === "left" ?
+            role === "right" ?
             `${leftPlayer}` : 
             `${rightPlayer}`
         }
@@ -66,7 +66,7 @@ export default function RemoteScoreBoard({ gameState , rightPlayer , leftPlayer 
           style={{ right: `${imageWidth / 2 + 10}px` }}
         >
             {
-          gameState.role === "left" ?
+          role === "left" ?
             `${leftPlayer}` : 
             `${rightPlayer}`
         }

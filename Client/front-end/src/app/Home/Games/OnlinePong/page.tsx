@@ -207,6 +207,7 @@ const [opponentName, setOpponentName] = useState<string | null>(null);
           {gameState ? (
             <div>
             <RemoteScoreBoard 
+              role={role}
               gameState={gameState}
               rightPlayer={playerName ?? ""}
               leftPlayer={opponentName ?? ""}
