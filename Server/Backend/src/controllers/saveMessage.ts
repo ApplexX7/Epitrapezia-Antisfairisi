@@ -1,4 +1,4 @@
-// saveMessage.ts
+
 import {FastifyRequest, FastifyReply} from "fastify";
 import { db } from "../databases/db";
 

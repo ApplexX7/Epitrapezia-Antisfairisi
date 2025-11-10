@@ -42,137 +42,86 @@ export default function Home() {
     init();
   }, [user, accessToken]);
   
-useEffect(() => {
-  if (!socket) return;
-
-  const handleUsersList = (users: any[]) => {
-    const filtered = users.filter(u => u.id !== user.id);
-
-    setFriends(prev => {
-      const updatedFriends = prev.map(friend => ({
-        ...friend,
-        isOnline: filtered.some(u => u.id === friend.id),
-      }));
-
-      friendsRef.current = updatedFriends; 
-      setOnlineUsers(updatedFriends.filter(f => f.isOnline));
-      return updatedFriends;
-    });
-  };
-
-useEffect(() => {
-  if (!selectedChat || !user) return;
-
-  const fetchMessages = async () => {
-    try {
-      const recipient = friendsRef.current.find(f => f.username === selectedChat);
-      if (!recipient) return;
-
-      const { data } = await api.get("/message/history", {
-        params: { sender_id: user.id, receiver_id: recipient.id }
+  useEffect(() => {
+    if (!socket) return;
+  
+    const handleUsersList = (users: any[]) => {
+      const filtered = users.filter(u => u.id !== user.id);
+  
+      setFriends(prev => {
+        const updatedFriends = prev.map(friend => ({
+          ...friend,
+          isOnline: filtered.some(u => u.id === friend.id),
+        }));
+  
+        friendsRef.current = updatedFriends; 
+        setOnlineUsers(updatedFriends.filter(f => f.isOnline));
+        return updatedFriends;
       });
-
-      const messagesWithDate = data.map((msg: any) => ({
-        ...msg,
-        time: new Date(msg.created_at),
-        user: msg.sender_id === user.id ? "me" : "other"
-      }));
-
+    };
+  
+    
+    const handleChatMessage = (data: any) => {
+      const sender = friendsRef.current.find(f => f.id === data.from);
+      const senderUsername = sender ? sender.username : "Unknown";
+  
       setMessages(prev => ({
         ...prev,
-        [selectedChat]: messagesWithDate
+        [senderUsername]: [
+          ...(prev[senderUsername] || []),
+          {
+            id: `${data.from}-${new Date(data.time).getTime()}`,
+            text: data.text,
+            time: new Date(data.time),
+            user: data.from === user.id ? "me" : "other",
+          },
+        ],
       }));
+    };
+  
+    socket.on("users-list", handleUsersList);
+    socket.on("chat-message", handleChatMessage);
+  
+    return () => {
+      socket.off("users-list", handleUsersList);
+      socket.off("chat-message", handleChatMessage);
+    };
+  }, [socket, user]);
+  
 
-    } catch (err) {
-      console.error("Error fetching messages:", err);
-    }
-  };
-
-  fetchMessages();
-}, [selectedChat, user]);
-
-  const handleChatMessage = (data: any) => {
-    const sender = friendsRef.current.find(f => f.id === data.from);
-    const senderUsername = sender ? sender.username : "Unknown";
-
+  const handleSendMessage = () => {
+    if (!inputMessage.trim() || !selectedChat) return;
+  
+    const recipient = onlineUsers.find(u => u.username === selectedChat);
+    if (!recipient || !socket) return;
+  
+    const newMessage = {
+      id: `${user.id}-${new Date().getTime()}`,
+      text: inputMessage.trim(),
+      time: new Date(),
+      user: "me",
+    };
+  
     setMessages(prev => ({
       ...prev,
-      [senderUsername]: [
-        ...(prev[senderUsername] || []),
-        {
-          id: `${data.from}-${new Date(data.time).getTime()}`,
-          text: data.text,
-          time: new Date(data.time),
-          user: data.from === user.id ? "me" : "other",
-        },
-      ],
+      [selectedChat]: [...(prev[selectedChat] || []), newMessage],
     }));
-  };
-
-  socket.on("users-list", handleUsersList);
-  socket.on("chat-message", handleChatMessage);
-
-  return () => {
-    socket.off("users-list", handleUsersList);
-    socket.off("chat-message", handleChatMessage);
-  };
-}, [socket, user]); // ✓ Proper closing of first useEffect
   
+    try{
+      await api.post("/message/send", {
+        sender_id: user.id,
+        receiver_id: recipient.id,
+        content: inputMessage.trim(),
+      });
+      socket.emit("chat-message", { to: recipient.id, text: inputMessage.trim() });
 
-const handleSendMessage = async () => {
-  console.log("🚀 handleSendMessage called");
-  console.log("Input:", { inputMessage, selectedChat });
+    }catch{
+      console.error("Error sending message: ", err);
+    }
+
   
-  if (!inputMessage.trim() || !selectedChat) {
-    console.log("❌ Empty message or no chat selected");
-    return;
-  }
-
-  const recipient = onlineUsers.find(u => u.username === selectedChat);
-  console.log("👤 Recipient found:", recipient);
-  
-  if (!recipient || !socket) {
-    console.log("❌ No recipient or socket");
-    return;
-  }
-
-  const newMessage = {
-    id: `${user.id}-${new Date().getTime()}`,
-    text: inputMessage.trim(),
-    time: new Date(),
-    user: "me",
+    setInputMessage("");
   };
-
-  setMessages(prev => ({
-    ...prev,
-    [selectedChat]: [...(prev[selectedChat] || []), newMessage],
-  }));
-
-  try{
-    console.log("📤 Sending to API:", {
-      sender_id: user.id,
-      receiver_id: recipient.id,
-      content: inputMessage.trim(),
-    });
-    
-    const response = await api.post("/message/send", {
-      sender_id: user.id,
-      receiver_id: recipient.id,
-      content: inputMessage.trim(),
-    });
-    
-    console.log("✅ API Response:", response.data);
-    
-    socket.emit("chat-message", { to: recipient.id, text: inputMessage.trim() });
-    console.log("✅ Socket message emitted");
-    
-  }catch(error: any){
-    console.error("❌ Error sending message:", error);
-    console.error("Error details:", error.response?.data);
-  }
-
-  setInputMessage("");
-};
   
 
   const handleKeyPress = (e) => {
