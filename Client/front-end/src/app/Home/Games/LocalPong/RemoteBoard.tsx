@@ -43,9 +43,7 @@ export default function RemoteBoard({
   const rightOffset = rightId ? paddles[rightId] ?? 0 : ownIdStr && role === "right" ? paddles[ownIdStr] ?? 0 : Object.values(paddles)[1] ?? 0;
 
   // Scores
-  const scores = gameState.scores ?? {};
-  const leftScore = leftId ? scores[String(leftId)] ?? 0 : 0;
-  const rightScore = rightId ? scores[String(rightId)] ?? 0 : 0;
+
 
   return (
     <div
@@ -122,9 +120,6 @@ export default function RemoteBoard({
           }}
         ></div>
 
-        {/* Scores */}
-        <div className="absolute left-4 top-4 text-white z-30 font-bold text-2xl">{leftScore}</div>
-        <div className="absolute right-4 top-4 text-white z-30 font-bold text-2xl">{rightScore}</div>
 
         {/* Countdown overlay (higher priority) */}
         {countdownRemaining != null && (
