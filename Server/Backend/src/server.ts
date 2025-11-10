@@ -1,7 +1,7 @@
 import fastify, { FastifyInstance, RouteHandlerMethod } from "fastify";
 import { Server as IOServer, Socket } from "socket.io";
 import { registerSocketHandlers } from "./socket.io";
-import rateLimit from  '@fastify/rate-limit'
+import rateLimit from  '@fastify/rate-limit';
 
 export class Server {
   private static readonly port = 8080;
