@@ -69,9 +69,9 @@ export function registerGameSocket(io: Server, socket: UserSocket) {
       loop: null,
     };
 
-    activeRooms[roomId] = room;
-    matchmakingQueue.splice(matchmakingQueue.indexOf(socket), 1);
-    matchmakingQueue.splice(matchmakingQueue.indexOf(opponent), 1);
+  activeRooms[roomId] = room;
+  // Remove both participants from the queue safely (avoid splice(-1,1) edge case)
+  matchmakingQueue = matchmakingQueue.filter((s) => s.id !== socket.id && s.id !== opponent.id);
 
     socket.join(roomId);
     opponent.join(roomId);
@@ -117,6 +117,13 @@ export function registerGameSocket(io: Server, socket: UserSocket) {
     const room = activeRooms[roomId];
     if (!room) return;
 
+    // Ensure the sender is actually a participant in this room
+    const isParticipant = room.players.some((p) => p.user.id === socket.user.id);
+    if (!isParticipant) {
+      console.warn(`Unauthorized movePaddle from user ${socket.user?.username} for room ${roomId}`);
+      return;
+    }
+
     const current = room.paddles[socket.user.id] ?? 0;
     const step = room.paddleStep ?? 24;
     let next = current;
@@ -134,6 +141,10 @@ export function registerGameSocket(io: Server, socket: UserSocket) {
     for (const [id, room] of Object.entries(activeRooms)) {
       if (room.players.includes(socket)) {
         io.to(id).emit("gameOver", { message: `${socket.user.username} disconnected` });
+        // clear any running loop for this room to avoid leaked intervals
+        try {
+          if (room.loop) clearInterval(room.loop as any);
+        } catch (e) {}
         delete activeRooms[id];
       }
     }
@@ -252,7 +263,7 @@ function startGameLoop(io: Server, room: GameRoom) {
 
     if (scored) {
       // Pause the loop and send a 3-second countdown to clients
-      clearInterval(interval);
+      try { if (room.loop) clearInterval(room.loop as any); } catch (e) {}
       room.loop = null;
 
       // Send immediate updated gameState with ball centered
@@ -310,8 +321,13 @@ function startGameLoop(io: Server, room: GameRoom) {
     });
   }, 1000 / 60);
 
+  // keep a reference on the room for cleanup and allow disconnect handler to clear it
+  room.loop = interval;
+
   // Stop loop on disconnect
   room.players.forEach((s) => {
-    s.once("disconnect", () => clearInterval(interval));
+    s.once("disconnect", () => {
+      try { if (room.loop) clearInterval(room.loop as any); } catch (e) {}
+    });
   });
 }
