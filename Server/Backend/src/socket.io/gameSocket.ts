@@ -5,6 +5,7 @@ interface UserSocket extends Socket {
   user: {
     id: number;
     username: string;
+    avatar: string;
   };
 }
 
@@ -71,13 +72,20 @@ export function registerGameSocket(io: Server, socket: UserSocket) {
     matchmakingQueue.splice(matchmakingQueue.indexOf(socket), 1);
     matchmakingQueue.splice(matchmakingQueue.indexOf(opponent), 1);
 
-    // Join room
     socket.join(roomId);
     opponent.join(roomId);
 
-    // Emit matched
-    socket.emit("matched", { opponent: opponent.user.username, role: "left", roomId });
-    opponent.emit("matched", { opponent: socket.user.username, role: "right", roomId });
+    socket.emit("matched", { 
+      opponent: { id: opponent.user.id, username: opponent.user.username, avatar: opponent.user.avatar },
+      role: "left",
+      roomId 
+    });
+    
+    opponent.emit("matched", { 
+      opponent: { id: socket.user.id, username: socket.user.username, avatar: socket.user.avatar },
+      role: "right",
+      roomId 
+    });
 
     console.log(`🏓 Room created: ${roomId} (${socket.user.username} vs ${opponent.user.username})`);
 

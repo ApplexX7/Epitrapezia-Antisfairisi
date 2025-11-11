@@ -7,7 +7,11 @@ import RemoteBoard from "../LocalPong/RemoteBoard";
 import GameCostum from "./GameCostum";
 import RemoteScoreBoard from "./RemoteScoreBoard"
 type MatchedPayload = {
-  opponent: string;
+  opponent: {
+    id: number;
+    username: string;
+    avatar: string;
+  };
   roomId: string;
   role: "left" | "right";
 };
@@ -40,6 +44,7 @@ export default function Page() {
   const { socket, isConnected } = useSocketStore();
   const [playerName, setPlayerName] = useState<string | null>(null);
 const [opponentName, setOpponentName] = useState<string | null>(null);
+const [opponentAvatar, setOpponentAvatar] = useState<string | null>(null);
   const { user } = useAuth();
   useEffect(() => {
     if (user?.username) {
@@ -63,8 +68,9 @@ const [opponentName, setOpponentName] = useState<string | null>(null);
       setStatus(`⏳ ${payload.message}`);
 
     const handleMatched = (payload: MatchedPayload) => {
-      setStatus(`✅ Matched with ${payload.opponent}`);
-      setOpponentName(payload.opponent);
+      setStatus(`✅ Matched with ${payload.opponent.username}`);
+      setOpponentName(payload.opponent.username);
+      setOpponentAvatar(payload.opponent.avatar);
       setRoomId(payload.roomId);
       setRole(payload.role);
     };
@@ -206,12 +212,18 @@ const [opponentName, setOpponentName] = useState<string | null>(null);
       
           {gameState ? (
             <div>
-            <RemoteScoreBoard 
-              role={role}
-              gameState={gameState}
-              rightPlayer={playerName ?? ""}
-              leftPlayer={opponentName ?? ""}
-            />
+       <RemoteScoreBoard
+  role={role}
+  gameState={gameState}
+  leftPlayer={role === "left" ? playerName ?? "" : opponentName ?? ""}
+  rightPlayer={role === "right" ? playerName ?? "" : opponentName ?? ""}
+  leftAvatar={role === "left" ? user?.avatar ?? "/images/player2.png" : opponentAvatar ?? "/images/player2.png"}
+  rightAvatar={role === "right" ? user?.avatar ?? "/images/player2.png" : opponentAvatar ?? "/images/player2.png"}
+/>
+
+
+
+
 
             <RemoteBoard
               gameState={gameState}
