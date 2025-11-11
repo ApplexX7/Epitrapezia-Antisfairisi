@@ -1,5 +1,6 @@
 import { Server, Socket } from "socket.io";
 import { v4 as uuidv4 } from "uuid";
+import { db } from "../databases/db";
 
 interface UserSocket extends Socket {
   user: {
@@ -23,7 +24,7 @@ let matchmakingQueue: UserSocket[] = [];
 const activeRooms: Record<string, GameRoom> = {};
 
 export function registerGameSocket(io: Server, socket: UserSocket) {
-  socket.on("joinmatchup", () => {
+  socket.on("joinmatchup", async () => {
     console.log(`🎮 ${socket.user.username} joined matchmaking`);
 
     // Add to queue
@@ -50,7 +51,7 @@ export function registerGameSocket(io: Server, socket: UserSocket) {
     );
     if (!opponent) return;
 
-    const roomId = `room-${uuidv4()}`;
+  const roomId = `room-${uuidv4()}`;
     const room: GameRoom = {
       id: roomId,
       players: [socket, opponent],
@@ -75,14 +76,34 @@ export function registerGameSocket(io: Server, socket: UserSocket) {
     socket.join(roomId);
     opponent.join(roomId);
 
+    // Fetch avatars from DB (token payload doesn't include avatar) and fallback to default
+    const getAvatar = (userId: number) => new Promise<string>((resolve) => {
+      db.get(
+        "SELECT avatar FROM players WHERE id = ?",
+        [userId],
+        (err: any, row: any) => {
+          if (err) {
+            console.error("Error fetching avatar for user", userId, err?.message || err);
+            return resolve("/images/player2.png");
+          }
+          resolve((row && row.avatar) ? row.avatar : "/images/player2.png");
+        }
+      );
+    });
+
+    const [socketAvatar, opponentAvatar] = await Promise.all([
+      getAvatar(socket.user.id),
+      getAvatar(opponent.user.id),
+    ]);
+
     socket.emit("matched", { 
-      opponent: { id: opponent.user.id, username: opponent.user.username, avatar: opponent.user.avatar },
+      opponent: { id: opponent.user.id, username: opponent.user.username, avatar: opponentAvatar },
       role: "left",
       roomId 
     });
     
     opponent.emit("matched", { 
-      opponent: { id: socket.user.id, username: socket.user.username, avatar: socket.user.avatar },
+      opponent: { id: socket.user.id, username: socket.user.username, avatar: socketAvatar },
       role: "right",
       roomId 
     });
