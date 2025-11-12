@@ -77,6 +77,29 @@ export function createOTPTable() {
     );
 }
 
+export function createGameStats() {
+    db.run(
+        `CREATE TABLE IF NOT EXISTS game_stats (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            player_id INTEGER NOT NULL UNIQUE,
+            total_games INTEGER DEFAULT 0,
+            wins INTEGER DEFAULT 0,
+            losses INTEGER DEFAULT 0,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (player_id) REFERENCES players(id) ON DELETE CASCADE
+        )`,
+        (err) => {
+            if (err) {
+                console.error("Error creating game_stats table:", err.message);
+            } else {
+                console.log('Table "game_stats" created or already exists.');
+            }
+        }
+    );
+}
+
+
 export function createTable(){
     db.run(
         `CREATE TABLE IF NOT EXISTS players (
@@ -131,4 +154,5 @@ export function createsDbTabes(){
     createUserInfo();
     createFriendsTable();
     createTableMessage();
+    createGameStats();
 }
