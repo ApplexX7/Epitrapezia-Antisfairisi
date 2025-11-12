@@ -18,6 +18,7 @@ interface GameRoom {
   scores: { [userId: number]: number };
   paddleStep?: number;
   loop?: ReturnType<typeof setInterval> | null;
+  recorded?: boolean; // guard to avoid double-recording results
 }
 
 let matchmakingQueue: UserSocket[] = [];
@@ -141,6 +142,39 @@ export function registerGameSocket(io: Server, socket: UserSocket) {
     for (const [id, room] of Object.entries(activeRooms)) {
       if (room.players.includes(socket)) {
         io.to(id).emit("gameOver", { message: `${socket.user.username} disconnected` });
+        // mark result: other player wins (best-effort)
+        try {
+          const other = room.players.find((p) => p.id !== socket.id);
+          if (other && !room.recorded) {
+            // record winner=other, loser=socket
+            (async () => {
+              try {
+                await ensureGameStatsForPlayer(other.user.id);
+                await ensureGameStatsForPlayer(socket.user.id);
+                await new Promise<void>((resolve, reject) => {
+                  db.run(
+                    `UPDATE game_stats SET total_games = total_games + 1, wins = wins + 1, updated_at = CURRENT_TIMESTAMP WHERE player_id = ?`,
+                    [other.user.id],
+                      (err: any) => (err ? reject(err) : resolve())
+                  );
+                });
+                await new Promise<void>((resolve, reject) => {
+                  db.run(
+                    `UPDATE game_stats SET total_games = total_games + 1, losses = losses + 1, updated_at = CURRENT_TIMESTAMP WHERE player_id = ?`,
+                    [socket.user.id],
+                      (err: any) => (err ? reject(err) : resolve())
+                  );
+                });
+                room.recorded = true;
+              } catch (e) {
+                console.error('Error recording disconnect result (top-level) for room', id, e);
+              }
+            })();
+          }
+        } catch (e) {
+          console.error('Error handling disconnect for room', id, e);
+        }
+
         // clear any running loop for this room to avoid leaked intervals
         try {
           if (room.loop) clearInterval(room.loop as any);
@@ -315,16 +349,17 @@ function startGameLoop(io: Server, room: GameRoom) {
               db.run(
                 `UPDATE game_stats SET total_games = total_games + 1, wins = wins + 1, updated_at = CURRENT_TIMESTAMP WHERE player_id = ?`,
                 [winnerId],
-                (err) => (err ? reject(err) : resolve())
+                  (err: any) => (err ? reject(err) : resolve())
               );
             });
             await new Promise<void>((resolve, reject) => {
               db.run(
                 `UPDATE game_stats SET total_games = total_games + 1, losses = losses + 1, updated_at = CURRENT_TIMESTAMP WHERE player_id = ?`,
                 [loserId],
-                (err) => (err ? reject(err) : resolve())
+                  (err: any) => (err ? reject(err) : resolve())
               );
             });
+            room.recorded = true;
           } catch (e) {
             console.error('Failed to record match result for room', room.id, e);
           }
@@ -368,16 +403,17 @@ function startGameLoop(io: Server, room: GameRoom) {
             db.run(
               `UPDATE game_stats SET total_games = total_games + 1, wins = wins + 1, updated_at = CURRENT_TIMESTAMP WHERE player_id = ?`,
               [winnerId],
-              (err) => (err ? reject(err) : resolve())
+              (err: any) => (err ? reject(err) : resolve())
             );
           });
           await new Promise<void>((resolve, reject) => {
             db.run(
               `UPDATE game_stats SET total_games = total_games + 1, losses = losses + 1, updated_at = CURRENT_TIMESTAMP WHERE player_id = ?`,
               [loserId],
-              (err) => (err ? reject(err) : resolve())
+              (err: any) => (err ? reject(err) : resolve())
             );
           });
+            room.recorded = true;
         }
       } catch (e) {
         console.error('Error recording disconnect result for room', room.id, e);
