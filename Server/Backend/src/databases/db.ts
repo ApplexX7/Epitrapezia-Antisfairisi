@@ -99,6 +99,23 @@ export function createGameStats() {
     );
 }
 
+export function ensureGameStatsForPlayer(playerId: number): Promise<void> {
+    return new Promise((resolve, reject) => {
+        db.run(
+            `INSERT OR IGNORE INTO game_stats (player_id, total_games, wins, losses) VALUES (?, 0, 0, 0)`,
+            [playerId],
+            (err) => {
+                if (err) {
+                    console.error(`Error ensuring game_stats for player ${playerId}:`, err.message);
+                    reject(err);
+                } else {
+                    resolve();
+                }
+            }
+        );
+    });
+}
+
 
 export function createTable(){
     db.run(

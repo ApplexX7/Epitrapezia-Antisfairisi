@@ -1,6 +1,6 @@
 import { Server, Socket } from "socket.io";
 import { v4 as uuidv4 } from "uuid";
-import { db } from "../databases/db";
+import { db, ensureGameStatsForPlayer } from "../databases/db";
 
 interface UserSocket extends Socket {
   user: {
@@ -303,6 +303,33 @@ function startGameLoop(io: Server, room: GameRoom) {
       const rightScore = room.scores[rightPlayer.user.id] ?? 0;
 
       if ((leftScore > 5 || rightScore > 5) && Math.abs(leftScore - rightScore) >= 2) {
+        const winnerId = leftScore > rightScore ? leftPlayer.user.id : rightPlayer.user.id;
+        const loserId = leftScore > rightScore ? rightPlayer.user.id : leftPlayer.user.id;
+
+        // record match result in DB (best-effort)
+        (async () => {
+          try {
+            await ensureGameStatsForPlayer(winnerId);
+            await ensureGameStatsForPlayer(loserId);
+            await new Promise<void>((resolve, reject) => {
+              db.run(
+                `UPDATE game_stats SET total_games = total_games + 1, wins = wins + 1, updated_at = CURRENT_TIMESTAMP WHERE player_id = ?`,
+                [winnerId],
+                (err) => (err ? reject(err) : resolve())
+              );
+            });
+            await new Promise<void>((resolve, reject) => {
+              db.run(
+                `UPDATE game_stats SET total_games = total_games + 1, losses = losses + 1, updated_at = CURRENT_TIMESTAMP WHERE player_id = ?`,
+                [loserId],
+                (err) => (err ? reject(err) : resolve())
+              );
+            });
+          } catch (e) {
+            console.error('Failed to record match result for room', room.id, e);
+          }
+        })();
+
         const loser = leftScore < rightScore ? leftPlayer.user.username : rightPlayer.user.username;
         io.to(room.id).emit("gameOver", { message: `${loser} is underdog!` });
         // ensure countdown cleared and do not restart
@@ -326,8 +353,35 @@ function startGameLoop(io: Server, room: GameRoom) {
 
   // Stop loop on disconnect
   room.players.forEach((s) => {
-    s.once("disconnect", () => {
+    s.once("disconnect", async () => {
       try { if (room.loop) clearInterval(room.loop as any); } catch (e) {}
+      // Determine winner (the other player) and record result
+      try {
+        const disconnected = s;
+        const other = room.players.find(p => p.id !== disconnected.id);
+        if (other) {
+          const winnerId = other.user.id;
+          const loserId = disconnected.user.id;
+          await ensureGameStatsForPlayer(winnerId);
+          await ensureGameStatsForPlayer(loserId);
+          await new Promise<void>((resolve, reject) => {
+            db.run(
+              `UPDATE game_stats SET total_games = total_games + 1, wins = wins + 1, updated_at = CURRENT_TIMESTAMP WHERE player_id = ?`,
+              [winnerId],
+              (err) => (err ? reject(err) : resolve())
+            );
+          });
+          await new Promise<void>((resolve, reject) => {
+            db.run(
+              `UPDATE game_stats SET total_games = total_games + 1, losses = losses + 1, updated_at = CURRENT_TIMESTAMP WHERE player_id = ?`,
+              [loserId],
+              (err) => (err ? reject(err) : resolve())
+            );
+          });
+        }
+      } catch (e) {
+        console.error('Error recording disconnect result for room', room.id, e);
+      }
     });
   });
 }
