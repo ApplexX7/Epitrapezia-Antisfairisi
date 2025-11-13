@@ -2,7 +2,7 @@ import { FastifyRequest, FastifyReply } from "fastify";
 import axios from "axios";
 import { OAuth2Client } from "google-auth-library";
 import bcrypt from "bcrypt";
-import { db } from "../databases/db";
+import { db, ensureGameStatsForPlayer } from "../databases/db";
 import { playerExist } from "../modules/playerExist";
 import { generateRefreshToken } from "../modules/generateTokens";
 import { storeRefrechTokenInDb } from "../modules/storeRefreshTokenInDb";
@@ -99,7 +99,13 @@ export async function GoogleAuthCallback(req: FastifyRequest, reply: FastifyRepl
         auth_Provider: "google",
       };
     }
-
+    // added by moniam
+    try {
+      await ensureGameStatsForPlayer(user.id);
+    } catch (e) {
+      console.error('Could not ensure game_stats for user', user.id, e);
+    }
+    // ebd
     const appRefreshToken = generateRefreshToken(user);
     await storeRefrechTokenInDb(appRefreshToken, user);
 

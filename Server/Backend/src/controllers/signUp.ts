@@ -1,7 +1,7 @@
 import { FastifyRequest, FastifyReply } from "fastify";
 import { playerExist } from '../modules/playerExist'
 import bcrypt from 'bcrypt';
-import { db } from '../databases/db'
+import { db, ensureGameStatsForPlayer } from '../databases/db'
 import fastifyCookie from "@fastify/cookie";
 import { Server } from "../server";
 import { saveOTP, generateOTP, sendVerificationEmail } from "../modules/generateOtp";
@@ -40,6 +40,13 @@ export function SignUp() {
         );
       });
 
+      // added by moneim
+      try {
+        await ensureGameStatsForPlayer(userId);
+      } catch (e) {
+        console.error('Could not create initial game_stats row for user', userId, e);
+      }
+      // end
       const otp = generateOTP();
       const expiredAt = new Date();
       expiredAt.setMinutes(expiredAt.getMinutes() + 10);

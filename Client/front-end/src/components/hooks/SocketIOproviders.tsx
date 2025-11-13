@@ -32,7 +32,13 @@ export const useSocketStore = create<SocketStore>((set, get) => ({
   initSocket: (user: User, token: string) => {
     if (get().socket) return;
 
-    const socket = io("", {
+    const URL = process.env.NEXT_PUBLIC_BACKEND_URL || 
+      (typeof window !== 'undefined' ? window.location.origin : "http://server:8080");
+    
+    console.log("🔌 Initializing socket with URL:", URL);
+    console.log("👤 User:", user.username);
+    
+    const socket = io(URL, {
       path: "/socket/",
       transports: ["websocket"],
       auth: { token },
@@ -42,6 +48,11 @@ export const useSocketStore = create<SocketStore>((set, get) => ({
     socket.on("connect", () => {
       console.log("🟢 Socket connected:", socket.id);
       set({ isConnected: true });
+    });
+
+    socket.on("connect_error", (err) => {
+      console.error("❌ Socket connection error:", err.message);
+      set({ isConnected: false });
     });
 
     socket.on("disconnect", () => {

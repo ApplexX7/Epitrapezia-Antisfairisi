@@ -1,6 +1,7 @@
 import { Server } from "socket.io";
 import { registerChatSocket } from "./chatSocket";
 import { registerNotifSocket } from "./notifSocket";
+import { registerGameSocket } from "./gameSocket";
 import jwt from "jsonwebtoken";
 
 interface UserPayload {
@@ -40,10 +41,10 @@ export function registerSocketHandlers(io: Server) {
       username: onlineUsers[Number(id)][0].user.username,
     }));
     io.emit("users-list", usersList);
-  
+
     registerChatSocket(io, socket, onlineUsers);
     registerNotifSocket(io, socket, onlineUsers);
-  
+    registerGameSocket(io, socket);
     socket.on("disconnect", () => {
       onlineUsers[user.id] = onlineUsers[user.id].filter(s => s.id !== socket.id);
       if (onlineUsers[user.id].length === 0) delete onlineUsers[user.id];
