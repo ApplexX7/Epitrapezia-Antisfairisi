@@ -14,7 +14,7 @@ export const useSocketStore = create<SocketStore>((set, get) => ({
   isConnected: false,
 
   initSocket: (user: User, token: string) => {
-    if (get().socket) return; 
+    // if (get().socket) return; 
 
     const socket = io("", {
       path: "/socket/",

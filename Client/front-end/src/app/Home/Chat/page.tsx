@@ -7,6 +7,7 @@ import { useAuth } from "@/components/hooks/authProvider";
 import { useSocketStore } from "@/components/hooks/SocketIOproviders";
 import { User } from "@/components/hooks/authProvider";
 import api from "@/lib/axios";
+import { send } from "process";
 
 export default function Home() {
   const [messages, setMessages] = useState({});
@@ -27,6 +28,28 @@ export default function Home() {
   });
   
 
+useEffect(() => {
+  async function fetchHistory() {
+    if (!selectedChat) 
+      return;
+    const recipient = onlineUsers.find(u => u.username === selectedChat);
+    if (!recipient) 
+      return;
+    try {
+      const result = await api.get("/message/history", {
+        params: {
+          sender_id: user.id,
+          receiver_id: recipient.id,
+        },
+      });
+    } catch (err) {
+      console.error("Error fetching message history:", err);
+    }
+  }
+  fetchHistory();
+}, [selectedChat, onlineUsers]);
+
+
   useEffect(() => {
     async function init() {
       if (!user) return;
@@ -40,8 +63,41 @@ export default function Home() {
       }
     }
     init();
-  }, [user, accessToken]);
+  }, [user, accessToken])
+
+
+    const handleSendMessage = async () => {
+    if (!inputMessage.trim() || !selectedChat) return;
   
+    const recipient = onlineUsers.find(u => u.username === selectedChat);
+    if (!recipient || !socket) return;
+  
+    const newMessage = {
+      id: `${user.id}-${new Date().getTime()}`,
+      text: inputMessage.trim(),
+      time: new Date(),
+      user: "me",
+    };
+  
+    setMessages(prev => ({
+      ...prev,
+      [selectedChat]: [...(prev[selectedChat] || []), newMessage],
+    }));
+  
+    try{
+      await api.post("/message/send", {
+        sender_id: user.id,
+        receiver_id: recipient.id,
+        content: inputMessage.trim(),
+      });
+      socket.emit("chat-message", { to: recipient.id, text: inputMessage.trim() });
+
+      } catch (err) {
+        console.error("Error sending message:", err);
+      }
+    setInputMessage("");
+  };
+
   useEffect(() => {
     if (!socket) return;
   
@@ -61,7 +117,7 @@ export default function Home() {
     };
   
     
-    const handleChatMessage = (data: any) => {
+    const handleChatMessage =  (data: any) => {
       const sender = friendsRef.current.find(f => f.id === data.from);
       const senderUsername = sender ? sender.username : "Unknown";
   
@@ -88,42 +144,7 @@ export default function Home() {
     };
   }, [socket, user]);
   
-
-  const handleSendMessage = () => {
-    if (!inputMessage.trim() || !selectedChat) return;
   
-    const recipient = onlineUsers.find(u => u.username === selectedChat);
-    if (!recipient || !socket) return;
-  
-    const newMessage = {
-      id: `${user.id}-${new Date().getTime()}`,
-      text: inputMessage.trim(),
-      time: new Date(),
-      user: "me",
-    };
-  
-    setMessages(prev => ({
-      ...prev,
-      [selectedChat]: [...(prev[selectedChat] || []), newMessage],
-    }));
-  
-    try{
-      await api.post("/message/send", {
-        sender_id: user.id,
-        receiver_id: recipient.id,
-        content: inputMessage.trim(),
-      });
-      socket.emit("chat-message", { to: recipient.id, text: inputMessage.trim() });
-
-    }catch{
-      console.error("Error sending message: ", err);
-    }
-
-  
-    setInputMessage("");
-  };
-  
-
   const handleKeyPress = (e) => {
     if (e.key === 'Enter') {
       handleSendMessage();

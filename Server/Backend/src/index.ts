@@ -11,25 +11,6 @@ import { Message } from "./routers/message";
 
 createsDbTabes();
 
-// After createsDbTabes();
-db.get("SELECT name FROM sqlite_master WHERE type='table' AND name='message'", (err, row) => {
-  if (err) {
-    console.error("❌ Error checking message table:", err);
-  } else if (row) {
-    console.log("✅ Message table exists");
-    
-    // Check table structure
-    db.all("PRAGMA table_info(message)", (err, columns) => {
-      if (err) {
-        console.error("❌ Error getting table info:", err);
-      } else {
-        console.log("📋 Message table structure:", columns);
-      }
-    });
-  } else {
-    console.log("❌ Message table does NOT exist!");
-  }
-});
 const app = Server.instance();
 
 
@@ -76,23 +57,6 @@ async function bootstrap() {
 }
 
 bootstrap();
-// In index.ts after bootstrap()
-// app.get("/test-db", async (req, reply) => {
-//   try {
-//     // Test insert
-//     const testId = await saveMessage(1, 2, "Test message");
-//     console.log("Test message inserted with ID:", testId);
-    
-//     // Test select
-//     const messages = await getMessages(1, 2);
-//     console.log("Test messages retrieved:", messages);
-    
-//     return { success: true, testId, messages };
-//   } catch (error: any) {
-//     console.error("Test failed:", error);
-//     return { success: false, error: error.message };
-//   }
-// });
 friends();
 playerSettings();
 Message();
