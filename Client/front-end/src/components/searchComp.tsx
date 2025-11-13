@@ -46,7 +46,10 @@ export default function SearchCompo( { search }: { search: boolean }){
           }
         } catch (err : any) {
           console.error("Error updating friend status:", err);
-          const message = err || "Something went wrong ❌";
+          const message =
+            err?.response?.data?.message ||
+            err.message ||                  
+            "Something went wrong ❌"; 
           toast.error(message);
         }
       }

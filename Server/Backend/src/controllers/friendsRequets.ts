@@ -1,6 +1,7 @@
 import { FastifyRequest, FastifyReply } from "fastify";
 import { db } from "../databases/db";
 import { User } from "../interfaces/userInterface";
+import { Server } from "../server";
 
 export async function FriendRequest(req : FastifyRequest<{Body:{friendId : number}}>, reply : FastifyReply){    
     const { id } = (req as any).user as User;
@@ -29,6 +30,14 @@ export async function FriendRequest(req : FastifyRequest<{Body:{friendId : numbe
             (err) => {err ? reject(err) : resolve()}
             )
         });
+        const sender = await new Promise<any>((resolve, reject) => {
+            db.get(`SELECT username FROM users WHERE id = ?`, [id], (err, row) => err ? reject(err) : resolve(row));
+          });
+        const io = Server.socket();
+        io.to(String(friendId)).emit("friend:request", {
+            from: { id, username: sender.username },
+            message: `${sender.username} sent you a friend request`
+          });
         return reply.send({ success: true, message: "Friend request sent" });
     } catch(err){
         console.log(err);
