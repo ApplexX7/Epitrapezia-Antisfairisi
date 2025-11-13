@@ -12,13 +12,16 @@ import { useRouter } from "next/navigation"
 import { useAuth } from "./hooks/authProvider"
 import api from "@/lib/axios"
 import toast from "react-hot-toast"
+import { useSocketStore } from "./hooks/SocketIOproviders"
   
 export function NavigationMenuDemo() {
+    const disconnectSocket = useSocketStore((state) => state.disconnectSocket);
     const router = useRouter()
     const {clearAuth, user} = useAuth()
     async function handleLogout() {
       try {
         await api.post("/auth/logout");
+        disconnectSocket();
         clearAuth();
   
         toast.success(`Goodbye ${user?.username || ""}! 👋`, {

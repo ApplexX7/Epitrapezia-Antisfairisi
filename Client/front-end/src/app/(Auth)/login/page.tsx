@@ -9,12 +9,13 @@ import toast from "react-hot-toast";
 import {LoginButton} from "@/components/loginButton"
 import { useAuth } from "@/components/hooks/authProvider";
 import LoginPageWrapper from "@/components/LoginWrapComp";
-
+import { useSocketStore } from "@/components/hooks/SocketIOproviders";
 
 export default function Login() {
   const router = useRouter();
   const [failedLog, setFailedLog] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const initSocket = useSocketStore((state) => state.initSocket)
   const checkAuth = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const formData = new FormData(event.target as HTMLFormElement);
@@ -25,12 +26,14 @@ export default function Login() {
         const { accessToken } = res.data.token;
         const user = res.data.user;
         useAuth.getState().setAuth(user, accessToken);
+        initSocket(user, accessToken);
         toast.success(`Welcome back, ${user.username || "User"}! 👋`);
         router.push("/Home");
       } else {
         toast.error("Login failed: Invalid server response 😕");
         setFailedLog("Login failed: Invalid server response");
       }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       if (err.response) {
         toast.error(err.response.data?.message || "Incorrect credentials ❌");

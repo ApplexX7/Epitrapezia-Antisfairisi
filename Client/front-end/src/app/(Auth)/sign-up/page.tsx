@@ -7,7 +7,11 @@ import {InputLogin} from "@/components/LoginInput"
 import {LoginButton} from "@/components/loginButton"
 import LoginPageWrapper from "@/components/LoginWrapComp";
 import { InputOTPWithSeparator } from "@/components/InputOtp";
-import {isStrongPassword, getPasswordStrengthMessage, isValidUsername, getUsernameErrorMessage} from "@/lib/sanitize";
+import {isStrongPassword,
+  getPasswordStrengthMessage,
+  isValidUsername, 
+  getUsernameErrorMessage
+} from "@/lib/sanitize";
 import toast from "react-hot-toast";
 
 

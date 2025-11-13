@@ -25,7 +25,6 @@ api.interceptors.response.use(
         await useAuth.getState().refreshAuth();
         const token = useAuth.getState().accessToken;
         if (!token) throw new Error("No token after refresh");
-
         originalRequest.headers = originalRequest.headers ?? {};
         originalRequest.headers.Authorization = `Bearer ${token}`;
         return api(originalRequest);

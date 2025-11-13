@@ -38,8 +38,8 @@ services:
     volumes:
       - ./Server/Backend:/app
       - /app/node_modules  
-    environment:
-      - NODE_ENV=${MODE}
+    env_file:
+      - ./env/.env_api
     command: >
       sh -c "if [ \"$MODE\" = \"dev\" ]; then nodemon --watch src --exec ts-node src/index.ts; else node dist/index.js; fi"
     networks:
