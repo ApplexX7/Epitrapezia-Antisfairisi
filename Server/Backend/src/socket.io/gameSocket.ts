@@ -14,6 +14,8 @@ interface GameRoom {
   id: string;
   players: UserSocket[];
   ball: { x: number; y: number; dx: number; dy: number };
+  baseSpeed?: { dx: number; dy: number }; // magnitude and sign baseline for per-round speed growth
+  roundStart?: number; // timestamp when the current rally/round started
   paddles: { [userId: number]: number };
   scores: { [userId: number]: number };
   paddleStep?: number;
@@ -83,7 +85,9 @@ export function registerGameSocket(io: Server, socket: UserSocket) {
       id: roomId,
       players: [socket, opponent],
       // start with a slightly reduced ball speed compared to before
-      ball: { x: 0, y: 0, dx: 6, dy: 6 },
+        ball: { x: 0, y: 0, dx: 6, dy: 6 },
+        baseSpeed: { dx: 6, dy: 6 },
+        roundStart: Date.now(),
       paddles: {
         [socket.user.id]: 0,
         [opponent.user.id]: 0,
@@ -201,9 +205,29 @@ function startGameLoop(io: Server, room: GameRoom) {
     clearInterval(room.loop as any);
     room.loop = null;
   }
+  const SPEED_ADD_PER_SECOND = 0.2; // px per second added to each component's magnitude
 
   const interval = setInterval(() => {
     const { ball, paddles, players } = room;
+
+    // compute current per-round elapsed and derive the effective ball velocity
+    const now = Date.now();
+    const roundStart = room.roundStart ?? now;
+    const elapsedSec = Math.max(0, (now - roundStart) / 1000);
+    const addPerSec = SPEED_ADD_PER_SECOND;
+
+    // If baseSpeed isn't present (older rooms), fallback to using current ball values
+    if (!room.baseSpeed) room.baseSpeed = { dx: ball.dx, dy: ball.dy };
+
+    const base = room.baseSpeed;
+    // current effective magnitudes (additive growth over time)
+    const effDx = Math.sign(base.dx) * (Math.abs(base.dx) + elapsedSec * addPerSec);
+    const effDy = Math.sign(base.dy) * (Math.abs(base.dy) + elapsedSec * addPerSec);
+
+    // apply to the ball for this tick (we'll maintain baseSpeed separately)
+    ball.dx = effDx;
+    ball.dy = effDy;
+
     // Move the ball using sub-steps to avoid tunneling when speed is high.
     // This ensures collisions are detected even when dx/dy are large.
   const maxDelta = Math.max(Math.abs(ball.dx), Math.abs(ball.dy));
@@ -251,6 +275,8 @@ function startGameLoop(io: Server, room: GameRoom) {
           ball.x = leftCollisionX;
           ball.y = impactY;
           ball.dx = Math.abs(ball.dx);
+          // reflect baseSpeed sign so future additive growth keeps direction
+          if (room.baseSpeed) room.baseSpeed.dx = Math.abs(room.baseSpeed.dx);
           collided = true;
         }
       }
@@ -263,6 +289,7 @@ function startGameLoop(io: Server, room: GameRoom) {
           ball.x = rightCollisionX;
           ball.y = impactY;
           ball.dx = -Math.abs(ball.dx);
+          if (room.baseSpeed) room.baseSpeed.dx = -Math.abs(room.baseSpeed.dx);
           collided = true;
         }
       }
@@ -282,6 +309,7 @@ function startGameLoop(io: Server, room: GameRoom) {
       const boardHalfH = 250; // half the board height (visual: 500px)
       if (ball.y > boardHalfH - ballRadius || ball.y < -boardHalfH + ballRadius) {
         ball.dy *= -1;
+        if (room.baseSpeed) room.baseSpeed.dy *= -1;
       }
 
       // Goal detection: if ball passes beyond playable area, award point to opponent
@@ -326,8 +354,16 @@ function startGameLoop(io: Server, room: GameRoom) {
 
           // After countdown, slightly reduce ball speed and increase paddle speed
           const minSpeed = 4;
-          ball.dx = (ball.dx >= 0 ? 1 : -1) * Math.max(minSpeed, Math.abs(ball.dx) * 0.9);
-          ball.dy = (ball.dy >= 0 ? 1 : -1) * Math.max(minSpeed, Math.abs(ball.dy) * 0.9);
+            // Reduce the base speed magnitude so future rounds start a bit slower,
+            // then reset the round start so additive growth begins from zero elapsed.
+            if (!room.baseSpeed) room.baseSpeed = { dx: ball.dx, dy: ball.dy };
+            room.baseSpeed.dx = (room.baseSpeed.dx >= 0 ? 1 : -1) * Math.max(minSpeed, Math.abs(room.baseSpeed.dx) * 0.9);
+            room.baseSpeed.dy = (room.baseSpeed.dy >= 0 ? 1 : -1) * Math.max(minSpeed, Math.abs(room.baseSpeed.dy) * 0.9);
+            // reset round timer so growth restarts for the next rally
+            room.roundStart = Date.now();
+            // make ball reflect the new base speed immediately (no elapsed added yet)
+            ball.dx = room.baseSpeed.dx;
+            ball.dy = room.baseSpeed.dy;
 
           // Increase paddle responsiveness a bit
           room.paddleStep = Math.min(40, (room.paddleStep ?? 24) + 4);
