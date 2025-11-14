@@ -105,7 +105,7 @@ export default function Home() {
 
     } catch (err) {
       console.error("Error sending message:", err);
-      // ✅ OPTIONAL: Remove optimistic message on error
+      // optimistic message on error
       setMessages(prev => ({
         ...prev,
         [selectedChat]: prev[selectedChat].filter(m => m.id !== newMessage.id),
