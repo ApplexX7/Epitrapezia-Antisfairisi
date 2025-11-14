@@ -28,7 +28,6 @@ export default function Home() {
   });
   
 
-  // ✅ Fetch message history for ALL friends when they come online
   useEffect(() => {
     async function fetchAllHistory() {
       if (!user || onlineUsers.length === 0) 
@@ -59,7 +58,7 @@ export default function Home() {
 
       const results = await Promise.all(historyPromises);
       
-      // ✅ Merge with existing messages (don't overwrite)
+      // Merge with existing messages 
       setMessages(prev => {
         const newMessages = { ...prev };
         results.forEach(({ username, messages }) => {
@@ -76,44 +75,6 @@ export default function Home() {
     }
   }, [onlineUsers.length, user])
 
-
-  // ✅ Fetch history when selecting a specific chat (for immediate update)
-  // useEffect(() => {
-  //   async function fetchHistory() {
-  //     if (!selectedChat) return;
-
-  //     const recipient = onlineUsers.find(u => u.username === selectedChat);
-  //     if (!recipient) return;
-
-  //     try {
-  //       const { data } = await api.get("/message/history", {
-  //         params: {
-  //           sender_id: user.id,
-  //           receiver_id: recipient.id,
-  //         },
-  //       });
-
-  //       const formatted = data.map(msg => ({
-  //         id: msg.id,
-  //         text: msg.content,
-  //         time: new Date(msg.created_at),
-  //         user: msg.sender_id === user.id ? "me" : "other",
-  //       }));
-
-  //       setMessages(prev => ({
-  //         ...prev,
-  //         [selectedChat]: formatted,
-  //       }));
-
-  //     } catch (err) {
-  //       console.error("Error fetching message history:", err);
-  //     }
-  //   }
-
-  //   fetchHistory();
-  // }, [selectedChat, onlineUsers]);
-
-
   const handleSendMessage = async () => {
     if (!inputMessage.trim() || !selectedChat) return;
   
@@ -127,21 +88,19 @@ export default function Home() {
       user: "me",
     };
   
-    // ✅ Optimistically update UI
+    // Optimistically update UI
     setMessages(prev => ({
       ...prev,
       [selectedChat]: [...(prev[selectedChat] || []), newMessage],
     }));
   
     try {
-      // ✅ Save to backend (this persists the message)
       await api.post("/message/send", {
         sender_id: user.id,
         receiver_id: recipient.id,
         content: inputMessage.trim(),
       });
       
-      // ✅ Send via socket for real-time delivery
       socket.emit("chat-message", { to: recipient.id, text: inputMessage.trim() });
 
     } catch (err) {
