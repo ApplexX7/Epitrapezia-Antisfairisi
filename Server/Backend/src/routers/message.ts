@@ -2,13 +2,14 @@
 import { Server } from "../server"
 import { saveMessage } from "../controllers/saveMessage"
 import { getMessages } from "../controllers/getMessages";
+import { Sendmessagebody, Historyquery } from "../interfaces/Messages";
 
 export function Message() {
     Server.instance().post("/message/send", async(req, reply) => {
         console.log("📨 POST /message/send called");
         console.log("Request body:", req.body);
         
-        const {sender_id, receiver_id, content} = req.body as any;
+        const {sender_id, receiver_id, content} = req.body as Sendmessagebody;
         
         console.log("Parsed values:", { sender_id, receiver_id, content });
         
@@ -26,7 +27,7 @@ export function Message() {
         console.log("📖 GET /message/history called");
         console.log("Query params:", req.query);
         
-        const {sender_id, receiver_id} = req.query as any;
+        const {sender_id, receiver_id} = req.query as Historyquery;
         
         console.log("Parsed values:", { sender_id, receiver_id });
         

@@ -7,7 +7,6 @@ import { useAuth } from "@/components/hooks/authProvider";
 import { useSocketStore } from "@/components/hooks/SocketIOproviders";
 import { User } from "@/components/hooks/authProvider";
 import api from "@/lib/axios";
-import { send } from "process";
 
 export default function Home() {
   const [messages, setMessages] = useState({});
@@ -15,6 +14,7 @@ export default function Home() {
   const [inputMessage, setInputMessage] = useState("");
   const [isSearchActive, setIsSearchActive] = useState(false);
   const [showChatList, setShowChatList] = useState(false);
+  const [loadingHistory, setLoadingHistory] = useState(false);
   const searchRef = useRef(null);
   const { user, accessToken } = useAuth.getState();
   const { socket, initSocket } = useSocketStore();
@@ -28,27 +28,133 @@ export default function Home() {
   });
   
 
-useEffect(() => {
-  async function fetchHistory() {
-    if (!selectedChat) 
-      return;
-    const recipient = onlineUsers.find(u => u.username === selectedChat);
-    if (!recipient) 
-      return;
-    try {
-      const result = await api.get("/message/history", {
-        params: {
-          sender_id: user.id,
-          receiver_id: recipient.id,
-        },
-      });
-    } catch (err) {
-      console.error("Error fetching message history:", err);
-    }
-  }
-  fetchHistory();
-}, [selectedChat, onlineUsers]);
+  // ✅ Fetch message history for ALL friends when they come online
+  useEffect(() => {
+    async function fetchAllHistory() {
+      if (!user || onlineUsers.length === 0) 
+        return;
 
+      const historyPromises = onlineUsers.map(async (recipient) => {
+        try {
+          const { data } = await api.get("/message/history", {
+            params: {
+              sender_id: user.id,
+              receiver_id: recipient.id,
+            },
+          });
+
+          const formatted = data.map(msg => ({
+            id: msg.id,
+            text: msg.content,
+            time: new Date(msg.created_at),
+            user: msg.sender_id === user.id ? "me" : "other",
+          }));
+
+          return { username: recipient.username, messages: formatted };
+        } catch (err) {
+          console.error(`Error fetching history for ${recipient.username}:`, err);
+          return { username: recipient.username, messages: [] };
+        }
+      });
+
+      const results = await Promise.all(historyPromises);
+      
+      // ✅ Merge with existing messages (don't overwrite)
+      setMessages(prev => {
+        const newMessages = { ...prev };
+        results.forEach(({ username, messages }) => {
+          if (messages.length > 0) {
+            newMessages[username] = messages;
+          }
+        });
+        return newMessages;
+      });
+    }
+
+    if (onlineUsers.length > 0) {
+      fetchAllHistory();
+    }
+  }, [onlineUsers.length, user])
+
+
+  // ✅ Fetch history when selecting a specific chat (for immediate update)
+  // useEffect(() => {
+  //   async function fetchHistory() {
+  //     if (!selectedChat) return;
+
+  //     const recipient = onlineUsers.find(u => u.username === selectedChat);
+  //     if (!recipient) return;
+
+  //     try {
+  //       const { data } = await api.get("/message/history", {
+  //         params: {
+  //           sender_id: user.id,
+  //           receiver_id: recipient.id,
+  //         },
+  //       });
+
+  //       const formatted = data.map(msg => ({
+  //         id: msg.id,
+  //         text: msg.content,
+  //         time: new Date(msg.created_at),
+  //         user: msg.sender_id === user.id ? "me" : "other",
+  //       }));
+
+  //       setMessages(prev => ({
+  //         ...prev,
+  //         [selectedChat]: formatted,
+  //       }));
+
+  //     } catch (err) {
+  //       console.error("Error fetching message history:", err);
+  //     }
+  //   }
+
+  //   fetchHistory();
+  // }, [selectedChat, onlineUsers]);
+
+
+  const handleSendMessage = async () => {
+    if (!inputMessage.trim() || !selectedChat) return;
+  
+    const recipient = onlineUsers.find(u => u.username === selectedChat);
+    if (!recipient || !socket) return;
+  
+    const newMessage = {
+      id: `${user.id}-${new Date().getTime()}`,
+      text: inputMessage.trim(),
+      time: new Date(),
+      user: "me",
+    };
+  
+    // ✅ Optimistically update UI
+    setMessages(prev => ({
+      ...prev,
+      [selectedChat]: [...(prev[selectedChat] || []), newMessage],
+    }));
+  
+    try {
+      // ✅ Save to backend (this persists the message)
+      await api.post("/message/send", {
+        sender_id: user.id,
+        receiver_id: recipient.id,
+        content: inputMessage.trim(),
+      });
+      
+      // ✅ Send via socket for real-time delivery
+      socket.emit("chat-message", { to: recipient.id, text: inputMessage.trim() });
+
+    } catch (err) {
+      console.error("Error sending message:", err);
+      // ✅ OPTIONAL: Remove optimistic message on error
+      setMessages(prev => ({
+        ...prev,
+        [selectedChat]: prev[selectedChat].filter(m => m.id !== newMessage.id),
+      }));
+    }
+    
+    setInputMessage("");
+  };
 
   useEffect(() => {
     async function init() {
@@ -64,39 +170,6 @@ useEffect(() => {
     }
     init();
   }, [user, accessToken])
-
-
-    const handleSendMessage = async () => {
-    if (!inputMessage.trim() || !selectedChat) return;
-  
-    const recipient = onlineUsers.find(u => u.username === selectedChat);
-    if (!recipient || !socket) return;
-  
-    const newMessage = {
-      id: `${user.id}-${new Date().getTime()}`,
-      text: inputMessage.trim(),
-      time: new Date(),
-      user: "me",
-    };
-  
-    setMessages(prev => ({
-      ...prev,
-      [selectedChat]: [...(prev[selectedChat] || []), newMessage],
-    }));
-  
-    try{
-      await api.post("/message/send", {
-        sender_id: user.id,
-        receiver_id: recipient.id,
-        content: inputMessage.trim(),
-      });
-      socket.emit("chat-message", { to: recipient.id, text: inputMessage.trim() });
-
-      } catch (err) {
-        console.error("Error sending message:", err);
-      }
-    setInputMessage("");
-  };
 
   useEffect(() => {
     if (!socket) return;
@@ -117,7 +190,7 @@ useEffect(() => {
     };
   
     
-    const handleChatMessage =  (data: any) => {
+    const handleChatMessage = (data: any) => {
       const sender = friendsRef.current.find(f => f.id === data.from);
       const senderUsername = sender ? sender.username : "Unknown";
   
@@ -260,7 +333,12 @@ useEffect(() => {
           <div className="flex h-[2px] w-full bg-white/30 mx-auto mb-3 md:mb-5" ></div>
         </div>
         <div className="flex-1 space-y-2 md:space-y-4 overflow-y-auto">
-          {onlineUsers.length === 0 ? (
+          {loadingHistory && (
+            <div className="text-center text-white/60 mt-10 px-4">
+              <p>Loading conversations...</p>
+            </div>
+          )}
+          {!loadingHistory && onlineUsers.length === 0 ? (
             <div className="text-center text-white/60 mt-10 px-4">
               <p>No users online</p>
               <p className="text-sm mt-2">Waiting for users to connect...</p>
