@@ -17,10 +17,13 @@ type GameCostumProps =
   currentBoard: string;
   currentDiff: string;
   currentPaddle: string;
+  isOpen: boolean;
+  setIsOpen: React.Dispatch<React.SetStateAction<boolean>>;
   setCurrentBall: React.Dispatch<React.SetStateAction<string>>;
   setCurrentBoard: React.Dispatch<React.SetStateAction<string>>;
   setCurrentDiff: React.Dispatch<React.SetStateAction<string>>;
   setCurrentPaddle: React.Dispatch<React.SetStateAction<string>>;
+
 }
 
 export default function GameCostum({
@@ -32,8 +35,10 @@ export default function GameCostum({
   setCurrentBoard,
   setCurrentDiff,
   setCurrentPaddle,
+  isOpen,
+  setIsOpen
 }: GameCostumProps) {
-  const [isOpen, setIsOpen] = useState(true);
+  // const [isOpen, setIsOpen] = useState(true);
   const handleResetDev = () => {
     setCurrentDiff("easy");
     setCurrentBall("default");
