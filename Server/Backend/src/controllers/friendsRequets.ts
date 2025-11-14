@@ -27,11 +27,11 @@ export async function FriendRequest(req : FastifyRequest<{Body:{friendId : numbe
                 `INSERT INTO friends (player_id, friend_id, status)
                 VALUES (?, ?, 'pending')`,
             [id, friendId],
-            (err) => {err ? reject(err) : resolve()}
+            (err : any) => {err ? reject(err) : resolve()}
             )
         });
         const sender = await new Promise<any>((resolve, reject) => {
-            db.get(`SELECT username FROM users WHERE id = ?`, [id], (err, row) => err ? reject(err) : resolve(row));
+            db.get(`SELECT username FROM players WHERE id = ?`, [id], (err, row) => err ? reject(err) : resolve(row));
           });
         const io = Server.socket();
         io.to(String(friendId)).emit("friend:request", {

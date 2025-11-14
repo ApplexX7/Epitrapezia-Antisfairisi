@@ -14,8 +14,8 @@ const app = Server.instance();
 
 
 app.register(fastifyCors, {
-  origin: ["https://localhost", "https://WebPong.1337.ma"], // your frontend URLs
-  credentials: true, // allow cookies
+  origin: ["https://localhost", "https://WebPong.1337.ma"],
+  credentials: true,
 });
 app.addHook("onRequest", async (req: FastifyRequest, reply: FastifyReply) => {
   const routeUrl = req.url;

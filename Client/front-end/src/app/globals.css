@@ -34,9 +34,9 @@
 }
 
 .card {
-  @apply bg-white-smoke/40 border-white backdrop-blur-none ring-1
+  @apply bg-white/30 border-white backdrop-blur-none ring-1
     ring-amber-50/20 backdrop-brightness-[150%] rounded-[35px]
-    shadow-[2px_2px_2px_2px_rgba(0,0,0,0.3)];
+    shadow-[1px_1px_1px_1px_rgba(0,0,0,0.2)];
 }
 
 
