@@ -7,6 +7,7 @@ import { useAuth } from "@/components/hooks/authProvider";
 import { useSocketStore } from "@/components/hooks/SocketIOproviders";
 import { User } from "@/components/hooks/authProvider";
 import api from "@/lib/axios";
+import { Checks } from '@phosphor-icons/react';
 
 export default function Home() {
   const [messages, setMessages] = useState({});
@@ -318,7 +319,10 @@ export default function Home() {
                   <p className="text-white font-medium text-sm md:text-base">{u.username}</p>
                   <p className="text-gray-300 text-xs md:text-sm truncate">{getLastMessage(u.username)}</p>
                 </div>
-                <span className="text-xs text-gray-200 mr-3 md:mr-7">{getLastMessageTime(u.username) || time.clock}</span>
+                <div className="flex flex-col items-end gap-1 mr-3 md:mr-7">
+                  <span className="text-xs text-gray-200">{getLastMessageTime(u.username) || time.clock}</span>
+                  <Checks size={30} weight="bold" className={u.onlineUsers ? "text-blue-500" :" text-gray-500"}/>
+                </div>
               </div>
             ))
           )}
