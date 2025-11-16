@@ -33,6 +33,7 @@ async function recordMatchResult(room: GameRoom, winnerId: number, loserId: numb
   try {
     await ensureGameStatsForPlayer(winnerId);
     await ensureGameStatsForPlayer(loserId);
+    // update winner stats
     await new Promise<void>((resolve, reject) => {
       db.run(
         `UPDATE game_stats SET total_games = total_games + 1, wins = wins + 1, updated_at = CURRENT_TIMESTAMP WHERE player_id = ?`,
@@ -40,6 +41,8 @@ async function recordMatchResult(room: GameRoom, winnerId: number, loserId: numb
         (err: any) => (err ? reject(err) : resolve())
       );
     });
+
+    // update loser stats
     await new Promise<void>((resolve, reject) => {
       db.run(
         `UPDATE game_stats SET total_games = total_games + 1, losses = losses + 1, updated_at = CURRENT_TIMESTAMP WHERE player_id = ?`,
@@ -47,6 +50,31 @@ async function recordMatchResult(room: GameRoom, winnerId: number, loserId: numb
         (err: any) => (err ? reject(err) : resolve())
       );
     });
+
+    // Insert into game_history table with current scores (best-effort)
+    try {
+      const p1Id = room.players[0]?.user?.id;
+      const p2Id = room.players[1]?.user?.id;
+      const p1Score = room.scores[p1Id] ?? 0;
+      const p2Score = room.scores[p2Id] ?? 0;
+      // Ensure winnerId is set (fallback: choose the other player if scores equal)
+      let resolvedWinner = winnerId;
+      if (!resolvedWinner) {
+        if (p1Score > p2Score) resolvedWinner = p1Id;
+        else if (p2Score > p1Score) resolvedWinner = p2Id;
+        else resolvedWinner = loserId === p1Id ? p2Id : p1Id;
+      }
+
+      await new Promise<void>((resolve, reject) => {
+        db.run(
+          `INSERT INTO game_history (player1_id, player2_id, player1_score, player2_score, winner_id) VALUES (?, ?, ?, ?, ?)`,
+          [p1Id, p2Id, p1Score, p2Score, resolvedWinner],
+          (err: any) => (err ? reject(err) : resolve())
+        );
+      });
+    } catch (e) {
+      console.error('Failed to insert into game_history for room', room.id, e || e);
+    }
   } catch (e) {
     console.error('Failed to record match result for room', room.id, e);
   }
