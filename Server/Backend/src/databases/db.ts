@@ -201,4 +201,5 @@ export function createsDbTabes(){
     createFriendsTable();
     createTableMessage();
     createGameStats();
+    createGameHistory();
 }
