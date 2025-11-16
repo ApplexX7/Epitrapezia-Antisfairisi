@@ -110,7 +110,7 @@ export function createTableMessage() {
             receiver_id INTEGER,
             content TEXT NOT NULL,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-
+            readed INTEGER DEFAULT 0 CHECK (is_completed IN (0, 1)),
             FOREIGN KEY (sender_id) REFERENCES players(id) ON DELETE CASCADE,
             FOREIGN KEY (receiver_id) REFERENCES players(id) ON DELETE CASCADE
         )
