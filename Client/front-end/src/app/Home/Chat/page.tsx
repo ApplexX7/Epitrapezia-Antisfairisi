@@ -282,10 +282,10 @@ export default function Home() {
                   autoFocus
                 />
               )}
-            <CustomButton className="flex justify-center items-center bg-white-smoke/10 hover:opacity-40
+            {/* <CustomButton className="flex justify-center items-center bg-white-smoke/10 hover:opacity-40
             h-[40px] w-[40px] md:h-[48px] md:w-[48px] rounded-4xl shadow-[inset_2px_0px_4px_rgba(245,245,245,0.3)] ">
               <Plus size={20} weight="bold" className="md:w-[25px] md:h-[25px]" />
-            </CustomButton>
+            </CustomButton> */}
           </div>
         </div>
         <div className="flex flex-col mb-3 md:mb-5 px-5 md:px-10">
