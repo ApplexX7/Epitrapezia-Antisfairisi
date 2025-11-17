@@ -1,6 +1,6 @@
 'use client'
 import Image from "next/image";
-import { MagnifyingGlass, Plus, ArrowLeft } from "@phosphor-icons/react/ssr";
+import { MagnifyingGlass, Plus, ArrowLeft, X } from "@phosphor-icons/react/ssr";
 import { CustomButton } from "@/components/CostumButton"
 import { useEffect, useState, useRef } from "react";
 import { useAuth } from "@/components/hooks/authProvider";
@@ -9,6 +9,13 @@ import { User } from "@/components/hooks/authProvider";
 import api from "@/lib/axios";
 import { Checks } from '@phosphor-icons/react';
 
+const emojiCategories = {
+  'Smileys': ['😀', '😃', '😄', '😁', '😅', '😂', '🤣', '😊', '😇', '🙂', '🙃', '😉', '😌', '😍', '🥰', '😘', '😗', '😙', '😚', '😋', '😛', '😝', '😜', '🤪', '🤨', '🧐', '🤓', '😎', '🤩', '🥳'],
+  'Gestures': ['👋', '🤚', '🖐', '✋', '🖖', '👌', '🤌', '🤏', '✌️', '🤞', '🤟', '🤘', '🤙', '👈', '👉', '👆', '👇', '☝️', '👍', '👎', '✊', '👊', '🤛', '🤜', '👏', '🙌', '👐', '🤲', '🤝', '🙏'],
+  'Hearts': ['❤️', '🧡', '💛', '💚', '💙', '💜', '🖤', '🤍', '🤎', '💔', '❤️‍🔥', '❤️‍🩹', '💕', '💞', '💓', '💗', '💖', '💘', '💝', '💟'],
+  'Objects': ['🎉', '🎊', '🎈', '🎁', '🎀', '🏆', '🥇', '🥈', '🥉', '⚽', '🏀', '🏈', '⚾', '🎾', '🏐', '🎱', '🎮', '🎯', '🎲', '🎰', '🔥', '⭐', '✨', '💫', '🌟', '⚡', '💥', '💢', '💨', '💦']
+};
+
 export default function Home() {
   const [messages, setMessages] = useState({});
   const [selectedChat, setSelectedChat] = useState(null);
@@ -16,7 +23,12 @@ export default function Home() {
   const [isSearchActive, setIsSearchActive] = useState(false);
   const [showChatList, setShowChatList] = useState(false);
   const [loadingHistory, setLoadingHistory] = useState(false);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState('Smileys');
+  const [recentEmojis, setRecentEmojis] = useState([]);
+  
   const searchRef = useRef(null);
+  const emojiPickerRef = useRef(null);
   const { user, accessToken } = useAuth.getState();
   const { socket, initSocket } = useSocketStore();
   const [onlineUsers, setOnlineUsers] = useState([]);
@@ -27,6 +39,7 @@ export default function Home() {
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({behavior: "smooth"})
   }
+  
   useEffect(() => {
     scrollToBottom();
   }, [messages, selectedChat]);
@@ -36,6 +49,39 @@ export default function Home() {
     date: new Date().toLocaleDateString([], { month:"2-digit", day: "2-digit" })
   });
   
+  useEffect(() => {
+    const stored = localStorage.getItem('recent-emojis');
+    if (stored) {
+      setRecentEmojis(JSON.parse(stored));
+    }
+  }, []);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (emojiPickerRef.current && !emojiPickerRef.current.contains(event.target)) {
+        setShowEmojiPicker(false);
+      }
+    };
+
+    if (showEmojiPicker) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showEmojiPicker]);
+
+  const addEmoji = (emoji) => {
+    setInputMessage(prev => prev + emoji);
+    
+    setRecentEmojis(prev => {
+      const filtered = prev.filter(e => e !== emoji);
+      const updated = [emoji, ...filtered].slice(0, 20);
+      localStorage.setItem('recent-emojis', JSON.stringify(updated));
+      return updated;
+    });
+  };
 
   useEffect(() => {
     async function fetchAllHistory() {
@@ -67,7 +113,6 @@ export default function Home() {
 
       const results = await Promise.all(historyPromises);
       
-      // Merge with existing messages 
       setMessages(prev => {
         const newMessages = { ...prev };
         results.forEach(({ username, messages }) => {
@@ -97,7 +142,6 @@ export default function Home() {
       user: "me",
     };
   
-    // Optimistically update UI
     setMessages(prev => ({
       ...prev,
       [selectedChat]: [...(prev[selectedChat] || []), newMessage],
@@ -114,7 +158,6 @@ export default function Home() {
 
     } catch (err) {
       console.error("Error sending message:", err);
-      // optimistic message on error
       setMessages(prev => ({
         ...prev,
         [selectedChat]: prev[selectedChat].filter(m => m.id !== newMessage.id),
@@ -157,7 +200,6 @@ export default function Home() {
       });
     };
   
-    
     const handleChatMessage = (data: any) => {
       const sender = friendsRef.current.find(f => f.id === data.from);
       const senderUsername = sender ? sender.username : "Unknown";
@@ -184,7 +226,6 @@ export default function Home() {
       socket.off("chat-message", handleChatMessage);
     };
   }, [socket, user]);
-  
   
   const handleKeyPress = (e) => {
     if (e.key === 'Enter') {
@@ -262,6 +303,7 @@ export default function Home() {
     const lastMsg = chatMessages[chatMessages.length - 1];
     return lastMsg.time.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
   };
+
   return (
     <div className="flex border-none h-[calc(100vh-80px)] justify-center shadow-[2px_2px_5px_3px_rgba(0,0,0,0.3)] 
     items-center bg-[#F5F5F5]/40 rounded-xl m-2 md:m-10 overflow-hidden">
@@ -331,7 +373,7 @@ export default function Home() {
           )}
         </div>
       </div>
-      {/* 2/3 */}
+      
       <div className={`${showChatList ? 'hidden md:flex' : 'flex'} w-full md:w-2/3 h-full rounded-r-xl flex-col flex-1`}>
         {selectedChat ? (
           <>
@@ -394,13 +436,20 @@ export default function Home() {
               )}
               <div ref={messagesEndRef} />
             </div>
+
             <div className="p-3 md:p-4 bg-[#D1DAE9]/20 border-t border-none rounded-br-xl">
               <div className="w-full">
                 <div className="flex items-center gap-2 md:gap-4">
                   <div className="flex-1 relative">
                     <div className="absolute left-3 md:left-4 top-1/2 transform -translate-y-1/2 z-10">
-                      <button className="flex items-center justify-center transition-colors">
-                        <Plus size={24} weight="bold" className="md:w-[30px] md:h-[30px]" />
+                      <button 
+                        onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                        className="flex items-center justify-center transition-colors hover:opacity-70">
+                        {showEmojiPicker ? (
+                          <X size={24} weight="bold" className="md:w-[30px] md:h-[30px]" />
+                        ) : (
+                          <Plus size={24} weight="bold" className="md:w-[30px] md:h-[30px]" />
+                        )}
                       </button>
                     </div>
                     <input
@@ -415,6 +464,59 @@ export default function Home() {
                       focus:outline-none focus:ring-1 focus:ring-white
                       placeholder:text-black-nave/80"
                     />
+                    
+                    {showEmojiPicker && (
+                      <div
+                        ref={emojiPickerRef}
+                        className="absolute left-0 bottom-full mb-2 w-full max-w-sm bg-white/95 backdrop-blur-sm rounded-2xl shadow-2xl border border-white/20 z-50 overflow-hidden"
+                      >
+                        {recentEmojis.length > 0 && (
+                          <div className="p-2 md:p-3 border-b border-gray-200">
+                            <p className="text-xs font-semibold text-gray-500 mb-2">RECENT</p>
+                            <div className="flex flex-wrap gap-1">
+                              {recentEmojis.slice(0, 15).map((emoji, idx) => (
+                                <button
+                                  key={idx}
+                                  onClick={() => addEmoji(emoji)}
+                                  className="text-xl md:text-2xl hover:bg-gray-100 rounded-lg p-1 md:p-2 transition-colors"
+                                >
+                                  {emoji}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        <div className="flex gap-1 p-2 border-b border-gray-200 overflow-x-auto">
+                          {Object.keys(emojiCategories).map((category) => (
+                            <button
+                              key={category}
+                              onClick={() => setSelectedCategory(category)}
+                              className={`px-2 md:px-3 py-1.5 rounded-lg text-xs md:text-sm font-medium transition-colors whitespace-nowrap ${
+                                selectedCategory === category
+                                  ? 'bg-[#D1DAE9] text-black-nave'
+                                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                              }`}
+                            >
+                              {category}
+                            </button>
+                          ))}
+                        </div>
+                        <div className="p-2 md:p-3 max-h-48 md:max-h-64 overflow-y-auto">
+                          <div className="grid grid-cols-6 md:grid-cols-8 gap-1">
+                            {emojiCategories[selectedCategory].map((emoji, idx) => (
+                              <button
+                                key={idx}
+                                onClick={() => addEmoji(emoji)}
+                                className="text-xl md:text-2xl hover:bg-gray-100 rounded-lg p-1 md:p-2 transition-all hover:scale-110"
+                              >
+                                {emoji}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
                   <button
                     onClick={handleSendMessage}
