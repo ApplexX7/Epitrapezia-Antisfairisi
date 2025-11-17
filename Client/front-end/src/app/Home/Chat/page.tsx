@@ -22,6 +22,14 @@ export default function Home() {
   const [onlineUsers, setOnlineUsers] = useState([]);
   const [friends, setFriends] = useState<User[]>([]);
   const friendsRef = useRef<User[]>([]);
+  const messagesEndRef= useRef<HTMLDivElement>(null);
+  
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({behavior: "smooth"})
+  }
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages, selectedChat]);
   
   const [time, setTime] = useState({
     clock: new Date().toLocaleTimeString([], { hour:"2-digit", minute: "2-digit" }),
@@ -338,7 +346,7 @@ export default function Home() {
               </div>
             </div>
 
-            <div className="flex-1 p-3 md:p-6 mt-0 md:mt-10 space-y-4 md:space-y-6 overflow-y-auto">
+            <div className="flex-1 p-3 md:p-6 space-y-4 md:space-y-6 overflow-y-auto">
               {messages[selectedChat] && messages[selectedChat].length > 0 ? (
                 groupMessagesByDate(messages[selectedChat]).map((group, groupIndex) => (
                   <div key={groupIndex}>
@@ -384,6 +392,7 @@ export default function Home() {
                   <p className="text-white/60">No messages yet. Start the conversation!</p>
                 </div>
               )}
+              <div ref={messagesEndRef} />
             </div>
             <div className="p-3 md:p-4 bg-[#D1DAE9]/20 border-t border-none rounded-br-xl">
               <div className="w-full">
