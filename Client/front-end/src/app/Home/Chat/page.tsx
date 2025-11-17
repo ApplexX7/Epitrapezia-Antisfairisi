@@ -255,9 +255,9 @@ export default function Home() {
     return lastMsg.time.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
   };
   return (
-    <div className="flex border-none h-screen justify-center shadow-[2px_2px_5px_3px_rgba(0,0,0,0.3)] 
-    items-center bg-[#F5F5F5]/40 rounded-xl m-2 md:m-10">
-      <div className={`${showChatList ? 'flex' : 'hidden md:flex'} flex-col h-screen w-full md:w-2/3 lg:w-1/3 h-full backdrop-brightness-[120%]
+    <div className="flex border-none h-[calc(100vh-80px)] justify-center shadow-[2px_2px_5px_3px_rgba(0,0,0,0.3)] 
+    items-center bg-[#F5F5F5]/40 rounded-xl m-2 md:m-10 overflow-hidden">
+      <div className={`${showChatList ? 'flex' : 'hidden md:flex'} flex-col h-full w-full md:w-2/3 lg:w-1/3  backdrop-brightness-[120%]
         bg-black/50 border-[#000000] rounded-l-xl`}>
         <div className="flex gap-2 w-full justify-between py-5 items-center self-start">
           {!isSearchActive && (
@@ -324,11 +324,11 @@ export default function Home() {
         </div>
       </div>
       {/* 2/3 */}
-      <div className={`${showChatList ? 'hidden md:flex' : 'flex'} w-full md:w-2/3 h-screen rounded-r-xl flex-col flex-1`}>
+      <div className={`${showChatList ? 'hidden md:flex' : 'flex'} w-full md:w-2/3 h-full rounded-r-xl flex-col flex-1`}>
         {selectedChat ? (
           <>
-            <div className="md:hidden flex items-center gap-3 p-4 bg-[#D1DAE9]/20 border-b border-white/10">
-              <button onClick={handleBackToChats} className="flex items-center justify-center">
+          <div className={`flex items-center gap-3 p-4 bg-[#D1DAE9]/20 border-b border-white/10 ${showChatList ? 'bg-[#D1DAE9]/20' : ''}`}>
+              <button onClick={handleBackToChats} className="flex items-center justify-center md:hidden">
                 <ArrowLeft size={24} weight="bold" />
               </button>
               <div className="flex items-center gap-2">
