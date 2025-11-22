@@ -7,7 +7,7 @@ import { useAuth } from "@/components/hooks/authProvider";
 import { useSocketStore } from "@/components/hooks/SocketIOproviders";
 import { User } from "@/components/hooks/authProvider";
 import api from "@/lib/axios";
-import { Checks } from '@phosphor-icons/react';
+import { Checks, DotsThreeVertical } from '@phosphor-icons/react';
 
 const emojiCategories = {
   'Smileys': ['😀', '😃', '😄', '😁', '😅', '😂', '🤣', '😊', '😇', '🙂', '🙃', '😉', '😌', '😍', '🥰', '😘', '😗', '😙', '😚', '😋', '😛', '😝', '😜', '🤪', '🤨', '🧐', '🤓', '😎', '🤩', '🥳'],
@@ -35,6 +35,7 @@ export default function Home() {
   const [friends, setFriends] = useState<User[]>([]);
   const friendsRef = useRef<User[]>([]);
   const messagesEndRef= useRef<HTMLDivElement>(null);
+  const [showMenu, setShowMenu] = useState(false);
   
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({behavior: "smooth"})
@@ -377,7 +378,7 @@ export default function Home() {
       <div className={`${showChatList ? 'hidden md:flex' : 'flex'} w-full md:w-2/3 h-full rounded-r-xl flex-col flex-1`}>
         {selectedChat ? (
           <>
-          <div className={`flex items-center gap-3 p-4 bg-[#D1DAE9]/20 border-b border-white/10 ${showChatList ? 'bg-[#D1DAE9]/20' : ''}`}>
+          <div className={`relative flex items-center justify-between gap-3 p-4 bg-[#D1DAE9]/20 border-b border-white/10 ${showChatList ? 'bg-[#D1DAE9]/20' : ''}`}>
               <button onClick={handleBackToChats} className="flex items-center justify-center md:hidden">
                 <ArrowLeft size={24} weight="bold" />
               </button>
@@ -386,6 +387,37 @@ export default function Home() {
                 className="rounded-full" />
                 <span className="font-bold text-lg">{selectedChat}</span>
               </div>
+                {/* MENU BUTTON WITH DROPDOWN */}
+                <div className="relative">
+                  <button 
+                    className="z-[50] p-2 hover:bg-white/10 rounded-lg transition-colors" 
+                    onClick={() => setShowMenu(!showMenu)}
+                  >
+                    <DotsThreeVertical size={40} weight="bold" />
+                  </button>
+
+                  {showMenu && (
+                    <div className="absolute right-0 top-full mt-2 border border-white/20 rounded-lg bg-white/10 shadow-lg min-w-[150px] overflow-hidden">
+                      <button 
+                        className="w-[100] px-4 py-3 text-left hover:bg-white/10 transition-colors border-b border-white/10"
+                        onClick={() => {
+                          setShowMenu(false);
+                        }}
+                      >
+                        Block
+                      </button>
+                      
+                      <button 
+                        className="w-full px-4 py-3 text-left hover:bg-white/10 transition-colors"
+                        onClick={() => {
+                          setShowMenu(false);
+                        }}
+                      >
+                        Unblock
+                      </button>
+                    </div>
+                  )}
+                </div>
             </div>
 
             <div className="flex-1 p-3 md:p-6 space-y-4 md:space-y-6 overflow-y-auto">
