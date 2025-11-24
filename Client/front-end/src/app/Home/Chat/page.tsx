@@ -7,7 +7,7 @@ import { useAuth } from "@/components/hooks/authProvider";
 import { useSocketStore } from "@/components/hooks/SocketIOproviders";
 import { User } from "@/components/hooks/authProvider";
 import api from "@/lib/axios";
-import { Checks } from '@phosphor-icons/react';
+import { Checks, DotsThreeVertical } from '@phosphor-icons/react';
 
 const emojiCategories = {
   'Smileys': ['😀', '😃', '😄', '😁', '😅', '😂', '🤣', '😊', '😇', '🙂', '🙃', '😉', '😌', '😍', '🥰', '😘', '😗', '😙', '😚', '😋', '😛', '😝', '😜', '🤪', '🤨', '🧐', '🤓', '😎', '🤩', '🥳'],
@@ -35,6 +35,7 @@ export default function Home() {
   const [friends, setFriends] = useState<User[]>([]);
   const friendsRef = useRef<User[]>([]);
   const messagesEndRef= useRef<HTMLDivElement>(null);
+  const [showMenu, setShowMenu] = useState(false);
   
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({behavior: "smooth"})
@@ -102,6 +103,7 @@ export default function Home() {
             text: msg.content,
             time: new Date(msg.created_at),
             user: msg.sender_id === user.id ? "me" : "other",
+            seen: msg.seen,
           }));
 
           return { username: recipient.username, messages: formatted };
@@ -140,6 +142,7 @@ export default function Home() {
       text: inputMessage.trim(),
       time: new Date(),
       user: "me",
+      seen: false,
     };
   
     setMessages(prev => ({
@@ -213,6 +216,7 @@ export default function Home() {
             text: data.text,
             time: new Date(data.time),
             user: data.from === user.id ? "me" : "other",
+            seen: false,
           },
         ],
       }));
@@ -283,11 +287,38 @@ export default function Home() {
     setShowChatList(true);
   };
 
-  const handleSelectChat = (username) => {
+
+  const handleSelectChat = async (username) => {
     setSelectedChat(username);
     setShowChatList(false);
+  
+    setMessages(prev => ({
+      ...prev,
+      [username]: prev[username]?.map(msg =>
+        msg.user === "other" ? { ...msg, seen: true } : msg
+      ) || []
+    }));
+  
+    const recipient = onlineUsers.find(u => u.username === username);
+    if (!recipient) return;
+  
+    const unreadMessageIds = (messages[username] || [])
+    .filter(msg => msg.user === "other" && !msg.seen)
+    .map(msg => msg.id);
+  
+    if (unreadMessageIds.length === 0) return;
+  
+    try {
+      await api.post("/message/mark-seen", {
+        message_ids: unreadMessageIds,
+        user_id: user.id
+      });
+    } catch (err) {
+      console.error("Error marking messages as seen:", err);
+    }
   };
-
+  
+  
   const getLastMessage = (username) => {
     const chatMessages = messages[username] || [];
     if (chatMessages.length === 0) 
@@ -349,27 +380,38 @@ export default function Home() {
               <p className="text-sm mt-2">Waiting for users to connect...</p>
             </div>
           ) : (
-            onlineUsers.map((u: any) => (
-              <div
-                key={`${u.id}-${u.username}`}
-                onClick={() => handleSelectChat(u.username)}
-                className={`flex items-center gap-2 md:gap-3 m-0 p-3 md:p-4 ${selectedChat === u.username ? "bg-white/20" : "hover:bg-white/20 cursor-pointer"}`}
-              > 
-                <div className="relative">
-                  <Image src={u.avatar} alt="Profile" width={40} height={40}
-                  className="rounded-full gap-2 ml-3 md:ml-7" />
-                  <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-none rounded-full"></div>
+            onlineUsers.map((u: any) => {
+              const chatMsgs = messages[u.username] || [];
+              const lastMsg = chatMsgs[chatMsgs.length - 1];
+              return (
+                <div
+                  key={`${u.id}-${u.username}`}
+                  onClick={() => handleSelectChat(u.username)}
+                  className={`flex items-center gap-2 md:gap-3 m-0 p-3 md:p-4 
+                    ${selectedChat === u.username ? "bg-white/20" : "hover:bg-white/20 cursor-pointer"}`}
+                > 
+                  <div className="relative">
+                    <Image src={u.avatar} alt="Profile" width={40} height={40}
+                    className="rounded-full gap-2 ml-3 md:ml-7" />
+                    <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-none rounded-full"></div>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-white font-medium text-sm md:text-base">{u.username}</p>
+                    <p className="text-gray-300 text-xs md:text-sm truncate">{getLastMessage(u.username)}</p>
+                  </div>
+                  <div className="flex flex-col items-end gap-1 mr-3 md:mr-7">
+                    <span className="text-xs text-gray-200">{getLastMessageTime(u.username) || time.clock}</span>
+                    <Checks size={30} weight="bold" className={
+                      lastMsg?.user === "me" 
+                        ? lastMsg.seen 
+                          ? "text-blue-500" 
+                          : "text-gray-500"
+                        : "text-gray-500"
+                    }/>
+                  </div>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-white font-medium text-sm md:text-base">{u.username}</p>
-                  <p className="text-gray-300 text-xs md:text-sm truncate">{getLastMessage(u.username)}</p>
-                </div>
-                <div className="flex flex-col items-end gap-1 mr-3 md:mr-7">
-                  <span className="text-xs text-gray-200">{getLastMessageTime(u.username) || time.clock}</span>
-                  <Checks size={30} weight="bold" className={u.isOnline ? "text-blue-500" :" text-gray-500"}/>
-                </div>
-              </div>
-            ))
+              );
+            })
           )}
         </div>
       </div>
@@ -377,7 +419,8 @@ export default function Home() {
       <div className={`${showChatList ? 'hidden md:flex' : 'flex'} w-full md:w-2/3 h-full rounded-r-xl flex-col flex-1`}>
         {selectedChat ? (
           <>
-          <div className={`flex items-center gap-3 p-4 bg-[#D1DAE9]/20 border-b border-white/10 ${showChatList ? 'bg-[#D1DAE9]/20' : ''}`}>
+          <div className={`relative flex items-center justify-between gap-3 p-4
+            bg-[#D1DAE9]/20 border-b border-white/10 ${showChatList ? 'bg-[#D1DAE9]/20' : ''}`}>
               <button onClick={handleBackToChats} className="flex items-center justify-center md:hidden">
                 <ArrowLeft size={24} weight="bold" />
               </button>
@@ -386,6 +429,44 @@ export default function Home() {
                 className="rounded-full" />
                 <span className="font-bold text-lg">{selectedChat}</span>
               </div>
+                {/* MENU BUTTON WITH DROPDOWN */}
+                <div className="relative">
+                  <button 
+                    className="z-[50] p-2 hover:bg-white/10 rounded-lg transition-colors" 
+                    onClick={() => setShowMenu(!showMenu)}
+                  >
+                    <DotsThreeVertical size={40} weight="bold" />
+                  </button>
+
+                  {showMenu && (
+                    <div
+                      className= {`
+                        absolute right-5 z-10 transition-all duration-200 ease-in-out
+                        cursor-pointer w-[150px] h-[125px]
+                        rounded-lg flex flex-col items-center justify-around
+                        bg-white-smoke/40 bg-opacity-100
+                        ${showMenu ? "opacity-100 scale-100 pointer-events-auto" : "opacity-0 scale-95 pointer-events-none"}`}
+                      >
+                      <button 
+                        className="rounded-lg w-[125px] px-4 py-3 hover:bg-[#D1DAE9]/20 border-white/10 mt-2 font-medium"
+                        onClick={() => {
+                          setShowMenu(false);
+                        }}
+                      >
+                        Block
+                      </button>
+                      
+                      <button 
+                        className="rounded-lg w-[125px] px-4 py-3 hover:bg-[#D1DAE9]/20 transition-colors border-white/10 mb-2 font-medium"
+                        onClick={() => {
+                          setShowMenu(false);
+                        }}
+                      >
+                        Unblock
+                      </button>
+                    </div>
+                  )}
+                </div>
             </div>
 
             <div className="flex-1 p-3 md:p-6 space-y-4 md:space-y-6 overflow-y-auto">
@@ -468,7 +549,8 @@ export default function Home() {
                     {showEmojiPicker && (
                       <div
                         ref={emojiPickerRef}
-                        className="absolute left-0 bottom-full mb-2 w-full max-w-sm bg-white/95 backdrop-blur-sm rounded-2xl shadow-2xl border border-white/20 z-50 overflow-hidden"
+                        className="absolute left-0 bottom-full mb-2 w-full max-w-sm bg-white/95 backdrop-blur-sm 
+                          rounded-2xl shadow-2xl border border-white/20 z-50 overflow-hidden"
                       >
                         {recentEmojis.length > 0 && (
                           <div className="p-2 md:p-3 border-b border-gray-200">
@@ -492,7 +574,8 @@ export default function Home() {
                             <button
                               key={category}
                               onClick={() => setSelectedCategory(category)}
-                              className={`px-2 md:px-3 py-1.5 rounded-lg text-xs md:text-sm font-medium transition-colors whitespace-nowrap ${
+                              className={`px-2 md:px-3 py-1.5 rounded-lg text-xs md:text-sm 
+                                font-medium transition-colors whitespace-nowrap ${
                                 selectedCategory === category
                                   ? 'bg-[#D1DAE9] text-black-nave'
                                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
@@ -508,7 +591,8 @@ export default function Home() {
                               <button
                                 key={idx}
                                 onClick={() => addEmoji(emoji)}
-                                className="text-xl md:text-2xl hover:bg-gray-100 rounded-lg p-1 md:p-2 transition-all hover:scale-110"
+                                className="text-xl md:text-2xl hover:bg-gray-100 rounded-lg 
+                                  p-1 md:p-2 transition-all hover:scale-110"
                               >
                                 {emoji}
                               </button>
@@ -520,7 +604,8 @@ export default function Home() {
                   </div>
                   <button
                     onClick={handleSendMessage}
-                    className="px-4 md:px-8 py-3 md:py-4 bg-[#D1DAE9]/30 hover:bg-black/30 text-black-nave rounded-xl font-bold text-sm md:text-base
+                    className="px-4 md:px-8 py-3 md:py-4 bg-[#D1DAE9]/30 hover:bg-black/30 
+                      text-black-nave rounded-xl font-bold text-sm md:text-base
                     shadow-[2px_2px_5px_rgba(0,0,0,0.3)] focus:shadow-[inset_2px_2px_5px_rgba(0,0,0,0.3)]">
                     Send
                   </button>

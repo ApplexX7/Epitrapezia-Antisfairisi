@@ -1,4 +1,3 @@
-// message.ts routes
 import { Server } from "../server"
 import { saveMessage } from "../controllers/saveMessage"
 import { getMessages } from "../controllers/getMessages";
@@ -27,7 +26,7 @@ export function Message() {
         console.log("📖 GET /message/history called");
         console.log("Query params:", req.query);
         
-        const {sender_id, receiver_id} = req.query as Historyquery;
+        const { sender_id, receiver_id } = req.query as Historyquery;
         
         console.log("Parsed values:", { sender_id, receiver_id });
         

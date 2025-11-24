@@ -8,6 +8,7 @@ import { playerSettings } from "./routers/player";
 import { friends } from "./routers/friends";
 import { verifyRefreshToken } from "./controllers/authRefresh";
 import { Message } from "./routers/message";
+import { seenMsg } from "./routers/seenMsg"
 
 createsDbTabes();
 
@@ -60,6 +61,7 @@ bootstrap();
 friends();
 playerSettings();
 Message();
+seenMsg();
 
 app.ready((err) => {
   if (err) throw err;
