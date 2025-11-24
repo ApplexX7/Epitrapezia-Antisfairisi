@@ -36,7 +36,6 @@ export default function Home() {
                 />
               </div>
             </label>
-
             <label className="block">
               <div className="flex items-center justify-between">
                 <span className="text-sm font-medium text-gray-700">Tournament password</span>
@@ -55,6 +54,7 @@ export default function Home() {
             </label>
 
             <button
+            // on
               type="submit"
               className="w-full rounded-lg px-4 py-3 bg-purple-600 text-white font-medium shadow-sm 
                          hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-400 transition cursor-pointer"

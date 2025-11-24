@@ -1,5 +1,5 @@
 "use client";
-
+import { useState } from "react";
 import React from "react";
 
 export default function JoinTournament(): JSX.Element {
@@ -10,28 +10,47 @@ export default function JoinTournament(): JSX.Element {
     { name: "Purple Cup", password: "pass" },
     { name: "Purple Cup", password: "pass" },
     { name: "Purple Cup", password: "pass" },
-
   ];
+
+  const [joinStates, setJoinStates] = useState<boolean[]>(
+    Array(tournaments.length).fill(false)
+  );
+
+  const handleJoin = (index: number) => {
+    setJoinStates((prev) => {
+      const copy = [...prev];
+      copy[index] = !copy[index];
+      return copy;
+    });
+  };
 
   return (
     <div className="flex justify-center mt-10">
       <div className="w-full max-w-3xl px-4">
-        <h1 className="text-2xl font-semibold text-purple-700 mb-6 text-center">Join a Tournament</h1>
+        <h1 className="text-2xl font-semibold text-purple-700 mb-6 text-center">
+          Join a Tournament
+        </h1>
 
         <div className="flex flex-col gap-4">
           {tournaments.map((t, i) => (
             <div
               key={i}
-              style={{ backgroundImage: "url('/images/rps.png')", backgroundSize: 'cover', backgroundPosition: 'center' }} // rigl chi tswira ta hna hh
+              style={{
+                backgroundImage: "url('/images/rps.png')",
+                backgroundSize: "cover",
+                backgroundPosition: "center",
+              }}
               className="bg-white/50 backdrop-blur-md rounded-xl p-4 flex flex-col shadow-md border border-purple-200"
             >
               <div className="flex items-center justify-between mb-3">
-                <h2 className="text-lg font-semibold text-white-smoke">{t.name}</h2>
+                <h2 className="text-lg font-semibold text-white-smoke">
+                  {t.name}
+                </h2>
                 <button
                   className="px-4 py-1 bg-purple-600 text-white rounded-lg shadow hover:bg-purple-700 transition cursor-pointer"
-                  onClick={() => {}}
+                  onClick={() => handleJoin(i)}
                 >
-                  Join
+                  {joinStates[i] ? "View" : "Join"}
                 </button>
               </div>
 
