@@ -506,13 +506,13 @@ export default function Home() {
                     <div
                       className= {`
                         absolute right-5 z-10 transition-all duration-200 ease-in-out
-                        cursor-pointer w-[150px] h-[125px]
+                        cursor-pointer w-[200px] h-[225px]
                         rounded-lg flex flex-col items-center justify-around
                         bg-white-smoke/40 bg-opacity-100
                         ${showMenu ? "opacity-100 scale-100 pointer-events-auto" : "opacity-0 scale-95 pointer-events-none"}`}
                       >
                       <button 
-                        className="rounded-lg w-[125px] px-4 py-3 hover:bg-[#D1DAE9]/20 border-white/10 mt-2 font-medium"
+                        className="rounded-lg w-[150px] px-4 py-3 hover:bg-[#D1DAE9]/20 border-white/10 mt-2 font-medium"
                         onClick={() => {
                           setShowMenu(false);
                         }}
@@ -521,12 +521,21 @@ export default function Home() {
                       </button>
                       
                       <button 
-                        className="rounded-lg w-[125px] px-4 py-3 hover:bg-[#D1DAE9]/20 transition-colors border-white/10 mb-2 font-medium"
+                        className="rounded-lg w-[150px] px-4 py-3 hover:bg-[#D1DAE9]/20 transition-colors border-white/10 mb-2 font-medium"
                         onClick={() => {
                           setShowMenu(false);
                         }}
                       >
                         Unblock
+                      </button>
+
+                      <button 
+                        className="rounded-lg w-[150px] px-4 py-3 hover:bg-[#D1DAE9]/20 transition-colors border-white/10 mb-2 font-medium"
+                        onClick={() => {
+                          setShowMenu(false);
+                        }}
+                      >
+                        invite friends to game
                       </button>
                     </div>
                   )}
