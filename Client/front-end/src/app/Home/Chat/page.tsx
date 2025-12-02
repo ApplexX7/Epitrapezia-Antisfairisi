@@ -508,7 +508,7 @@ export default function Home() {
                         absolute right-5 z-10 transition-all duration-200 ease-in-out
                         cursor-pointer w-[200px] h-[225px]
                         rounded-lg flex flex-col items-center justify-around
-                        bg-white-smoke/40 bg-opacity-100
+                        bg-white-smoke/100 bg-opacity-100
                         ${showMenu ? "opacity-100 scale-100 pointer-events-auto" : "opacity-0 scale-95 pointer-events-none"}`}
                       >
                       <button 

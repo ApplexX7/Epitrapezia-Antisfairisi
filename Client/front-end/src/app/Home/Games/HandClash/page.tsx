@@ -60,17 +60,33 @@ export default function TicTacToe() {
     <main className="flex flex-col items-center justify-center h-screen bg-[#F5F5F5]/10   rounded-xl border-none
       shadow-[2px_2px_5px_3px_rgba(0,0,0,0.3)] m-2 md:m-10">
 
-    <div className="relative w-[38vw] h-[7vh] ml-[34vw] mr-[34vw] mb-[8vh] max-w-[650px] max-h-[109px]">``
-      <div className="absolute bg-white/10 backdrop-blur-sm rounded-lg w-full h-full">
-        <span className="absolute top-1/2 -translate-y-1/2 font-bold left-60">b</span>
-        <span className="absolute top-1/2 -translate-y-1/2 font-bold ">v</span>
-        <span className="absolute top-1/2 -translate-y-1/2 font-bold right-60">y</span>
+    <div className="relative w-[38vw] h-[7vh] ml-[34vw] mr-[34vw] mb-[8vh] max-w-[650px] max-h-[109px]">
+      <div className="absolute bg-white/10 backdrop-blur-sm rounded-full w-full h-full"></div>
+
+      <div className="absolute left-0 top-1/2 -translate-y-1/2">
+        <img
+          src="/images/defaultAvatare.jpg"
+          alt="player 1"
+          className="h-[6vh] w-[6vh] rounded-full object-cover"
+        />
       </div>
 
-      <div className="absolute  w-[38vw] h-[7vh]">
-        <img src="/images/defaultAvatare.jpg" alt="player 1"className="h-[6vh] rounded-full left-0"/>
+      <div className="absolute inset-0 flex justify-around items-center gap-10">
+        <span className="font-bold text-lg ml-5">Saloua</span>
+        <span className="font-bold text-lg">v</span>
+        <span className="font-bold text-lg">Saloua</span>
       </div>
+      
+      <div className="absolute right-0 top-1/2 -translate-y-1/2">
+        <img
+          src="/images/defaultAvatare.jpg"
+          alt="player 2"
+          className="h-[6vh] w-[6vh] rounded-full object-cover"
+        />
+      </div>
+
     </div>
+
     
       <div className="grid grid-cols-3 gap-4">
           {board.map((value, index) => {
