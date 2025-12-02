@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { RotateCcw } from 'lucide-react';
+import Image from "next/image";
 
 export default function TicTacToe() {
   const[board, setBoard] = useState(Array(9).fill(null))
@@ -59,10 +60,18 @@ export default function TicTacToe() {
     <main className="flex flex-col items-center justify-center h-screen bg-[#F5F5F5]/10   rounded-xl border-none
       shadow-[2px_2px_5px_3px_rgba(0,0,0,0.3)] m-2 md:m-10">
 
-      <h1 className = "text-3xl font-semibold mb-4 flex ">
-        {winner ? `${winner.player} wins! 🎉` : `Next player: ${isXNext ? "O" : "X"}`}  
-      </h1>
+    <div className="relative w-[38vw] h-[7vh] ml-[34vw] mr-[34vw] mb-[8vh] max-w-[650px] max-h-[109px]">``
+      <div className="absolute bg-white/10 backdrop-blur-sm rounded-lg w-full h-full">
+        <span className="absolute top-1/2 -translate-y-1/2 font-bold left-60">b</span>
+        <span className="absolute top-1/2 -translate-y-1/2 font-bold ">v</span>
+        <span className="absolute top-1/2 -translate-y-1/2 font-bold right-60">y</span>
+      </div>
 
+      <div className="absolute  w-[38vw] h-[7vh]">
+        <img src="/images/defaultAvatare.jpg" alt="player 1"className="h-[6vh] rounded-full left-0"/>
+      </div>
+    </div>
+    
       <div className="grid grid-cols-3 gap-4">
           {board.map((value, index) => {
              const isWinningCell = winner?.line?.includes(index);
