@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/hooks/authProvider";
 import LoadingComp from "@/components/loadingComp"
+import { useNotification } from "./hooks/notifhooks";
 
 type AuthWrapperProps = {
   children: React.ReactNode;
@@ -12,7 +13,6 @@ type AuthWrapperProps = {
 export default function AuthWrapper({ children }: AuthWrapperProps) {
   const router = useRouter();
   const { accessToken, checkingAuth, refreshAuth } = useAuth();
-
   useEffect(() => {
     refreshAuth();
   }, [refreshAuth]);
@@ -24,6 +24,5 @@ export default function AuthWrapper({ children }: AuthWrapperProps) {
   }, [checkingAuth, accessToken, router]);
 
   if (checkingAuth) return <LoadingComp />;
-
   return <>{children}</>;
 }

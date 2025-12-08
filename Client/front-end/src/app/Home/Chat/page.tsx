@@ -9,6 +9,8 @@ import { User } from "@/components/hooks/authProvider";
 import api from "@/lib/axios";
 import { Checks, DotsThreeVertical } from '@phosphor-icons/react';
 
+let friendImageUser = "/images/defaultimage.png"
+
 const emojiCategories = {
   'Smileys': ['😀', '😃', '😄', '😁', '😅', '😂', '🤣', '😊', '😇', '🙂', '🙃', '😉', '😌', '😍', '🥰', '😘', '😗', '😙', '😚', '😋', '😛', '😝', '😜', '🤪', '🤨', '🧐', '🤓', '😎', '🤩', '🥳'],
   'Gestures': ['👋', '🤚', '🖐', '✋', '🖖', '👌', '🤌', '🤏', '✌️', '🤞', '🤟', '🤘', '🤙', '👈', '👉', '👆', '👇', '☝️', '👍', '👎', '✊', '👊', '🤛', '🤜', '👏', '🙌', '👐', '🤲', '🤝', '🙏'],
@@ -103,6 +105,7 @@ export default function Home() {
             time: new Date(msg.created_at),
             user: msg.sender_id === user.id ? "me" : "other",
             seen: msg.seen === 1,
+            avatar: msg.sender_id === user.id ? user.avatar : recipient.avatar
           }));
 
           return { username: recipient.username, messages: formatted };
@@ -147,6 +150,7 @@ export default function Home() {
       time: new Date(),
       user: "me",
       seen: false,
+      avatar: user.avatar
     };
   
     setMessages(prev => ({
@@ -239,6 +243,7 @@ export default function Home() {
             time: new Date(data.time),
             user: data.from === user.id ? "me" : "other",
             seen: false,
+            avatar: sender?.avatar,
           },
         ],
       }));
@@ -344,7 +349,7 @@ export default function Home() {
     const recipient = onlineUsers.find(u => u.username === username);
     if (!recipient) 
       return;
-  
+    friendImageUser = recipient.avatar;
     const unreadMessageIds = (messages[username] || [])
       .filter(msg => msg.user === "other" && !msg.seen)
       .map(msg => Number(msg.id))
@@ -489,7 +494,7 @@ export default function Home() {
                 <ArrowLeft size={24} weight="bold" />
               </button>
               <div className="flex items-center gap-2">
-                <Image src="/images/defaultAvatare.jpg" alt="Profile" width={40} height={40}
+                <Image src={friendImageUser} alt="Profile" width={40} height={40}
                 className="rounded-full" />
                 <span className="font-bold text-lg">{selectedChat}</span>
               </div>
@@ -508,7 +513,7 @@ export default function Home() {
                         absolute right-5 z-10 transition-all duration-200 ease-in-out
                         cursor-pointer w-[200px] h-[225px]
                         rounded-lg flex flex-col items-center justify-around
-                        bg-white-smoke/100 bg-opacity-100
+                        bg-white-smoke/45 bg-opacity-70 backdrop-blur-3xl
                         ${showMenu ? "opacity-100 scale-100 pointer-events-auto" : "opacity-0 scale-95 pointer-events-none"}`}
                       >
                       <button 
@@ -554,7 +559,7 @@ export default function Home() {
                         <div key={msg.id} className={`flex ${msg.user === "me" ? "justify-end" : "justify-start"}`}>
                           <div className={`flex gap-2 ${msg.user === "me" ? "justify-end" : ""}`}>
                             {msg.user !== "me" && (
-                              <Image src="/images/defaultAvatare.jpg" alt="Profile" width={32} 
+                              <Image src={msg.avatar} alt="Profile" width={32} 
                               height={32} className="md:w-[40px] md:h-[40px] rounded-full mt-2 self-end" />
                             )}
                             <div className="flex flex-col">
@@ -573,7 +578,7 @@ export default function Home() {
                               </div>
                             </div>
                             {msg.user === "me" && (
-                              <Image src="/images/defaultAvatare.jpg" alt="Profile" width={32}
+                              <Image src={user.avatar} alt="Profile" width={32}
                               height={32} className="md:w-[40px] md:h-[40px] self-end rounded-full mt-2"
                               />
                             )}

@@ -40,26 +40,28 @@ export default function PongGame() {
             style={{
               clipPath: 'polygon(0 0, 100% 0, 100% 65%, 0 35%)',
             }}
-          ></div>
-        </Link>
+          >
+
         <span
   className="
-    font-poppins font-semibold
-    leading-[100%] tracking-[0%]
+  font-poppins font-semibold
+  leading-[100%] tracking-[0%]
     text-white
     absolute
     whitespace-nowrap
-  "
-  style={{
-    left: '50%',
-    top: '30%', 
-    transform: 'translate(-50%, -50%) rotate(30deg)',
-    transformOrigin: 'center center',
-    fontSize: 'clamp(16px, 3vw, 36px)',
-  }}
+    "
+    style={{
+      left: '50%',
+      top: '30%', 
+      transform: 'translate(-50%, -50%) rotate(30deg)',
+      transformOrigin: 'center center',
+      fontSize: 'clamp(16px, 3vw, 36px)',
+    }}
 >
   Online Matchup
 </span>
+          </div>
+  </Link>
             <Link href='/Home/Games/LocalPong'>
           <div
             className="
@@ -72,8 +74,8 @@ export default function PongGame() {
             style={{
               clipPath: 'polygon(0 35%, 100% 65%, 100% 100%, 0 100%)',
             }}
-          ></div>
-            </Link>
+          >
+
             <span
   className="
     font-poppins font-semibold
@@ -92,6 +94,9 @@ export default function PongGame() {
 >
   Local Face-Off
 </span>
+
+          </div>
+            </Link>
 
           <span
             className="

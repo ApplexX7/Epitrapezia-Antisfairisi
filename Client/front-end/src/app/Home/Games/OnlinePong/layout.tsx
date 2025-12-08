@@ -1,6 +1,4 @@
 import "../../../globals.css";
-import Link from "next/link";
-import Image from "next/image";
 import { NavBar } from '@/components/Navbar'
 import LogoPong from "./LogoPong";
 // import HomeNavBar from "./NavBar";
