@@ -25,7 +25,39 @@ interface SquareProps {
           }
         `}
       >
-        {value}
+      {value === 'X' && (
+       <svg viewBox="0 0 100 100" className="w-24 h-24 md:w-28 md:h-28">
+       <defs>
+         <linearGradient id="xGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+           <stop offset="0%" stopColor="#a855f7" />      {/* purple-400 */}
+           <stop offset="50%" stopColor="#c084fc" />     {/* purple-300 */}
+           <stop offset="100%" stopColor="#a855f7" />    {/* purple-400 */}
+         </linearGradient>
+       </defs>
+       <line x1="10" y1="10" x2="90" y2="90" stroke="url(#xGradient)" strokeWidth="20" strokeLinecap="round" />
+       <line x1="90" y1="10" x2="10" y2="90" stroke="url(#xGradient)" strokeWidth="20" strokeLinecap="round" />
+     </svg> 
+      )}
+
+      {value === 'O' && (
+        <svg viewBox="0 0 100 100" className="w-24 h-24 md:w-28 md:h-28">
+          <defs>
+            <linearGradient id="oGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor="#a855f7" />      {/* purple-400 */}
+              <stop offset="50%" stopColor="#c084fc" />     {/* purple-300 */}
+              <stop offset="100%" stopColor="#a855f7" />    {/* purple-400 */}
+            </linearGradient>
+          </defs>
+          <circle
+            cx="50"
+            cy="50"
+            r="40"
+            stroke="url(#oGradient)"
+            strokeWidth="20"
+            fill="none"
+          />
+        </svg>
+        )}
       </button>
     );
   }
