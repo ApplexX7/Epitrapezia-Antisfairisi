@@ -403,6 +403,11 @@ export default function Home() {
     return lastMsg.time.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
   };
 
+   // Get unread count for a chat
+  const getUnreadCount = (username) => {
+    const chatMessages = messages[username] || [];
+    return chatMessages.filter(msg => msg.user === "other" && !msg.seen).length;
+  };
 
   return (
     <div className="flex border-none h-[calc(100vh-80px)] justify-center shadow-[2px_2px_5px_3px_rgba(0,0,0,0.3)] 
@@ -452,6 +457,7 @@ export default function Home() {
             onlineUsers.map((u: any) => {
               const chatMsgs = messages[u.username] || [];
               const lastMsg = chatMsgs[chatMsgs.length - 1];
+              const unreadCount = getUnreadCount(u.username);
               return (
                 <div
                   key={`${u.id}-${u.username}`}
@@ -469,14 +475,16 @@ export default function Home() {
                     <p className="text-gray-300 text-xs md:text-sm truncate">{getLastMessage(u.username)}</p>
                   </div>
                   <div className="flex flex-col items-end gap-1 mr-3 md:mr-7">
-                    <span className="text-xs text-gray-200">{getLastMessageTime(u.username) || time.clock}</span>
-                    <Checks size={30} weight="bold" className={
-                      lastMsg?.user === "me" 
-                        ? lastMsg.seen 
-                          ? "text-blue-500" 
-                          : "text-gray-500"
-                        : "text-gray-500"
+                  <span className="text-xs text-gray-200">{getLastMessageTime(u.username) || time.clock}</span>
+                  {lastMsg?.user === "me" ? (
+                    <Checks size={20} weight="bold" className={
+                      lastMsg.seen ? "text-blue-500" : "text-gray-400"
                     }/>
+                  ) : unreadCount > 0 ? (
+                    <div className="bg-blue-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                      {unreadCount}
+                    </div>
+                  ) : null}
                   </div>
                 </div>
               );
