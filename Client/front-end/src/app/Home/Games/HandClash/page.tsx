@@ -96,7 +96,7 @@ export default function Home() {
       {gameOver && (
         <div className="mb-4 bg-yellow-400 text-purple-900 rounded-2xl px-6 py-3 text-center animate-bounce">
           <p className="text-2xl font-bold">
-            🏆 {player1Score >= 3 ? 'Saloua (Left)' : 'Saloua (Right)'} WINS THE MATCH! 🏆
+            🏆 {player1Score >= 3 ? 'Saloua_X' : 'Saloua_O'} WINS THE MATCH! 🏆
           </p>
         </div>
       )}
@@ -111,7 +111,8 @@ export default function Home() {
         {winner && !gameOver && (
           <button
             onClick={resetRound}
-            className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-full font-semibold transition-all"
+            className="mt-7 p-3 rounded-xl hover:scale-110 bg-[#F5F5F5]/25 text-2xl text-white flex items-center gap-2 
+            transition-all duration-300 ease-in-out hover:bg-[#F5F5F5]/10 hover:scale-110 cursor-pointer shadow-[2px_3px_7px_0px_rgba(0,0,0,0.3)]"
           >
             Next Round
           </button>
