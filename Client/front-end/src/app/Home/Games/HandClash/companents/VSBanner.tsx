@@ -1,22 +1,44 @@
 interface VSBannerProps {
-    player1Name: string;
-    player2Name: string;
-    player1Avatar: string;
-    player2Avatar: string;
-  }
-  
-export default function VSBanner({ player1Name, player2Name, player1Avatar, player2Avatar }: VSBannerProps) {
+  player1Name: string;
+  player2Name: string;
+  player1Avatar: string;
+  player2Avatar: string;
+  winner: { player: string; line: number[] } | null;
+  player1Score: number;
+  player2Score: number;
+}
+
+export default function VSBanner({player1Name, player2Name, player1Avatar, player2Avatar, winner,
+  player1Score,
+  player2Score
+}: VSBannerProps) {
+  const isPlayer1Winner = winner?.player === 'X';
+  const isPlayer2Winner = winner?.player === 'O';
+  const isPlayer1Champion = player1Score >= 3;
+  const isPlayer2Champion = player2Score >= 3;
+
   return (
     <div className="relative w-[38vw] h-[7vh] ml-[34vw] mr-[34vw] mb-[8vh] max-w-[650px] max-h-[109px]">
       <div className="absolute bg-white/10 backdrop-blur-sm rounded-full w-full h-full"></div>
 
-      <div className="absolute left-0 top-1/2 -translate-y-1/2 flex items-center gap-2">
-        <img
-          src={player1Avatar}
-          alt="player 1"
-          className="h-[6vh] w-[6vh] rounded-full object-cover"
-        />
+      <div className={`absolute left-0 top-1/2 -translate-y-1/2 flex items-center gap-2 transition-all duration-300 ${
+        isPlayer1Winner || isPlayer1Champion ? 'scale-110' : isPlayer2Winner || isPlayer2Champion ? 'opacity-40 scale-90' : ''
+      }`}>
+        <div className="relative">
+          <img
+            src={player1Avatar}
+            alt="player 1"
+            className={`h-[6vh] w-[6vh] rounded-full object-cover ${
+              isPlayer1Winner || isPlayer1Champion ? 'ring-4 ring-yellow-400 shadow-lg shadow-yellow-400/50' : ''
+            }`}
+          />
+          <div className="absolute -bottom-1 -right-1 bg-purple-600 text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center border-2 border-white">
+            {player1Score}
+          </div>
+        </div>
         <span className="font-bold text-lg">{player1Name}</span>
+        {isPlayer1Champion && <span className="text-2xl animate-bounce">🏆</span>}
+        {isPlayer1Winner && !isPlayer1Champion && <span className="text-2xl">👑</span>}
       </div>
 
       <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10">
@@ -42,13 +64,24 @@ export default function VSBanner({ player1Name, player2Name, player1Avatar, play
         </div>
       </div>
 
-      <div className="absolute right-0 top-1/2 -translate-y-1/2 flex items-center gap-3">
+      <div className={`absolute right-0 top-1/2 -translate-y-1/2 flex items-center gap-3 transition-all duration-300 ${
+        isPlayer2Winner || isPlayer2Champion ? 'scale-110' : isPlayer1Winner || isPlayer1Champion ? 'opacity-40 scale-90' : ''
+      }`}>
+        {isPlayer2Champion && <span className="text-2xl animate-bounce">🏆</span>}
+        {isPlayer2Winner && !isPlayer2Champion && <span className="text-2xl">👑</span>}
         <span className="font-bold text-lg">{player2Name}</span>
-        <img
-          src={player2Avatar}
-          alt="player 2"
-          className="h-[6vh] w-[6vh] rounded-full object-cover"
-        />
+        <div className="relative">
+          <img
+            src={player2Avatar}
+            alt="player 2"
+            className={`h-[6vh] w-[6vh] rounded-full object-cover ${
+              isPlayer2Winner || isPlayer2Champion ? 'ring-4 ring-yellow-400 shadow-lg shadow-yellow-400/50' : ''
+            }`}
+          />
+          <div className="absolute -bottom-1 -left-1 bg-purple-600 text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center border-2 border-white">
+            {player2Score}
+          </div>
+        </div>
       </div>
     </div>
   );
