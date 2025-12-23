@@ -6,6 +6,7 @@ import { User } from "@/components/hooks/authProvider";
 import api from "@/lib/axios";
 import { ChatList } from './companents/ChatList';
 import { ChatWindow } from './companents/ChatWindow';
+import { ChatHeader } from "./companents/ChatHeader";
 
 let friendImageUser = "/images/defaultimage.png"
 
@@ -21,8 +22,9 @@ export default function Home() {
   const [onlineUsers, setOnlineUsers] = useState([]);
   const [friends, setFriends] = useState<User[]>([]);
   const friendsRef = useRef<User[]>([]);
+  const [blockedUsers, setBlockedUsers] = useState<number[]>([]);
   
-  const [time, setTime] = useState({
+  const [time] = useState({
     clock: new Date().toLocaleTimeString([], { hour:"2-digit", minute: "2-digit" }),
     date: new Date().toLocaleDateString([], { month:"2-digit", day: "2-digit" })
   });
@@ -76,76 +78,85 @@ export default function Home() {
   }, [onlineUsers.length, user])
 
   const handleSendMessage = async () => {
-    if (!inputMessage.trim() || !selectedChat) 
-      return;
-  
-    const recipient = onlineUsers.find(u => u.username === selectedChat);
-    if (!recipient || !socket) 
-      return;
-  
-    const tempId = `temp-${Date.now()}`;
-    const messageText = inputMessage.trim();
-    
-    const newMessage = {
-      id: tempId,
-      text: messageText,
-      time: new Date(),
-      user: "me",
-      seen: false,
-      avatar: user.avatar
-    };
-  
-    setMessages(prev => ({
-      ...prev,
-      [selectedChat]: [...(prev[selectedChat] || []), newMessage],
-    }));
-    
-    setInputMessage("");
-  
-    try {
-      const { data } = await api.post("/message/send", {
-        sender_id: user.id,
-        receiver_id: recipient.id,
-        content: messageText,
-      });
-      
-      setMessages(prev => ({
-        ...prev,
-        [selectedChat]: prev[selectedChat].map(msg =>
-          msg.id === tempId ? { ...msg, id: data.message_id } : msg
-        )
-      }));
-      
-      socket.emit("chat-message", { 
-        to: recipient.id, 
-        text: messageText,
-        message_id: data.message_id
-      });
+  if (!inputMessage.trim() || !selectedChat) return;
 
-    } catch (err) {
-      console.error("Error sending message:", err);
-      setMessages(prev => ({
-        ...prev,
-        [selectedChat]: prev[selectedChat].filter(m => m.id !== tempId),
-      }));
-    }
+  const recipient = onlineUsers.find(u => u.username === selectedChat);
+  if (!recipient || !socket) return;
+
+  const tempId = `temp-${Date.now()}`;
+  const messageText = inputMessage.trim();
+
+  // Add temp message immediately for UX
+  const newMessage = {
+    id: tempId,
+    text: messageText,
+    time: new Date(),
+    user: "me",
+    seen: false,
+    avatar: user.avatar
   };
 
-  useEffect(() => {
-    async function init() {
-      if (!user) 
-        return;
-      try {
-        const { data } = await api.put("/friends/friendship", { id: user.id });
-        setFriends(data.friendList);
-        friendsRef.current = data.friendList;
-        initSocket(user, accessToken);
-      } catch (err) {
-        console.error(err);
-      }
+  setMessages(prev => ({
+    ...prev,
+    [selectedChat]: [...(prev[selectedChat] || []), newMessage],
+  }));
+
+  setInputMessage("");
+
+  try {
+    const { data } = await api.post("/message/send", {
+      sender_id: user.id,
+      receiver_id: recipient.id,
+      content: messageText,
+    });
+
+    // Replace temp ID with actual ID from server
+    setMessages(prev => ({
+      ...prev,
+      [selectedChat]: prev[selectedChat].map(msg =>
+        msg.id === tempId ? { ...msg, id: data.message_id } : msg
+      )
+    }));
+
+    // Emit via socket
+    socket.emit("chat-message", { 
+      to: recipient.id, 
+      text: messageText,
+      message_id: data.message_id
+    });
+
+  } catch (err: any) {
+    // Remove temp message if error occurs
+    setMessages(prev => ({
+      ...prev,
+      [selectedChat]: prev[selectedChat].filter(m => m.id !== tempId),
+    }));
+
+    // Handle 403 explicitly
+    if (err.response?.status === 403) {
+      alert("🚫 You cannot send messages to this user (blocked).");
+    } else {
+      console.error("Error sending message:", err.response?.data || err);
+      alert("Failed to send message. Please try again.");
     }
-    init();
-  }, [user, accessToken])
+  }
+};
+
+useEffect(() => {
+  async function init() {
+    if (!user) 
+      return;
+    try {
+      const { data } = await api.put("/friends/friendship", { id: user.id });
+      setFriends(data.friendList);
+      friendsRef.current = data.friendList;
+      initSocket(user, accessToken);
+    } catch (err) {
+      console.error(err);
+    }
+  }
+  init();
+}, [user, accessToken])
 
   useEffect(() => {
     if (!socket) 
@@ -265,6 +276,48 @@ export default function Home() {
     }
   };
 
+const handleBlockUser = async (username) => {
+  const recipient = friends.find(u => u.username === username);
+  if (!recipient) return;
+
+  try {
+    // 1. Close the chat window FIRST
+    setSelectedChat(null);
+    setShowChatList(true); // Show chat list on mobile
+    
+    // 2. Call backend API
+    await api.post("/friends/block", { friendId: recipient.id });
+
+    // 3. Update local state to remove the user from view
+    setFriends(prev => prev.filter(f => f.id !== recipient.id));
+    setOnlineUsers(prev => prev.filter(f => f.id !== recipient.id));
+    
+    // 4. Clear messages for this user
+    setMessages(prev => {
+      const updated = { ...prev };
+      delete updated[username];
+      return updated;
+    });
+    
+    alert(`${username} has been blocked.`);
+  } catch (err) {
+    console.error("Failed to block user:", err);
+    alert("Failed to block user. Please try again.");
+  }
+};
+
+const handleUnblockUser = async (username: string) => {
+  const recipient = friends.find(u => u.username === username);
+  if (!recipient) return;
+
+  try {
+    await api.post("/friends/unblock", { friendId: recipient.id });
+    alert("User unblocked! You can now send messages.");
+    // Optionally refresh the chat state here
+  } catch (err) {
+    console.error("Unblock failed", err);
+  }
+};
   return (
     <div className="flex border-none h-[calc(100vh-80px)] justify-center shadow-[2px_2px_5px_3px_rgba(0,0,0,0.3)] 
     items-center bg-[#F5F5F5]/40 rounded-xl m-2 md:m-10 overflow-hidden">
@@ -290,6 +343,8 @@ export default function Home() {
         onBackToChats={handleBackToChats}
         showChatList={showChatList}
         setShowChatList={setShowChatList}
+        onBlock={() => selectedChat && handleBlockUser(selectedChat)}
+        onUnblock={() => selectedChat && handleUnblockUser(selectedChat)}
       />
     </div>
   );

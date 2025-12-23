@@ -21,6 +21,8 @@ interface ChatWindowProps {
   setInputMessage: (message: string) => void;
   onSendMessage: () => void;
   onBackToChats: () => void;
+  onBlock: () => void;
+  onUnblock: () => void;
   showChatList: boolean;
   setShowChatList: (show: boolean) => void;
 }
@@ -35,7 +37,9 @@ export const ChatWindow = ({
   onSendMessage,
   onBackToChats,
   showChatList,
-  setShowChatList
+  setShowChatList,
+  onBlock,
+  onUnblock
 }: ChatWindowProps) => {
   const [showMenu, setShowMenu] = useState(false);
 
@@ -48,6 +52,8 @@ export const ChatWindow = ({
             friendImageUser={friendImageUser}
             showMenu={showMenu}
             setShowMenu={setShowMenu}
+            onBlock={onBlock}
+            onUnblock={onUnblock}
             onBackToChats={onBackToChats}
           />
 

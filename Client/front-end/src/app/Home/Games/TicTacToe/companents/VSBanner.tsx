@@ -36,7 +36,7 @@ export default function VSBanner({player1Name, player2Name, player1Avatar, playe
             {player1Score}
           </div>
         </div>
-        <span className="font-bold text-lg">{player1Name}</span>
+        <span className="font-bold text-b lg">{player1Name}</span>
         {isPlayer1Champion && <span className="text-2xl animate-bounce">🏆</span>}
         {isPlayer1Winner && !isPlayer1Champion && <span className="text-2xl">👑</span>}
       </div>

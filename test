@@ -4,7 +4,7 @@ import Link from "next/link"
 export default function HandClash() {
   return (
     <>
-      <Link href="/Home/Games/HandClash">
+      <Link href="/Home/Games/tic_tac_toe">
         <div
           id="HandClash"
           className="

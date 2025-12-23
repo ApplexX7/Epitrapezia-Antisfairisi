@@ -195,6 +195,25 @@ export function createTableMessage() {
     });
 }
 
+
+export function createBlockTable() {
+    const createTableBlock = `
+        CREATE TABLE IF NOT EXISTS block (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            blocker_id INTEGER NOT NULL,
+            blocked_id INTEGER NOT NULL,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE(blocker_id, blocked_id),
+            FOREIGN KEY (blocker_id) REFERENCES users(id) ON DELETE CASCADE,
+            FOREIGN KEY (blocked_id) REFERENCES users(id) ON DELETE CASCADE
+        )
+    `;
+    db.run(createTableBlock, (err) => {
+        if (err) console.error("Error creating block table:", err.message);
+        else console.log('Table "block" created.');
+    });
+}
+
 export function createsDbTabes(){
     createTable();
     createOTPTable();
@@ -203,4 +222,5 @@ export function createsDbTabes(){
     createTableMessage();
     createGameStats();
     createGameHistory();
+    createBlockTable();
 }

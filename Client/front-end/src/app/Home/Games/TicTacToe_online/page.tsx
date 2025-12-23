@@ -35,7 +35,6 @@ export default function Home() {
 
   useEffect(() => {
     if (winner) {
-      // Update scores when there's a winner
       if (winner.player === 'X') {
         const newScore = player1Score + 1;
         setPlayer1Score(newScore);
@@ -82,7 +81,8 @@ export default function Home() {
   }
 
   return (
-    <main className="flex flex-col items-center justify-center h-screen bg-[#F5F5F5]/10 rounded-xl border-none shadow-[2px_2px_5px_3px_rgba(0,0,0,0.3)] m-2 md:m-10">
+    <main className="flex flex-col items-center justify-center h-screen bg-[#F5F5F5]/10 rounded-xl border-none 
+      shadow-[2px_2px_5px_3px_rgba(0,0,0,0.3)] m-2 md:m-10">
       <VSBanner
         player1Name="Saloua_X"
         player2Name="Saloua_O"
@@ -94,7 +94,7 @@ export default function Home() {
       />
 
       {gameOver && (
-        <div className="mb-4 bg-yellow-400 text-purple-900 rounded-2xl px-6 py-3 text-center animate-bounce">
+        <div className=" mb-4 bg-yellow-400 text-purple-900 rounded-2xl px-6 py-3 text-center animate-bounce">
           <p className="text-2xl font-bold">
             🏆 {player1Score >= 3 ? 'Saloua_X' : 'Saloua_O'} WINS THE MATCH! 🏆
           </p>
@@ -112,7 +112,8 @@ export default function Home() {
           <button
             onClick={resetRound}
             className="mt-7 p-3 rounded-xl hover:scale-110 bg-[#F5F5F5]/25 text-2xl text-white flex items-center gap-2 
-            transition-all duration-300 ease-in-out hover:bg-[#F5F5F5]/10 hover:scale-110 cursor-pointer shadow-[2px_3px_7px_0px_rgba(0,0,0,0.3)]"
+            transition-all duration-300 ease-in-out hover:bg-[#F5F5F5]/10 hover:scale-110 cursor-pointer 
+              shadow-[2px_3px_7px_0px_rgba(0,0,0,0.3)]"
           >
             Next Round
           </button>

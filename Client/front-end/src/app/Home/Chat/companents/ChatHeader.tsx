@@ -7,6 +7,8 @@ interface ChatHeaderProps {
   showMenu: boolean;
   setShowMenu: (show: boolean) => void;
   onBackToChats: () => void;
+  onBlock: () => void;
+  onUnblock: () => void,
   showBackButton?: boolean;
 }
 
@@ -16,6 +18,8 @@ export const ChatHeader = ({
   showMenu,
   setShowMenu,
   onBackToChats,
+  onBlock = () => console.warn("onBlock not provided"),
+  onUnblock,
   showBackButton = true
 }: ChatHeaderProps) => {
   return (
@@ -50,14 +54,20 @@ export const ChatHeader = ({
             ${showMenu ? "opacity-100 scale-100 pointer-events-auto" : "opacity-0 scale-95 pointer-events-none"}`}>
             <button 
               className="rounded-lg w-[150px] px-4 py-3 hover:bg-[#D1DAE9]/20 border-white/10 mt-2 font-medium"
-              onClick={() => setShowMenu(false)}
+              onClick={() => {
+                onBlock();
+                setShowMenu(false);
+              }}
             >
               Block
             </button>
             
             <button 
               className="rounded-lg w-[150px] px-4 py-3 hover:bg-[#D1DAE9]/20 transition-colors border-white/10 mb-2 font-medium"
-              onClick={() => setShowMenu(false)}
+              onClick={() => {
+                onUnblock();
+                setShowMenu(false);
+              }}
             >
               Unblock
             </button>
