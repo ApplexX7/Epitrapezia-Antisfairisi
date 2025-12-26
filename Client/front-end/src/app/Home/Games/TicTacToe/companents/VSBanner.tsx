@@ -18,7 +18,7 @@ export default function VSBanner({player1Name, player2Name, player1Avatar, playe
   const isPlayer2Champion = player2Score >= 3;
 
   return (
-    <div className="relative w-[38vw] h-[7vh] ml-[34vw] mr-[34vw] mb-[8vh] max-w-[650px] max-h-[109px]">
+    <div className="relative w-[95vw] sm:w-[90vw] lg:w-[95vw] mx-auto h-[64px] lg:h-[7vh] mb-4 lg:mb-[8vh] max-w-[650px]">
       <div className="absolute bg-white/10 backdrop-blur-sm rounded-full w-full h-full"></div>
 
       <div className={`absolute left-0 top-1/2 -translate-y-1/2 flex items-center gap-2 transition-all duration-300 ${

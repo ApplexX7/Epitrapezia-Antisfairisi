@@ -1,11 +1,11 @@
 'use client'
 import Link from "next/link"
 
-export default function HandClash() {
+export default function tic_tac_toe() {
   return (
     <>
       <div
-        id="HandClash"
+        id="tic_tac_toe"
         className="
           absolute
           w-[20vw] h-[60vh]
@@ -88,7 +88,6 @@ export default function HandClash() {
           </div>
         </Link>
 
-        {/* TITLE */}
         <span
           className="
             absolute
