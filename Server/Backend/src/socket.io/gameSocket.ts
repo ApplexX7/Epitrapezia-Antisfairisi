@@ -14,23 +14,25 @@ interface GameRoom {
   id: string;
   players: UserSocket[];
   ball: { x: number; y: number; dx: number; dy: number };
+  baseSpeed?: { dx: number; dy: number };
+  roundStart?: number;
   paddles: { [userId: number]: number };
   scores: { [userId: number]: number };
   paddleStep?: number;
   loop?: ReturnType<typeof setInterval> | null;
-  recorded?: boolean; // guard to avoid double-recording results
+  recorded?: boolean; // no race condition for db error
 }
 
 let matchmakingQueue: UserSocket[] = [];
 const activeRooms: Record<string, GameRoom> = {};
-
-// Helper: record a match result once (marks room.recorded synchronously to avoid races)
+// avoid race 
 async function recordMatchResult(room: GameRoom, winnerId: number, loserId: number) {
   if (room.recorded) return;
   room.recorded = true;
   try {
     await ensureGameStatsForPlayer(winnerId);
     await ensureGameStatsForPlayer(loserId);
+    // update winner stats
     await new Promise<void>((resolve, reject) => {
       db.run(
         `UPDATE game_stats SET total_games = total_games + 1, wins = wins + 1, updated_at = CURRENT_TIMESTAMP WHERE player_id = ?`,
@@ -38,6 +40,8 @@ async function recordMatchResult(room: GameRoom, winnerId: number, loserId: numb
         (err: any) => (err ? reject(err) : resolve())
       );
     });
+
+    // update loser stats
     await new Promise<void>((resolve, reject) => {
       db.run(
         `UPDATE game_stats SET total_games = total_games + 1, losses = losses + 1, updated_at = CURRENT_TIMESTAMP WHERE player_id = ?`,
@@ -45,6 +49,31 @@ async function recordMatchResult(room: GameRoom, winnerId: number, loserId: numb
         (err: any) => (err ? reject(err) : resolve())
       );
     });
+
+    // insert to game historiy
+    try {
+      const p1Id = room.players[0]?.user?.id;
+      const p2Id = room.players[1]?.user?.id;
+      const p1Score = room.scores[p1Id] ?? 0;
+      const p2Score = room.scores[p2Id] ?? 0;
+      // make sure winnerid is set
+      let resolvedWinner = winnerId;
+      if (!resolvedWinner) {
+        if (p1Score > p2Score) resolvedWinner = p1Id;
+        else if (p2Score > p1Score) resolvedWinner = p2Id;
+        else resolvedWinner = loserId === p1Id ? p2Id : p1Id;
+      }
+
+      await new Promise<void>((resolve, reject) => {
+        db.run(
+          `INSERT INTO game_history (player1_id, player2_id, player1_score, player2_score, winner_id) VALUES (?, ?, ?, ?, ?)`,
+          [p1Id, p2Id, p1Score, p2Score, resolvedWinner],
+          (err: any) => (err ? reject(err) : resolve())
+        );
+      });
+    } catch (e) {
+      console.error('Failed to insert into game_history for room', room.id, e || e);
+    }
   } catch (e) {
     console.error('Failed to record match result for room', room.id, e);
   }
@@ -54,7 +83,7 @@ export function registerGameSocket(io: Server, socket: UserSocket) {
   socket.on("joinmatchup", async () => {
     console.log(`🎮 ${socket.user.username} joined matchmaking`);
 
-    // Add to queue
+    // add to queue
 
     const alreadyInQueue = matchmakingQueue.some(
       (s) => s.id === socket.id
@@ -63,16 +92,16 @@ export function registerGameSocket(io: Server, socket: UserSocket) {
     if (alreadyInQueue) {
       console.log(`⚠️ ${socket.user.username} already in matchmaking, stopping...`);
       socket.emit("stopmatchmaking", { message: "Matchmaking cancelled" });
-      // Optionally remove from queue
+      // optionally remove from queue
       matchmakingQueue = matchmakingQueue.filter((s) => s.id !== socket.id);
       return;
     }
   
-    // Add to queue
+    // add to queue
     matchmakingQueue.push(socket);
     socket.emit("waiting", { message: "searching for opponent" });
   
-    // Match with first different user
+    // match with first diff user
     const opponent = matchmakingQueue.find(
       (s) => s.user.id !== socket.user.id
     );
@@ -82,8 +111,10 @@ export function registerGameSocket(io: Server, socket: UserSocket) {
     const room: GameRoom = {
       id: roomId,
       players: [socket, opponent],
-      // start with a slightly reduced ball speed compared to before
-      ball: { x: 0, y: 0, dx: 6, dy: 6 },
+      // start with a slightly reduced ball speed
+        ball: { x: 0, y: 0, dx: 6, dy: 6 },
+        baseSpeed: { dx: 6, dy: 6 },
+        roundStart: Date.now(),
       paddles: {
         [socket.user.id]: 0,
         [opponent.user.id]: 0,
@@ -97,13 +128,13 @@ export function registerGameSocket(io: Server, socket: UserSocket) {
     };
 
   activeRooms[roomId] = room;
-  // Remove both participants from the queue safely (avoid splice(-1,1) edge case)
+  // remove both participants from the queue safely avoid splice(-1,1) edge case
   matchmakingQueue = matchmakingQueue.filter((s) => s.id !== socket.id && s.id !== opponent.id);
 
     socket.join(roomId);
     opponent.join(roomId);
 
-    // Fetch avatars from DB (token payload doesn't include avatar) and fallback to default
+    // get avatar from db , if not exist going back to default
     const getAvatar = (userId: number) => new Promise<string>((resolve) => {
       db.get(
         "SELECT avatar FROM players WHERE id = ?",
@@ -144,7 +175,7 @@ export function registerGameSocket(io: Server, socket: UserSocket) {
     const room = activeRooms[roomId];
     if (!room) return;
 
-    // Ensure the sender is actually a participant in this room
+    // ensure the sender is actually a participant in this room 
     const isParticipant = room.players.some((p) => p.user.id === socket.user.id);
     if (!isParticipant) {
       console.warn(`Unauthorized movePaddle from user ${socket.user?.username} for room ${roomId}`);
@@ -164,11 +195,11 @@ export function registerGameSocket(io: Server, socket: UserSocket) {
   });
 
   socket.on("disconnect", () => {
-    // Remove from rooms
+    // remove from rooms
     for (const [id, room] of Object.entries(activeRooms)) {
       if (room.players.includes(socket)) {
         io.to(id).emit("gameOver", { message: `${socket.user.username} disconnected` });
-        // mark result: other player wins (best-effort)
+        // mark result: other player wins best-effort
         try {
           const other = room.players.find((p) => p.id !== socket.id);
           if (other && !room.recorded) {
@@ -189,25 +220,45 @@ export function registerGameSocket(io: Server, socket: UserSocket) {
       }
     }
 
-    // Remove from queue if waiting
+    // remove from queue if waiting
     const idx = matchmakingQueue.indexOf(socket);
     if (idx !== -1) matchmakingQueue.splice(idx, 1);
   });
 }
 
 function startGameLoop(io: Server, room: GameRoom) {
-  // clear any existing loop (restart)
+  // clear any existing loop restart
   if (room.loop) {
     clearInterval(room.loop as any);
     room.loop = null;
   }
+  const SPEED_ADD_PER_SECOND = 0.2; // px per second added to each component's magnitude
 
   const interval = setInterval(() => {
     const { ball, paddles, players } = room;
-    // Move the ball using sub-steps to avoid tunneling when speed is high.
-    // This ensures collisions are detected even when dx/dy are large.
+
+    // compute current per round elapsed and derive the effective ball velocity
+    const now = Date.now();
+    const roundStart = room.roundStart ?? now;
+    const elapsedSec = Math.max(0, (now - roundStart) / 1000);
+    const addPerSec = SPEED_ADD_PER_SECOND;
+
+      // if basespeed doesnt exist
+    if (!room.baseSpeed) room.baseSpeed = { dx: ball.dx, dy: ball.dy };
+
+    const base = room.baseSpeed;
+    // current effective magnitudes (additive growth over time)
+    const effDx = Math.sign(base.dx) * (Math.abs(base.dx) + elapsedSec * addPerSec);
+    const effDy = Math.sign(base.dy) * (Math.abs(base.dy) + elapsedSec * addPerSec);
+
+    // apply to the ball for this tick 
+    ball.dx = effDx;
+    ball.dy = effDy;
+
+    // move the ball using sub-steps to avoid tunneling when speed is high.
+    // this ensures collisions are detected even when dx/dy are large.
   const maxDelta = Math.max(Math.abs(ball.dx), Math.abs(ball.dy));
-  // Increase sub-steps resolution to avoid tunneling at high speeds
+  // increase sub steps resolution to avoid tunneling at high speeds
   const subSteps = Math.max(1, Math.ceil(maxDelta / 4));
 
     let scored = false;
@@ -228,11 +279,11 @@ function startGameLoop(io: Server, room: GameRoom) {
       const paddleHalfH = 80; // vertical half-height used earlier
       const ballRadius = 12; // ball diameter 24px -> radius 12
 
-      // Paddle center X positions
+      // paddle center X positions
       const leftPaddleCenterX = -400 + paddleWidth / 2; // -390.5
       const rightPaddleCenterX = 400 - paddleWidth / 2; // 390.5
 
-      // Paddle face X (outer edge matching visual paddle face)
+      // paddle face X (outer edge matching visual paddle face)
       const leftFaceX = leftPaddleCenterX + paddleWidth / 2; // -381
       const rightFaceX = rightPaddleCenterX - paddleWidth / 2; // 381
 
@@ -242,7 +293,7 @@ function startGameLoop(io: Server, room: GameRoom) {
 
       let collided = false;
 
-      // Check left paddle crossing (ball moving left)
+      // check left paddle crossing (ball moving left)
       if (sx < 0 && prevX >= leftCollisionX && prevX + sx <= leftCollisionX) {
         const t = (leftCollisionX - prevX) / sx; // fraction along this substep
         const impactY = prevY + sy * t;
@@ -251,11 +302,13 @@ function startGameLoop(io: Server, room: GameRoom) {
           ball.x = leftCollisionX;
           ball.y = impactY;
           ball.dx = Math.abs(ball.dx);
+          // reflect baseSpeed sign so future additive growth keeps direction
+          if (room.baseSpeed) room.baseSpeed.dx = Math.abs(room.baseSpeed.dx);
           collided = true;
         }
       }
 
-      // Check right paddle crossing (ball moving right)
+      // check right paddle crossing (ball moving right)
       if (!collided && sx > 0 && prevX <= rightCollisionX && prevX + sx >= rightCollisionX) {
         const t = (rightCollisionX - prevX) / sx;
         const impactY = prevY + sy * t;
@@ -263,6 +316,7 @@ function startGameLoop(io: Server, room: GameRoom) {
           ball.x = rightCollisionX;
           ball.y = impactY;
           ball.dx = -Math.abs(ball.dx);
+          if (room.baseSpeed) room.baseSpeed.dx = -Math.abs(room.baseSpeed.dx);
           collided = true;
         }
       }
@@ -276,24 +330,25 @@ function startGameLoop(io: Server, room: GameRoom) {
       ball.x += sx;
       ball.y += sy;
 
-      // Wall collision (top/bottom) - account for ball radius so the bounce
+      // wall collision (top/bottom) - account for ball radius so the bounce
       // occurs when the ball's outer edge (corner) hits the board limits,
       // not when its center reaches them.
       const boardHalfH = 250; // half the board height (visual: 500px)
       if (ball.y > boardHalfH - ballRadius || ball.y < -boardHalfH + ballRadius) {
         ball.dy *= -1;
+        if (room.baseSpeed) room.baseSpeed.dy *= -1;
       }
 
-      // Goal detection: if ball passes beyond playable area, award point to opponent
+      // goal detection: if ball passes beyond playable area, award point to opponent
       const leftGoal = -400 - ballRadius; // require ball fully past left edge
       const rightGoal = 400 + ballRadius;
 
       if (ball.x <= leftGoal) {
-        // Right player scores
+        // right player scores
         room.scores[rightPlayer.user.id] = (room.scores[rightPlayer.user.id] ?? 0) + 1;
         scored = true;
       } else if (ball.x >= rightGoal) {
-        // Left player scores
+        // left player scores
         room.scores[leftPlayer.user.id] = (room.scores[leftPlayer.user.id] ?? 0) + 1;
         scored = true;
       }
@@ -302,11 +357,11 @@ function startGameLoop(io: Server, room: GameRoom) {
     }
 
     if (scored) {
-      // Pause the loop and send a 3-second countdown to clients
+      // pause the loop and send a 3-second countdown to clients
       try { if (room.loop) clearInterval(room.loop as any); } catch (e) {}
       room.loop = null;
 
-      // Send immediate updated gameState with ball centered
+      // send immediate updated gameState with ball centered
       ball.x = 0;
       ball.y = 0;
       io.to(room.id).emit("gameState", {
@@ -324,10 +379,18 @@ function startGameLoop(io: Server, room: GameRoom) {
         if (countdown === 0) {
           clearInterval(countdownInterval);
 
-          // After countdown, slightly reduce ball speed and increase paddle speed
+          // after countdown, slightly reduce ball speed and increase paddle speed
           const minSpeed = 4;
-          ball.dx = (ball.dx >= 0 ? 1 : -1) * Math.max(minSpeed, Math.abs(ball.dx) * 0.9);
-          ball.dy = (ball.dy >= 0 ? 1 : -1) * Math.max(minSpeed, Math.abs(ball.dy) * 0.9);
+            // reduce the base speed magnitude so future rounds start a bit slower,
+            // then reset the round start so additive growth begins from zero elapsed.
+            if (!room.baseSpeed) room.baseSpeed = { dx: ball.dx, dy: ball.dy };
+            room.baseSpeed.dx = (room.baseSpeed.dx >= 0 ? 1 : -1) * Math.max(minSpeed, Math.abs(room.baseSpeed.dx) * 0.9);
+            room.baseSpeed.dy = (room.baseSpeed.dy >= 0 ? 1 : -1) * Math.max(minSpeed, Math.abs(room.baseSpeed.dy) * 0.9);
+            // reset round timer so growth restarts for the next rally
+            room.roundStart = Date.now();
+            // make ball reflect the new base speed immediately (no elapsed added yet)
+            ball.dx = room.baseSpeed.dx;
+            ball.dy = room.baseSpeed.dy;
 
           // Increase paddle responsiveness a bit
           room.paddleStep = Math.min(40, (room.paddleStep ?? 24) + 4);
@@ -338,7 +401,7 @@ function startGameLoop(io: Server, room: GameRoom) {
         }
       }, 1000);
 
-      // Check win condition: first to >5 with at least 2 point lead
+      // check win condition: first to >5 with at least 2 point lead
       const leftScore = room.scores[leftPlayer.user.id] ?? 0;
       const rightScore = room.scores[rightPlayer.user.id] ?? 0;
 
@@ -360,7 +423,7 @@ function startGameLoop(io: Server, room: GameRoom) {
       }
     }
 
-    // Emit game state along with player order and scores so clients can map left/right and display score
+    // mmit game state along with player order and scores so clients can map left/right and display score
     io.to(room.id).emit("gameState", {
       ball,
       paddles,
@@ -372,7 +435,7 @@ function startGameLoop(io: Server, room: GameRoom) {
   // keep a reference on the room for cleanup and allow disconnect handler to clear it
   room.loop = interval;
 
-  // Stop loop on disconnect
+  // stop loop on disconnect
   room.players.forEach((s) => {
     s.once("disconnect", async () => {
       try { if (room.loop) clearInterval(room.loop as any); } catch (e) {}

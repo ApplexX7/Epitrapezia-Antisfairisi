@@ -148,7 +148,7 @@ export default function SignUp() {
                 )}
             </div>
               <Image className="z-0 hidden md:w-[700px] left-10 h-full  md:block absolute"
-                alt="Logo for  a ping pong" src="/images/logo-S.png" 
+                alt="Logo for  a ping pong" src="/images/Logo-S.png" 
                 width={500} height={500} priority/>
           </div>
         </div>

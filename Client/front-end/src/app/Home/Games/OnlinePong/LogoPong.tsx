@@ -7,7 +7,7 @@ export default function LogoPong() {
       <Image
         className="w-[167px] h-[250px] xl:block hidden md:block"
         alt="Logo for a ping pong"
-        src="/images/logo-S.png"
+  src="/images/Logo-S.png"
         width={450}
         height={450}
       />

@@ -2,7 +2,7 @@
 import "../../globals.css";
 import Tournament from "./Tournament";
 import PongGame from "./PongGame";
-import HandClash from "./HandClash";
+import HandClash from "./tic_tac_toe";
 
 export default function Games() {
   return (

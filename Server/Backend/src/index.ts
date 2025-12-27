@@ -7,6 +7,8 @@ import { refreshTokenDate } from "./controllers/authRefresh";
 import { playerSettings } from "./routers/player";
 import { friends } from "./routers/friends";
 import { verifyRefreshToken } from "./controllers/authRefresh";
+import { Message } from "./routers/message";
+import { seenMsg } from "./routers/seenMsg"
 
 createsDbTabes();
 
@@ -14,7 +16,7 @@ const app = Server.instance();
 
 
 app.register(fastifyCors, {
-  origin: ["https://localhost", "https://WebPong.1337.ma"],
+  origin: ["https://localhost", "https://localhost:8443", "https://WebPong.1337.ma"],
   credentials: true,
 });
 app.addHook("onRequest", async (req: FastifyRequest, reply: FastifyReply) => {
@@ -58,6 +60,8 @@ async function bootstrap() {
 bootstrap();
 friends();
 playerSettings();
+Message();
+seenMsg();
 
 app.ready((err) => {
   if (err) throw err;

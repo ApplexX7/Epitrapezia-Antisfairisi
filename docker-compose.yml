@@ -3,8 +3,10 @@ services:
     image : nginx:latest
     container_name: nginx
     build: ./nginx
+    restart: unless-stopped
     ports:
-      - "443:443"
+      - "8080:80"
+      - "8443:443"
     depends_on:
       - client
       - server
@@ -25,12 +27,19 @@ services:
       - NODE_ENV=${MODE}
     command: >
       sh -c "if [ \"$MODE\" = \"dev\" ]; then npm run dev; else npm run start; fi"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:3000/ || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 10s
     networks:
       - webpong
 
   server:
     image : server:latest
-    container_name: back-end
+    container_name: server
     build:
       context: ./Server
       args:
@@ -42,6 +51,13 @@ services:
       - ./env/.env_api
     command: >
       sh -c "if [ \"$MODE\" = \"dev\" ]; then nodemon --watch src --exec ts-node src/index.ts; else node dist/index.js; fi"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/ || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 10s
     networks:
       - webpong
     depends_on:

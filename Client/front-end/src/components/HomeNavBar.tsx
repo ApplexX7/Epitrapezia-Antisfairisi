@@ -16,7 +16,7 @@ export default function HomeNavBar (){
     const [notif, isnotif] = useState(false);
     return (
         <div className="relative mt-10 min-[1400px]:-mt-5 min-[1400px]:mb-0 mb-10 flex justify-center items-center gap-5 w-full xl:px-10 px-5">
-            <Image className="hidden ml-10 min-[1400px]:block w-[180px] h-[200px]"  alt="Logo for  a ping pong" src="/images/logo-S.png" width={500} height={500} priority/>
+            <Image className="hidden ml-10 min-[1400px]:block w-[180px] h-[200px]"  alt="Logo for  a ping pong" src="/images/Logo-S.png" width={500} height={500} priority/>
             <div className={`ml-10  lg:block hidden xl:ml-0 w-full rounded-full h-[70px]  xl:mt-0`}>
                 {
                     !search ? (

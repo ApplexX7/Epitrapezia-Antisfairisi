@@ -2,6 +2,7 @@ import { FastifyRequest, FastifyReply } from "fastify";
 import { db } from "../databases/db";
 import { User } from "../interfaces/userInterface";
 import { Server } from "../server";
+import { Message } from "../routers/message";
 
 export async function FriendRequest(req : FastifyRequest<{Body:{friendId : number}}>, reply : FastifyReply){    
     const { id } = (req as any).user as User;
@@ -99,3 +100,4 @@ export async function RemoveFriendRequest(req : FastifyRequest<{Body:{friendId :
 
     }
 }
+

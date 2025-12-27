@@ -99,6 +99,35 @@ export function createGameStats() {
     );
 }
 
+export function createGameHistory() {
+    db.run(
+        `CREATE TABLE IF NOT EXISTS game_history (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+            player1_id INTEGER NOT NULL,
+            player2_id INTEGER NOT NULL,
+
+            player1_score INTEGER NOT NULL DEFAULT 0,
+            player2_score INTEGER NOT NULL DEFAULT 0,
+
+            winner_id INTEGER NOT NULL, -- id of the player who won
+
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+
+            FOREIGN KEY (player1_id) REFERENCES players(id) ON DELETE CASCADE,
+            FOREIGN KEY (player2_id) REFERENCES players(id) ON DELETE CASCADE,
+            FOREIGN KEY (winner_id) REFERENCES players(id) ON DELETE CASCADE
+        )`,
+        (err) => {
+            if (err) {
+                console.error("Error creating game_history table:", err.message);
+            } else {
+                console.log('Table "game_history" created or already exists.');
+            }
+        }
+    );
+}
+
 export function ensureGameStatsForPlayer(playerId: number): Promise<void> {
     return new Promise((resolve, reject) => {
         db.run(
@@ -150,9 +179,10 @@ export function createTableMessage() {
             receiver_id INTEGER,
             content TEXT NOT NULL,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-
+            readed INTEGER DEFAULT 0 CHECK (is_completed IN (0, 1)),
             FOREIGN KEY (sender_id) REFERENCES players(id) ON DELETE CASCADE,
-            FOREIGN KEY (receiver_id) REFERENCES players(id) ON DELETE CASCADE
+            FOREIGN KEY (receiver_id) REFERENCES players(id) ON DELETE CASCADE,
+            ALTER TABLE messages ADD COLUMN seen BOOLEAN DEFAULT FALSE,
         )
     `;
 
@@ -165,6 +195,25 @@ export function createTableMessage() {
     });
 }
 
+
+export function createBlockTable() {
+    const createTableBlock = `
+        CREATE TABLE IF NOT EXISTS block (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            blocker_id INTEGER NOT NULL,
+            blocked_id INTEGER NOT NULL,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE(blocker_id, blocked_id),
+            FOREIGN KEY (blocker_id) REFERENCES users(id) ON DELETE CASCADE,
+            FOREIGN KEY (blocked_id) REFERENCES users(id) ON DELETE CASCADE
+        )
+    `;
+    db.run(createTableBlock, (err) => {
+        if (err) console.error("Error creating block table:", err.message);
+        else console.log('Table "block" created.');
+    });
+}
+
 export function createsDbTabes(){
     createTable();
     createOTPTable();
@@ -172,4 +221,6 @@ export function createsDbTabes(){
     createFriendsTable();
     createTableMessage();
     createGameStats();
+    createGameHistory();
+    createBlockTable();
 }
