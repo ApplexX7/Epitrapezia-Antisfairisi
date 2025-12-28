@@ -9,6 +9,8 @@ export interface User {
     authProvider?: string
     status ?: string,
     friendstatus ? : string,
+    level?: number;
+    experience?: number;
     settings ?: {
       dateJoined : string,
       social : string,

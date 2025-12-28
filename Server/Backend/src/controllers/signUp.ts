@@ -55,7 +55,17 @@ export function SignUp() {
 
       await sendVerificationEmail(email, otp);
 
-      const user = { id: userId, username, email, firstName, lastName, avatar: "/images/defaultAvatare.jpg" , auth_Provider : "local"};
+      const user = { 
+        id: userId, 
+        username, 
+        email, 
+        firstName, 
+        lastName, 
+        avatar: "/images/defaultAvatare.jpg", 
+        auth_Provider: "local",
+        level: 1,
+        progression: 0,
+      };
       return reply.status(201).send({
         message: "User created successfully. Please verify your email with the OTP sent.",
         user,

@@ -12,6 +12,31 @@ interface UserPayload {
 
 const onlineUsers: Record<number, any[]> = {};
 
+// Function to update player level based on experience
+function updateLevel(playerId: number) {
+  db.get(
+    `SELECT experience FROM players WHERE id = ?`,
+    [playerId],
+    (err, row: { experience: number }) => {
+      if (err) {
+        console.error("Error getting experience:", err);
+        return;
+      }
+      const experience = row.experience;
+      // Level calculation: level = floor(experience / 100) + 1
+      const newLevel = Math.floor(experience / 100) + 1;
+      
+      db.run(
+        `UPDATE players SET level = ? WHERE id = ?`,
+        [newLevel, playerId],
+        (updateErr) => {
+          if (updateErr) console.error("Error updating level:", updateErr);
+        }
+      );
+    }
+  );
+}
+
 // Mock function to get friend IDs of a user
 async function getFriendIds(userId: number): Promise<number[]> {
   return new Promise((resolve, reject) => {
@@ -75,6 +100,19 @@ export function registerSocketHandlers(io: Server) {
             if (err) console.error("Error updating attendance:", err);
           }
         );
+
+        // Add experience points (10 XP per hour)
+        const xpGained = Math.floor(sessionDurationHours * 10);
+        if (xpGained > 0) {
+          db.run(
+            `UPDATE players SET experience = experience + ? WHERE id = ?`,
+            [xpGained, user.id],
+            (err) => {
+              if (err) console.error("Error updating experience:", err);
+              else updateLevel(user.id);
+            }
+          );
+        }
       }
     }, 300000); // Update every 5 minutes
 
@@ -112,6 +150,19 @@ export function registerSocketHandlers(io: Server) {
             if (err) console.error("Error updating attendance hours:", err);
           }
         );
+
+        // Add experience points for the session (10 XP per hour)
+        const xpGained = Math.floor(durationHours * 10);
+        if (xpGained > 0) {
+          db.run(
+            `UPDATE players SET experience = experience + ? WHERE id = ?`,
+            [xpGained, user.id],
+            (err) => {
+              if (err) console.error("Error updating experience:", err);
+              else updateLevel(user.id);
+            }
+          );
+        }
       }
 
       onlineUsers[user.id] = onlineUsers[user.id].filter(s => s.id !== socket.id);

@@ -20,6 +20,8 @@ export async  function getUserInfo(req : FastifyRequest, reply : FastifyReply){
             id : exist.id,
             username : exist.username,
             avatar : exist.avatar,
+            level: exist.level || 1,
+            progression: ((exist.experience || 0) % 100),
         }
         reply.code(200).send({
             userInof,

@@ -13,6 +13,8 @@ export type User = {
   des : string,
   dateJoined: string,
   exp: number,
+  level: number;
+  progression: number;
   isFriend ?: boolean,
   friendstatus ? : string,
 };

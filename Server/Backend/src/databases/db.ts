@@ -159,13 +159,26 @@ export function createTable(){
             avatar TEXT NULL,
             refreshToken TEXT,
             is_online INTEGER DEFAULT 0,
-            auth_Provider TEXT DEFAULT 'local'
+            auth_Provider TEXT DEFAULT 'local',
+            level INTEGER DEFAULT 1,
+            experience INTEGER DEFAULT 0
         )`,
         (err : any) => {
             if (err) {
                 console.error("Error creating table:", err.message);
             } else {
                 console.log('Table "players" created or already exists.');
+                // Add level and experience columns if they don't exist
+                db.run(`ALTER TABLE players ADD COLUMN level INTEGER DEFAULT 1`, (alterErr : any) => {
+                    if (alterErr && !alterErr.message.includes('duplicate column name')) {
+                        console.error("Error adding level column:", alterErr.message);
+                    }
+                });
+                db.run(`ALTER TABLE players ADD COLUMN experience INTEGER DEFAULT 0`, (alterErr : any) => {
+                    if (alterErr && !alterErr.message.includes('duplicate column name')) {
+                        console.error("Error adding experience column:", alterErr.message);
+                    }
+                });
             }
         }
     );
@@ -229,7 +242,7 @@ export function createAttendanceTable() {
                 console.error("Error creating attendance table:", err.message);
             } else {
                 console.log('Table "attendance" created or already exists.');
-                db.run(`ALTER TABLE attendance ADD COLUMN hours REAL DEFAULT 0`, (alterErr) => {
+                db.run(`ALTER TABLE attendance ADD COLUMN hours REAL DEFAULT 0`, (alterErr : any) => {
                     if (alterErr && !alterErr.message.includes('duplicate column name')) {
                         console.error("Error adding hours column:", alterErr.message);
                     }

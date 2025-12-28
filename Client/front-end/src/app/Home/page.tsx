@@ -65,7 +65,7 @@ export default function Home() {
         </BoxLayout>
         <BoxLayout className="col-span-4 xl:col-span-1 grid gap-5" >
           <BoxLayout className="card px-5 h-fit" >
-            <BarProgressionLevel level={20} progression={60}/>
+            <BarProgressionLevel level={user?.level || 1} progression={user?.progression || 0}/>
           </BoxLayout>
           <BoxLayout className="py-18 card h-full xl:row-span-auto" >
             <ChartLineDefault/>

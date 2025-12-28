@@ -7,7 +7,7 @@ import {VerifyOtp} from "../controllers/verifyOtp"
 import { ResendOtp } from "../controllers/resendOtp";
 import { GoogleAuthRedirection, GoogleAuthCallback } from "../controllers/googleAuth";
 import { LoginBody, SignUpBody } from "../interfaces/types";
-import rateLimit from  '@fastify/rate-limit'
+// import rateLimit from  '@fastify/rate-limit'
 
 const loginSchema = {
   type: "object",

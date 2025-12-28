@@ -55,7 +55,10 @@ export function RefreshToken() {
         });
   
         return reply.send({
-          user,
+          user: {
+            ...user,
+            progression: (user.experience || 0) % 100,
+          },
           token: { accessToken },
         });
       } catch (err) {
