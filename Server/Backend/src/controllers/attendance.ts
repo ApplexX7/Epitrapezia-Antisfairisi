@@ -1,0 +1,123 @@
+import { FastifyReply, FastifyRequest } from "fastify";
+import { db } from "../databases/db";
+
+export function MarkAttendance() {
+    return async (req: FastifyRequest, reply: FastifyReply) => {
+        try {
+            const playerId = (req as any).user.id;
+            const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+
+            const existing = await new Promise((resolve, reject) => {
+                db.get(
+                    `SELECT id FROM attendance WHERE player_id = ? AND date = ?`,
+                    [playerId, today],
+                    (err, row) => {
+                        if (err) reject(err);
+                        else resolve(row);
+                    }
+                );
+            });
+
+            if (existing) {
+                return reply.status(200).send({ message: "Attendance already marked for today" });
+            }
+
+            // Insert new attendance
+            await new Promise((resolve, reject) => {
+                db.run(
+                    `INSERT INTO attendance (player_id, date) VALUES (?, ?)`,
+                    [playerId, today],
+                    function(err) {
+                        if (err) reject(err);
+                        else resolve(this.lastID);
+                    }
+                );
+            });
+
+            return reply.status(201).send({ message: "Attendance marked successfully" });
+        } catch (err) {
+            console.error("Error marking attendance:", err);
+            return reply.status(500).send({ message: 'Internal server error' });
+        }
+    };
+}
+
+export function GetTodayAttendance() {
+    return async (req: FastifyRequest, reply: FastifyReply) => {
+        try {
+            const playerId = (req as any).user.id;
+            const today = new Date().toISOString().split('T')[0];
+
+            const todayData = await new Promise<any>((resolve, reject) => {
+                db.get(
+                    `SELECT hours FROM attendance WHERE player_id = ? AND date = ?`,
+                    [playerId, today],
+                    (err, row) => {
+                        if (err) reject(err);
+                        else resolve(row);
+                    }
+                );
+            });
+
+            const hoursToday = todayData ? todayData.hours : 0;
+
+            return reply.status(200).send({ 
+                date: today,
+                hours: hoursToday,
+                minutes: Math.round(hoursToday * 60)
+            });
+        } catch (err) {
+            console.error("Error fetching today's attendance:", err);
+            return reply.status(500).send({ message: 'Internal server error' });
+        }
+    };
+}
+export function GetWeeklyAttendance() {
+    return async (req: FastifyRequest, reply: FastifyReply) => {
+        try {
+            const playerId = (req as any).user.id;
+            const today = new Date();
+            const startOfWeek = new Date(today);
+            startOfWeek.setDate(today.getDate() - today.getDay()); // Sunday as start
+            const endOfWeek = new Date(startOfWeek);
+            endOfWeek.setDate(startOfWeek.getDate() + 6); // Saturday
+
+            const startDate = startOfWeek.toISOString().split('T')[0];
+            const endDate = endOfWeek.toISOString().split('T')[0];
+
+            const attendance = await new Promise<any[]>((resolve, reject) => {
+                db.all(
+                    `SELECT date, hours FROM attendance WHERE player_id = ? AND date BETWEEN ? AND ? ORDER BY date`,
+                    [playerId, startDate, endDate],
+                    (err, rows) => {
+                        if (err) reject(err);
+                        else resolve(rows);
+                    }
+                );
+            });
+
+            // Create a map of attended dates with hours
+            const attendanceMap = new Map(attendance.map(row => [row.date, row.hours]));
+
+            // Generate week days
+            const weekDays = [];
+            for (let i = 0; i < 7; i++) {
+                const date = new Date(startOfWeek);
+                date.setDate(startOfWeek.getDate() + i);
+                const dateStr = date.toISOString().split('T')[0];
+                const hours = attendanceMap.get(dateStr) || 0;
+                weekDays.push({
+                    date: dateStr,
+                    day: date.toLocaleDateString('en-US', { weekday: 'short' }),
+                    hours: hours,
+                    attended: hours > 0
+                });
+            }
+
+            return reply.status(200).send({ weekDays });
+        } catch (err) {
+            console.error("Error fetching weekly attendance:", err);
+            return reply.status(500).send({ message: 'Internal server error' });
+        }
+    };
+}

@@ -5,7 +5,7 @@ sqlite3.verbose();
 const { Database } = sqlite3;
 
 const dbPath = path.resolve(__dirname, "./mydatabase.sqlite");
-export const db = new Database(dbPath, (err) => {
+export const db = new Database(dbPath, (err : any) => {
     if (err) {
         console.error("Error opening database:", err.message);
     } else {
@@ -25,7 +25,7 @@ export function createFriendsTable (){
             FOREIGN KEY (friend_id) REFERENCES players(id) ON DELETE CASCADE,
             UNIQUE (player_id, friend_id)
         )`,
-        (error) => {
+        (error : any) => {
             if (error)
                 console.error("Error creating friends table : ", error.message);
             else
@@ -44,7 +44,7 @@ export function createUserInfo() {
             socials TEXT NULL,
             FOREIGN KEY (player_id) REFERENCES players(id) ON DELETE CASCADE
         )`,
-        (err) => {
+        (err : any) => {
             if (err) {
                 console.error("Error creating player_infos table:", err.message);
             } else {
@@ -67,7 +67,7 @@ export function createOTPTable() {
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (player_id) REFERENCES players(id) ON DELETE CASCADE
         )`,
-        (err) => {
+        (err : any) => {
             if (err) {
                 console.error("Error creating OTP table:", err.message);
             } else {
@@ -89,7 +89,7 @@ export function createGameStats() {
             updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (player_id) REFERENCES players(id) ON DELETE CASCADE
         )`,
-        (err) => {
+        (err : any) => {
             if (err) {
                 console.error("Error creating game_stats table:", err.message);
             } else {
@@ -118,7 +118,7 @@ export function createGameHistory() {
             FOREIGN KEY (player2_id) REFERENCES players(id) ON DELETE CASCADE,
             FOREIGN KEY (winner_id) REFERENCES players(id) ON DELETE CASCADE
         )`,
-        (err) => {
+        (err : any) => {
             if (err) {
                 console.error("Error creating game_history table:", err.message);
             } else {
@@ -133,7 +133,7 @@ export function ensureGameStatsForPlayer(playerId: number): Promise<void> {
         db.run(
             `INSERT OR IGNORE INTO game_stats (player_id, total_games, wins, losses) VALUES (?, 0, 0, 0)`,
             [playerId],
-            (err) => {
+            (err : any) => {
                 if (err) {
                     console.error(`Error ensuring game_stats for player ${playerId}:`, err.message);
                     reject(err);
@@ -161,7 +161,7 @@ export function createTable(){
             is_online INTEGER DEFAULT 0,
             auth_Provider TEXT DEFAULT 'local'
         )`,
-        (err) => {
+        (err : any) => {
             if (err) {
                 console.error("Error creating table:", err.message);
             } else {
@@ -179,14 +179,14 @@ export function createTableMessage() {
             receiver_id INTEGER,
             content TEXT NOT NULL,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            readed INTEGER DEFAULT 0 CHECK (is_completed IN (0, 1)),
+            readed INTEGER DEFAULT 0 CHECK (readed IN (0, 1)),
+            seen BOOLEAN DEFAULT FALSE,
             FOREIGN KEY (sender_id) REFERENCES players(id) ON DELETE CASCADE,
-            FOREIGN KEY (receiver_id) REFERENCES players(id) ON DELETE CASCADE,
-            ALTER TABLE messages ADD COLUMN seen BOOLEAN DEFAULT FALSE,
+            FOREIGN KEY (receiver_id) REFERENCES players(id) ON DELETE CASCADE
         )
     `;
 
-    db.run(createTableQuery, (err) => {
+    db.run(createTableQuery, (err : any) => {
         if (err) {
             console.error("Error creating message table:", err.message);
         } else {
@@ -194,7 +194,6 @@ export function createTableMessage() {
         }
     });
 }
-
 
 export function createBlockTable() {
     const createTableBlock = `
@@ -204,14 +203,40 @@ export function createBlockTable() {
             blocked_id INTEGER NOT NULL,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             UNIQUE(blocker_id, blocked_id),
-            FOREIGN KEY (blocker_id) REFERENCES users(id) ON DELETE CASCADE,
-            FOREIGN KEY (blocked_id) REFERENCES users(id) ON DELETE CASCADE
+            FOREIGN KEY (blocker_id) REFERENCES players(id) ON DELETE CASCADE,
+            FOREIGN KEY (blocked_id) REFERENCES players(id) ON DELETE CASCADE
         )
     `;
-    db.run(createTableBlock, (err) => {
+    db.run(createTableBlock, (err : any) => {
         if (err) console.error("Error creating block table:", err.message);
         else console.log('Table "block" created.');
     });
+}
+
+export function createAttendanceTable() {
+    db.run(
+        `CREATE TABLE IF NOT EXISTS attendance (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            player_id INTEGER NOT NULL,
+            date DATE NOT NULL,
+            hours REAL DEFAULT 0,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (player_id) REFERENCES players(id) ON DELETE CASCADE,
+            UNIQUE(player_id, date)
+        )`,
+        (err : any) => {
+            if (err) {
+                console.error("Error creating attendance table:", err.message);
+            } else {
+                console.log('Table "attendance" created or already exists.');
+                db.run(`ALTER TABLE attendance ADD COLUMN hours REAL DEFAULT 0`, (alterErr) => {
+                    if (alterErr && !alterErr.message.includes('duplicate column name')) {
+                        console.error("Error adding hours column:", alterErr.message);
+                    }
+                });
+            }
+        }
+    );
 }
 
 export function createsDbTabes(){
@@ -223,4 +248,5 @@ export function createsDbTabes(){
     createGameStats();
     createGameHistory();
     createBlockTable();
+    createAttendanceTable();
 }

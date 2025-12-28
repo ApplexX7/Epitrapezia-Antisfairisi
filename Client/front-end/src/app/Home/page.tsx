@@ -5,10 +5,30 @@ import BarProgressionLevel  from '@/components/BarProgressionLevel'
 import {ChartLineDefault} from '@/components/LineChart'
 import { ChartBarDefault } from '@/components/TimeLineLogin'
 import { useAuth } from '@/components/hooks/authProvider';
+import api from '@/lib/axios';
 
 
 export default function Home() {
   const user = useAuth.getState().user
+  const [gamesHistory, setGamesHistory] = React.useState<any[]>([]);
+  const historyGames = async () => {
+    try {
+      const response = await api.get('/historygames');
+      setGamesHistory(response.data.games);
+      return response.data.games;
+    } catch (error) {
+      console.error("Error fetching game history:", error);
+      return [];
+    }
+  };
+
+  React.useEffect(() => {
+    historyGames();
+    // Mark attendance on page load
+    api.post('/attendance/mark').catch(error => {
+      console.error("Error marking attendance:", error);
+    });
+  }, []);
   return (
     <>
       <h1
@@ -58,6 +78,22 @@ export default function Home() {
               Recent Games
             </h1>
             <div className="card w-full h-full flex">
+              {/* Recent games content goes here */}
+              {gamesHistory.length === 0 ? (
+                <div className="flex items-center justify-center w-full h-full">
+                  <p className="text-gray-500">No recent games found.</p>
+                </div>
+              ) : (
+                gamesHistory.map((game, index) => (
+                <div key={index} className="p-4 border-b border-gray-200 w-full">
+                <p className="text-white-smoke">Game ID: {game.id}</p>
+                <p className="text-white-smoke">Player 1 ID: {game.player1_id}</p>
+                <p className="text-white-smoke">Player 2 ID: {game.player2_id}</p>
+                <p className="text-white-smoke">Score: {game.player1_score} - {game.player2_score}</p>
+                <p className="text-white-smoke">Winner: {game.winner_id}</p>
+                <p className="text-white-smoke">Date: {new Date(game.created_at).toLocaleString()}</p>
+                </div>
+              )))}
             </div>
           </div>
         </BoxLayout>

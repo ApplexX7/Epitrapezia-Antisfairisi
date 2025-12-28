@@ -9,6 +9,8 @@ import { friends } from "./routers/friends";
 import { verifyRefreshToken } from "./controllers/authRefresh";
 import { Message } from "./routers/message";
 import { seenMsg } from "./routers/seenMsg"
+import { gameStatesRouters } from "./routers/gameStates";
+import { attendanceRouters } from "./routers/attendance";
 
 createsDbTabes();
 
@@ -62,6 +64,8 @@ friends();
 playerSettings();
 Message();
 seenMsg();
+gameStatesRouters();
+attendanceRouters();
 
 app.ready((err) => {
   if (err) throw err;

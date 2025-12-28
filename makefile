@@ -14,7 +14,7 @@ start:
 	MODE=prod $(COMPOSE) up -d
 
 stop:
-	$(COMPOSE) down
+	$(COMPOSE) down -v
 
 logs:
 	$(COMPOSE) logs -f

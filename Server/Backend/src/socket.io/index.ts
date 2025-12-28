@@ -56,6 +56,28 @@ export function registerSocketHandlers(io: Server) {
     if (!onlineUsers[user.id]) onlineUsers[user.id] = [];
     onlineUsers[user.id].push(socket);
 
+    // Track connection start time for attendance
+    socket.connectStartTime = Date.now();
+
+    // Periodic update of attendance every 5 minutes while connected
+    socket.updateInterval = setInterval(() => {
+      if (socket.connectStartTime) {
+        const sessionDurationMs = Date.now() - socket.connectStartTime;
+        const sessionDurationHours = sessionDurationMs / (1000 * 60 * 60);
+
+        const today = new Date().toISOString().split('T')[0];
+        // Update attendance with current session time
+        db.run(
+          `INSERT INTO attendance (player_id, date, hours) VALUES (?, ?, ?) 
+           ON CONFLICT(player_id, date) DO UPDATE SET hours = ?`,
+          [user.id, today, sessionDurationHours, sessionDurationHours],
+          (err) => {
+            if (err) console.error("Error updating attendance:", err);
+          }
+        );
+      }
+    }, 300000); // Update every 5 minutes
+
     console.log(`🟢 ${user.username} connected. Total connections: ${onlineUsers[user.id].length}`);
 
     // Notify friends that this user is online
@@ -72,6 +94,26 @@ export function registerSocketHandlers(io: Server) {
     registerGameSocket(io, socket);
 
     socket.on("disconnect", async () => {
+      // Clear the update interval
+      if (socket.updateInterval) {
+        clearInterval(socket.updateInterval);
+      }
+      if (socket.connectStartTime) {
+        const durationMs = Date.now() - socket.connectStartTime;
+        const durationHours = durationMs / (1000 * 60 * 60);
+
+        const today = new Date().toISOString().split('T')[0];
+        // Update attendance hours
+        db.run(
+          `INSERT INTO attendance (player_id, date, hours) VALUES (?, ?, ?) 
+           ON CONFLICT(player_id, date) DO UPDATE SET hours = hours + excluded.hours`,
+          [user.id, today, durationHours],
+          (err) => {
+            if (err) console.error("Error updating attendance hours:", err);
+          }
+        );
+      }
+
       onlineUsers[user.id] = onlineUsers[user.id].filter(s => s.id !== socket.id);
       if (onlineUsers[user.id].length === 0) {
         delete onlineUsers[user.id];

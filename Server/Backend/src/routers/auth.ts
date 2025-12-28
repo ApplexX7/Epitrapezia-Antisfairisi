@@ -31,7 +31,6 @@ const signUpSchema = {
 } as const;
 
 export async function authRouters() {
-  const server = Server.instance();
   // await server.register(rateLimit, {
   //   max: 10,
   //   timeWindow: "1 minute",
@@ -47,7 +46,6 @@ export async function authRouters() {
     { schema: { body: loginSchema } },
     Login()
   );
-
   Server.instance().get("/auth/refresh", RefreshToken());
   Server.instance().post("/auth/logout", Logout())
   Server.instance().post("/auth/verify-otp", VerifyOtp());
