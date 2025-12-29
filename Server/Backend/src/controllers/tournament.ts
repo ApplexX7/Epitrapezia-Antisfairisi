@@ -14,7 +14,7 @@ export class TournamentController {
         return reject({ status: 400, message: 'Tournament name too long (max 100 characters)' });
       }
 
-      const verifyCreatorSql = `SELECT id FROM players WHERE id = ?`;
+      const verifyCreatorSql = `SELECT id, username FROM players WHERE id = ?`;
       db.get(verifyCreatorSql, [creatorId], (err, creator: any) => {
         if (err) return reject({ status: 400, message: 'Failed to verify creator', error: (err as any)?.message || String(err) });
         if (!creator) return reject({ status: 404, message: 'Creator not found in database' });
@@ -23,7 +23,7 @@ export class TournamentController {
         db.run(sql, [name, creatorId, password], function (err) {
           if (err) return reject({ status: 400, message: 'Failed to create tournament', error: (err as any)?.message || String(err) });
           const tourId = this.lastID;
-          const creatorName = 'Creator';
+          const creatorName = creator?.username || 'Creator';
           const autoJoinSql = `INSERT INTO tournament_players (tournament_id, player_id, display_name) VALUES (?, ?, ?)`;
           db.run(autoJoinSql, [tourId, creatorId, creatorName], (err) => {
             if (err) console.warn('Failed to auto-join creator:', (err as any)?.message || err);
