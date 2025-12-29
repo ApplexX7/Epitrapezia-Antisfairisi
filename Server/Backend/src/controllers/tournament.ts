@@ -1,6 +1,5 @@
 import { db } from '../databases/db';
 import { Tournament, TournamentPlayer, TournamentMatch } from '../interfaces/tournamentInterface';
-import { SendEmail } from '../modules/mailer';
 
 export class TournamentController {
   static createTournament(name: string, creatorId: number, password: string): Promise<{ id: number; name: string }> {
@@ -305,81 +304,11 @@ export class TournamentController {
       });
     });
   }
-
   /**
-   * Send OTP for match verification
+   * Start a match (mark as in_progress) — only tournament creator may start.
+   * Returns match info (ids and usernames) so the client can launch the local game.
    */
-  static sendOTPForMatch(tournamentId: number, playerId: number, matchId: number): Promise<string> {
-    return new Promise((resolve, reject) => {
-      // Validate match exists and player is in it
-      const matchSql = `
-        SELECT * FROM tournament_matches 
-        WHERE id = ? AND tournament_id = ? 
-        AND (player_a_id = ? OR player_b_id = ?)
-      `;
-      db.get(matchSql, [matchId, tournamentId, playerId, playerId], (err, match: any) => {
-        if (err) {
-          return reject({ status: 400, message: 'Failed to fetch match', error: (err as any)?.message || String(err) });
-        }
-        if (!match) {
-          return reject({ status: 404, message: 'Match not found or player not in match' });
-        }
-        if (match.status === 'finished') {
-          return reject({ status: 409, message: 'Match already finished' });
-        }
-
-        // Check if already sent unexpired OTP for this match
-        const checkOtpSql = `
-          SELECT id FROM tournament_otps 
-          WHERE tournament_id = ? AND player_id = ? AND match_id = ? 
-          AND verified = 0 AND expires_at > datetime('now')
-          LIMIT 1
-        `;
-        db.get(checkOtpSql, [tournamentId, playerId, matchId], (err, existingOtp: any) => {
-          if (err) {
-            return reject({ status: 400, message: 'Failed to check OTP', error: (err as any)?.message || String(err) });
-          }
-          if (existingOtp) {
-            return reject({ status: 429, message: 'OTP already sent. Please wait before requesting again.' });
-          }
-
-          // Generate 6-digit OTP
-          const otp = String(Math.floor(100000 + Math.random() * 900000));
-          const expiresAt = new Date(Date.now() + 5 * 60 * 1000).toISOString(); // 5 minutes
-
-          const sql = `
-            INSERT INTO tournament_otps (tournament_id, player_id, match_id, otp_code, expires_at)
-            VALUES (?, ?, ?, ?, ?)
-          `;
-          db.run(sql, [tournamentId, playerId, matchId, otp, expiresAt], (err) => {
-            if (err) {
-              return reject({ status: 400, message: 'Failed to send OTP', error: (err as any)?.message || String(err) });
-            }
-
-            // Try to fetch player's email and send OTP via mailer (best-effort)
-            const playerEmailSql = `SELECT email, username FROM players WHERE id = ?`;
-            db.get(playerEmailSql, [playerId], async (err, player: any) => {
-              try {
-                if (!err && player && player.email) {
-                  const subject = `Tournament OTP`;
-                  const html = `<p>Your OTP for tournament ${tournamentId} (match ${matchId}) is <strong>${otp}</strong>. It expires in 5 minutes.</p>`;
-                  await SendEmail(player.email, subject, html);
-                }
-              } catch (mailErr) {
-                console.warn('Failed to send OTP email:', (mailErr as any)?.message || String(mailErr));
-              }
-              resolve(otp);
-            });
-          });
-        });
-      });
-    });
-  }
-
-  /**
-   * Send OTP to both players of a match. Only tournament creator can trigger this.
-   */
-  static sendOTPToMatchPlayers(tournamentId: number, matchId: number, requesterId: number): Promise<void> {
+  static startMatch(tournamentId: number, matchId: number, requesterId: number): Promise<any> {
     return new Promise((resolve, reject) => {
       const tourSql = `SELECT creator_id FROM tournaments WHERE id = ?`;
       db.get(tourSql, [tournamentId], (err, tour: any) => {
@@ -393,78 +322,27 @@ export class TournamentController {
           if (!match) return reject({ status: 404, message: 'Match not found' });
           if (match.status === 'finished') return reject({ status: 409, message: 'Match already finished' });
 
-          const players = [match.player_a_id, match.player_b_id].filter(Boolean);
-          if (players.length !== 2) return reject({ status: 400, message: 'Match does not have two players assigned' });
+          // mark match as in_progress
+          const updateMatch = `UPDATE tournament_matches SET status = 'in_progress' WHERE id = ? AND tournament_id = ?`;
+          db.run(updateMatch, [matchId, tournamentId], (err) => {
+            if (err) return reject({ status: 400, message: 'Failed to mark match in progress', error: (err as any)?.message || String(err) });
 
-          const otpInsert = `INSERT INTO tournament_otps (tournament_id, player_id, match_id, otp_code, expires_at) VALUES (?, ?, ?, ?, ?)`;
-          const expiresAt = new Date(Date.now() + 5 * 60 * 1000).toISOString();
+            // ensure tournament marked in_progress
+            const updateTour = `UPDATE tournaments SET status = 'in_progress', updated_at = CURRENT_TIMESTAMP WHERE id = ?`;
+            db.run(updateTour, [tournamentId], (err) => {
+              if (err) console.warn('Failed to update tournament status:', (err as any)?.message || String(err));
 
-          let completed = 0;
-          let hasError = false;
-
-          players.forEach((pid: number) => {
-            const otp = String(Math.floor(100000 + Math.random() * 900000));
-            db.run(otpInsert, [tournamentId, pid, matchId, otp, expiresAt], (err) => {
-              if (err && !hasError) {
-                hasError = true;
-                return reject({ status: 400, message: 'Failed to create OTP', error: (err as any)?.message || String(err) });
-              }
-
-              // send email best-effort
-              const playerEmailSql = `SELECT email, username FROM players WHERE id = ?`;
-              db.get(playerEmailSql, [pid], async (err, player: any) => {
-                try {
-                  if (!err && player && player.email) {
-                    const subject = `Tournament OTP`;
-                    const html = `<p>Your OTP for tournament ${tournamentId} (match ${matchId}) is <strong>${otp}</strong>. It expires in 5 minutes.</p>`;
-                    await SendEmail(player.email, subject, html);
-                  }
-                } catch (mailErr) {
-                  console.warn('Failed to send OTP email:', (mailErr as any)?.message || String(mailErr));
-                }
-
-                completed++;
-                if (completed === players.length && !hasError) {
-                  resolve();
-                }
+              // fetch player usernames
+              const playersSql = `SELECT id, username FROM players WHERE id IN (?, ?)`;
+              db.all(playersSql, [match.player_a_id, match.player_b_id], (err, rows: any) => {
+                if (err) return resolve({ matchId: match.id, playerA: { id: match.player_a_id }, playerB: { id: match.player_b_id } });
+                const pmap: any = {};
+                (rows || []).forEach((r: any) => { pmap[r.id] = r.username; });
+                resolve({ matchId: match.id, playerA: { id: match.player_a_id, username: pmap[match.player_a_id] || null }, playerB: { id: match.player_b_id, username: pmap[match.player_b_id] || null } });
               });
             });
           });
         });
-      });
-    });
-  }
-
-  /**
-   * Verify OTP
-   */
-  static verifyOTP(tournamentId: number, playerId: number, matchId: number, otp: string): Promise<boolean> {
-    return new Promise((resolve, reject) => {
-      const sql = `
-        SELECT id, expires_at, verified FROM tournament_otps 
-        WHERE tournament_id = ? AND player_id = ? AND match_id = ? AND otp_code = ?
-        ORDER BY created_at DESC LIMIT 1
-      `;
-      db.get(sql, [tournamentId, playerId, matchId, otp], (err, otpRecord: any) => {
-        if (err) {
-          reject({ status: 400, message: 'Failed to verify OTP', error: (err as any)?.message || String(err) });
-        } else if (!otpRecord) {
-          reject({ status: 401, message: 'Invalid OTP' });
-        } else if (new Date(otpRecord.expires_at) < new Date()) {
-          reject({ status: 401, message: 'OTP expired' });
-        } else if (otpRecord.verified) {
-          reject({ status: 400, message: 'OTP already used' });
-        } else {
-          // Mark as verified
-          const updateSql = `UPDATE tournament_otps SET verified = 1 WHERE id = ?`;
-          db.run(updateSql, [otpRecord.id], (err) => {
-            if (err) {
-              reject({ status: 400, message: 'Failed to mark OTP as verified', error: (err as any)?.message || String(err) });
-            } else {
-              resolve(true);
-            }
-          });
-        }
       });
     });
   }

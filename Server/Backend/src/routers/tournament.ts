@@ -226,26 +226,8 @@ export function registerTournamentRoutes() {
     }
   });
 
-  // Send OTP
-  Server.route('post', '/tournaments/:id/send-otp', async (request: FastifyRequest, reply: FastifyReply) => {
-    try {
-      const { id } = request.params as { id: string };
-      const { playerId, matchId } = request.body as { playerId: number; matchId?: number };
-
-      if (!playerId) {
-        return reply.status(400).send({ message: 'Player ID is required' });
-      }
-
-      const otp = await TC.sendOTPForMatch(parseInt(id), playerId, matchId || 0);
-      // In dev, return OTP; in production, should be sent via email/SMS
-      reply.send({ otp, message: 'OTP sent (dev mode)' });
-    } catch (error: any) {
-      reply.status(error.status || 500).send({ message: error.message });
-    }
-  });
-
-  // Send OTP to both players in a match (creator only)
-  Server.route('post', '/tournaments/:id/send-otp/match', async (request: FastifyRequest, reply: FastifyReply) => {
+  // Start a match (creator only) — marks match in_progress and returns player info
+  Server.route('post', '/tournaments/:id/start-match', async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const { id } = request.params as { id: string };
       const { matchId } = request.body as { matchId: number };
@@ -254,25 +236,8 @@ export function registerTournamentRoutes() {
       if (!user || !user.id) return reply.status(401).send({ message: 'Must be logged in' });
       if (!matchId) return reply.status(400).send({ message: 'matchId is required' });
 
-      await TC.sendOTPToMatchPlayers(parseInt(id), matchId, user.id);
-      reply.send({ message: 'OTPs sent to match players (dev: check emails)' });
-    } catch (error: any) {
-      reply.status(error.status || 500).send({ message: error.message });
-    }
-  });
-
-  // Verify OTP
-  Server.route('post', '/tournaments/:id/verify-otp', async (request: FastifyRequest, reply: FastifyReply) => {
-    try {
-      const { id } = request.params as { id: string };
-      const { playerId, otp, matchId } = request.body as { playerId: number; otp: string; matchId?: number };
-
-      if (!playerId || !otp) {
-        return reply.status(400).send({ message: 'Player ID and OTP are required' });
-      }
-
-      await TC.verifyOTP(parseInt(id), playerId, matchId || 0, otp);
-      reply.send({ ok: true, message: 'OTP verified' });
+      const info = await TC.startMatch(parseInt(id), matchId, user.id);
+      reply.send({ message: 'Match started', match: info });
     } catch (error: any) {
       reply.status(error.status || 500).send({ message: error.message });
     }

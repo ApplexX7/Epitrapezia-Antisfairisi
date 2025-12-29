@@ -269,7 +269,7 @@ export function createTournamentMatchesTable() {
             player_b_id INTEGER,
             winner_id INTEGER,
             loser_id INTEGER,
-            status TEXT DEFAULT 'idle', -- idle | otp_sent | verified | finished
+            status TEXT DEFAULT 'idle', -- idle | in_progress | finished
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (tournament_id) REFERENCES tournaments(id) ON DELETE CASCADE,
             FOREIGN KEY (player_a_id) REFERENCES players(id) ON DELETE SET NULL,
@@ -282,31 +282,6 @@ export function createTournamentMatchesTable() {
                 console.error("Error creating tournament_matches table:", err.message);
             } else {
                 console.log('Table "tournament_matches" created or already exists.');
-            }
-        }
-    );
-}
-
-export function createTournamentOTPTable() {
-    db.run(
-        `CREATE TABLE IF NOT EXISTS tournament_otps (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            tournament_id INTEGER NOT NULL,
-            player_id INTEGER NOT NULL,
-            match_id INTEGER NOT NULL,
-            otp_code TEXT NOT NULL,
-            expires_at DATETIME NOT NULL,
-            verified INTEGER DEFAULT 0,
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (tournament_id) REFERENCES tournaments(id) ON DELETE CASCADE,
-            FOREIGN KEY (player_id) REFERENCES players(id) ON DELETE CASCADE,
-            FOREIGN KEY (match_id) REFERENCES tournament_matches(id) ON DELETE CASCADE
-        )`,
-        (err) => {
-            if (err) {
-                console.error("Error creating tournament_otps table:", err.message);
-            } else {
-                console.log('Table "tournament_otps" created or already exists.');
             }
         }
     );
@@ -350,6 +325,5 @@ export function createsDbTabes(){
     createTournamentTable();
     createTournamentPlayersTable();
     createTournamentMatchesTable();
-    createTournamentOTPTable();
     createTournamentResultsTable();
 }

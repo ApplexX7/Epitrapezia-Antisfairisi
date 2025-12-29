@@ -1,5 +1,7 @@
-'use client'
-import React, { useState } from "react";
+"use client"
+import React, { useState, useCallback } from "react";
+import { useSearchParams, useRouter } from 'next/navigation';
+import api from '@/lib/axios';
 import Board from "./Board";
 import ScoreBar from "./ScoreBar";
 import GameCostum from "./GameCostum";
@@ -12,7 +14,32 @@ export default function LocalPong() {
     let [paddleColor, setPaddleColor] = useState("default");
     let [gameDiff, setGameDiff] = useState("easy");
     let [openSettings, setOpenSettings] = useState(true);
-    return (
+        const search = useSearchParams();
+        const router = useRouter();
+        const t = search.get('t');
+        const m = search.get('m');
+        const p1 = search.get('p1');
+        const p2 = search.get('p2');
+
+        const onGameEnd = useCallback(async (winner: "playerOne" | "playerTwo") => {
+            // map winner to player id
+            const winnerId = winner === 'playerOne' ? p1 : p2;
+            const loserId = winner === 'playerOne' ? p2 : p1;
+            try {
+                if (t && t !== 'local' && m) {
+                    await api.post(`/tournaments/${t}/result`, { matchId: Number(m), winnerId: Number(winnerId), loserId: Number(loserId) });
+                    // create finals if ready happens on server
+                }
+            } catch (e) {
+                console.warn('Failed to report match result', e);
+            } finally {
+                // navigate back to tournament lobby if possible
+                if (t && t !== 'local') router.push(`/Home/Games/Tournament/lobby/${t}`);
+                else router.push('/Home/Games/Tournament');
+            }
+        }, [t, m, p1, p2, router]);
+
+        return (
      <>
      <OpenGameCostumButton
         isOpen = {openSettings}
@@ -34,7 +61,7 @@ export default function LocalPong() {
      playerOneScore = {rightPlayerScore}
      playerTwoScore = {leftPlayerScore}
      />
-     <Board 
+    <Board 
      playerOneScore = {rightPlayerScore}
      playerTwoScore= {leftPlayerScore}
      setPlayerOneScore = {setRightPlayerScore}
@@ -43,6 +70,7 @@ export default function LocalPong() {
      _ballColor = {ballColor}
      _paddleColor = {paddleColor}
      _gameDiff = {gameDiff}
+    onGameEnd={onGameEnd}
      />
      </>
     );

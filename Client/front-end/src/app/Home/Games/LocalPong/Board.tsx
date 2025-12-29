@@ -10,6 +10,7 @@ type BoardProps = {
   _ballColor: string;
   _gameDiff: string;
   _paddleColor: string;
+  onGameEnd?: (winner: "playerOne" | "playerTwo") => void;
 };
 
 export default function Board({
@@ -236,6 +237,11 @@ export default function Board({
 
   useEffect(() => {
     const handleWin = (winner: "playerOne" | "playerTwo") => {
+      try {
+        if (typeof onGameEnd === 'function') onGameEnd(winner);
+      } catch (e) {
+        // swallow
+      }
       nextX = 0;
       nextY = 0;
       dxRef.current = 10;

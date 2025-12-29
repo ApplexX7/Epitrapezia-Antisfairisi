@@ -2,7 +2,6 @@
 import React, { useEffect, useState } from "react";
 import api from "@/lib/axios";
 import toast from "react-hot-toast";
-import OtpModal from "./OtpModal";
 import { useAuth } from "@/components/hooks/authProvider";
 import { useRouter } from "next/navigation";
 
@@ -20,9 +19,6 @@ export default function TournamentLobby({ tournamentId }: Props) {
   const [players, setPlayers] = useState<Player[]>([]);
   const [tournamentInfo, setTournamentInfo] = useState<any>(null);
   const [nameEntry, setNameEntry] = useState("");
-  const [otpOpen, setOtpOpen] = useState(false);
-  const [verifyTarget, setVerifyTarget] = useState<Player | null>(null);
-  const [pendingMatch, setPendingMatch] = useState<{ a: Player; b: Player; matchId: string } | null>(null);
   const [matchToResolve, setMatchToResolve] = useState<string | null>(null);
   const [matchesState, setMatchesState] = useState<Record<string, Match>>({});
   const [loading, setLoading] = useState(true);
@@ -147,12 +143,19 @@ export default function TournamentLobby({ tournamentId }: Props) {
   const initializeBracket = async () => {
     try {
       await api.post(`/tournaments/${tournamentId}/initialize`, {});
-      const idxA = 0, idxB = 1, idxC = 2, idxD = 3;
-      const a = players[idxA], b = players[idxB], c = players[idxC], d = players[idxD];
-      setMatchesState({
-        'semi-1': { a, b, status: 'idle' },
-        'semi-2': { a: c, b: d, status: 'idle' },
+      // fetch matches from server to get DB ids and player assignments
+      const res = await api.get(`/tournaments/${tournamentId}/matches`);
+      const matches = res.data?.matches || [];
+      const nextState: Record<string, Match> = {};
+      matches.forEach((m: any) => {
+        if (m.stage === 'semi') {
+          const key = `semi-${m.match_number}`;
+          const pa = players.find((p) => String(p.id) === String(m.player_a_id)) || { id: String(m.player_a_id), name: m.player_a_name || 'Player' };
+          const pb = players.find((p) => String(p.id) === String(m.player_b_id)) || { id: String(m.player_b_id), name: m.player_b_name || 'Player' };
+          nextState[key] = { a: pa, b: pb, status: m.status || 'idle', winnerId: m.winner_id, loserId: m.loser_id, dbId: m.id } as any;
+        }
       });
+      setMatchesState((s) => ({ ...s, ...nextState }));
       setBracketReady(true);
       toast.success("Tournament bracket initialized!");
     } catch (err) {
@@ -167,40 +170,34 @@ export default function TournamentLobby({ tournamentId }: Props) {
     }
   };
 
-  const requestOtpAndVerify = async (a: Player, b: Player, matchId?: string) => {
+  const requestStartMatch = async (a: Player, b: Player, key: string) => {
     try {
-      // If this is a server-backed tournament, require creator auth
       if (!String(tournamentId).startsWith('local-')) {
         if (!currentUser || !currentUser.id) return toast.error('Must be logged in to start matches');
         if (!tournamentInfo || tournamentInfo.creator_id !== currentUser.id) return toast.error('Only the tournament creator can start matches from server');
 
-        // Ask server (creator) to send OTPs to both players in the match
-        await api.post(`/tournaments/${tournamentId}/send-otp/match`, { matchId });
-        toast.success(`OTPs sent to players' emails`);
-        // If current user is the creator (host), navigate to local Pong to start the game
-        if (tournamentInfo && currentUser?.id === tournamentInfo.creator_id) {
-          const q = `?match=${encodeURIComponent(String(matchId || ''))}&p1=${encodeURIComponent(a.name)}&p2=${encodeURIComponent(b.name)}`;
-          router.push(`/Home/Games/LocalPong${q}`);
-        }
-      } else {
-        // local mode: simulate OTP sent
-        toast.success('OTP sent (local mode)');
-      }
-      setVerifyTarget(b);
-      const id = matchId || `m-${Date.now()}`;
-      setPendingMatch({ a, b, matchId: id });
-      setMatchesState((s) => ({ ...s, [id]: { a, b, status: 'otp_sent' } }));
-      setOtpOpen(true);
-    } catch (err: any) {
-      toast.error(err?.response?.data?.message || "Failed to send OTP");
-    }
-  };
+        // find DB id for this match
+        const match = (matchesState[key] as any) || (matchesState as any)[key];
+        const dbId = match?.dbId;
+        if (!dbId) return toast.error('Server match id not found');
 
-  const onOtpVerified = () => {
-    if (!pendingMatch) return;
-    toast.success(`✓ OTP verified for ${pendingMatch.b.name}`);
-    setMatchesState((s) => ({ ...s, [pendingMatch.matchId]: { ...(s[pendingMatch.matchId] || {}), status: 'verified' } }));
-    setMatchToResolve(pendingMatch.matchId);
+        const resp = await api.post(`/tournaments/${tournamentId}/start-match`, { matchId: dbId });
+        const matchInfo = resp.data?.match;
+        toast.success('Match started');
+        // navigate host to LocalPong with useful params
+        const q = `?t=${encodeURIComponent(String(tournamentId))}&m=${encodeURIComponent(String(dbId))}&p1=${encodeURIComponent(String(a.id))}&p2=${encodeURIComponent(String(b.id))}&n1=${encodeURIComponent(a.name)}&n2=${encodeURIComponent(b.name)}`;
+        router.push(`/Home/Games/LocalPong${q}`);
+        // mark UI match as in_progress
+        setMatchesState((s) => ({ ...s, [key]: { ...(s as any)[key], status: 'in_progress' } }));
+        return;
+      } else {
+        // local mode: just open local Pong
+        const q = `?t=local&m=${encodeURIComponent(String(Date.now()))}&p1=${encodeURIComponent(String(a.id))}&p2=${encodeURIComponent(String(b.id))}&n1=${encodeURIComponent(a.name)}&n2=${encodeURIComponent(b.name)}`;
+        router.push(`/Home/Games/LocalPong${q}`);
+      }
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || 'Failed to start match');
+    }
   };
 
   const resolveMatch = async (matchId: string, winnerId: string) => {
@@ -234,12 +231,21 @@ export default function TournamentLobby({ tournamentId }: Props) {
 
     // Send to backend
     try {
-      const sid = matchId.startsWith('semi') ? matchId.replace('semi-', '') : null;
-      await api.post(`/tournaments/${tournamentId}/result`, { 
-        matchId: sid || matchId, 
-        winnerId: winnerId, 
-        loserId: loser.id 
-      });
+      const serverMatchId = (match as any).dbId || null;
+      if (serverMatchId) {
+        await api.post(`/tournaments/${tournamentId}/result`, {
+          matchId: Number(serverMatchId),
+          winnerId: Number(winnerId),
+          loserId: Number(loser.id),
+        });
+      } else {
+        // fallback: try to send a non-numeric id (older local flow)
+        await api.post(`/tournaments/${tournamentId}/result`, {
+          matchId: matchId,
+          winnerId: winnerId,
+          loserId: loser.id,
+        });
+      }
     } catch (err: any) {
       console.warn("Could not save to server:", err.message);
     }
@@ -252,7 +258,7 @@ export default function TournamentLobby({ tournamentId }: Props) {
     
     const dialog = confirm(`Start match: ${match.a.name} vs ${match.b.name}?`);
     if (dialog) {
-      requestOtpAndVerify(match.a, match.b, matchId);
+      requestStartMatch(match.a, match.b, matchId);
     }
   };
 

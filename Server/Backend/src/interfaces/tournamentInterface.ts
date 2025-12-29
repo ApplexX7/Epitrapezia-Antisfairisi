@@ -25,7 +25,7 @@ export interface TournamentMatch {
   player_b_id: number | null;
   winner_id: number | null;
   loser_id: number | null;
-  status: 'idle' | 'otp_sent' | 'verified' | 'finished';
+  status: 'idle' | 'in_progress' | 'finished';
   created_at: string;
 }
 
@@ -38,13 +38,4 @@ export interface TournamentResult {
   completed_at: string;
 }
 
-export interface TournamentOTP {
-  id: number;
-  tournament_id: number;
-  player_id: number;
-  otp_code: string;
-  match_id: number;
-  expires_at: string;
-  verified: number;
-  created_at: string;
-}
+// Tournament OTPs removed — OTP-based flows are deprecated for tournaments
