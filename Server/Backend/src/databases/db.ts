@@ -282,6 +282,13 @@ export function createTournamentMatchesTable() {
                 console.error("Error creating tournament_matches table:", err.message);
             } else {
                 console.log('Table "tournament_matches" created or already exists.');
+                // Ensure one match per stage/match_number per tournament to avoid duplicate finals
+                db.run(
+                    `CREATE UNIQUE INDEX IF NOT EXISTS idx_tournament_match_unique ON tournament_matches(tournament_id, stage, match_number)`,
+                    (indexErr) => {
+                        if (indexErr) console.error('Error creating tournament_matches unique index:', indexErr.message);
+                    }
+                );
             }
         }
     );

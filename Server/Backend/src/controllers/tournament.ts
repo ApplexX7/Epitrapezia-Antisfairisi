@@ -320,6 +320,7 @@ export class TournamentController {
         db.get(matchSql, [matchId, tournamentId], (err, match: any) => {
           if (err) return reject({ status: 400, message: 'Failed to fetch match', error: (err as any)?.message || String(err) });
           if (!match) return reject({ status: 404, message: 'Match not found' });
+          if (match.status === 'in_progress') return reject({ status: 409, message: 'Match already in progress' });
           if (match.status === 'finished') return reject({ status: 409, message: 'Match already finished' });
 
           // mark match as in_progress

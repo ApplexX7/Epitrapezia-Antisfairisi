@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 
 type Player = { id: string; name: string; local?: boolean };
 
-type Match = { a?: Player | null; b?: Player | null; winnerId?: string | null; loserId?: string | null; status?: string };
+type Match = { a?: Player | null; b?: Player | null; winnerId?: string | null; loserId?: string | null; status?: string; dbId?: number | string };
 
 type Props = { tournamentId: string };
 
@@ -58,6 +58,26 @@ export default function TournamentLobby({ tournamentId }: Props) {
           }
         } catch (e) {
           // ignore
+        }
+
+        // Fetch matches (if any) to hydrate bracket
+        try {
+          const matchesRes = await api.get(`/tournaments/${tournamentId}/matches`);
+          const matches = matchesRes.data?.matches || [];
+          if (matches.length) {
+            const nextState: Record<string, Match> = {};
+            matches.forEach((m: any) => {
+              const pa = remotePlayers.find((p) => String(p.id) === String(m.player_a_id)) || { id: String(m.player_a_id), name: m.player_a_name || 'Player' };
+              const pb = remotePlayers.find((p) => String(p.id) === String(m.player_b_id)) || { id: String(m.player_b_id), name: m.player_b_name || 'Player' };
+              const key = `${m.stage}-${m.match_number}`;
+              nextState[key] = { a: pa, b: pb, status: m.status || 'idle', winnerId: m.winner_id ? String(m.winner_id) : null, loserId: m.loser_id ? String(m.loser_id) : null, dbId: m.id } as any;
+            });
+            setMatchesState((s) => ({ ...s, ...nextState }));
+            setBracketReady(true);
+          }
+        } catch (err) {
+          // If there are no matches yet, ignore; otherwise log
+          if (process.env.NODE_ENV !== 'production') console.warn('Could not fetch matches on load', err);
         }
       } catch (err) {
         console.warn("Could not load tournament from server, using local mode");
@@ -148,18 +168,45 @@ export default function TournamentLobby({ tournamentId }: Props) {
       const matches = res.data?.matches || [];
       const nextState: Record<string, Match> = {};
       matches.forEach((m: any) => {
-        if (m.stage === 'semi') {
-          const key = `semi-${m.match_number}`;
-          const pa = players.find((p) => String(p.id) === String(m.player_a_id)) || { id: String(m.player_a_id), name: m.player_a_name || 'Player' };
-          const pb = players.find((p) => String(p.id) === String(m.player_b_id)) || { id: String(m.player_b_id), name: m.player_b_name || 'Player' };
-          nextState[key] = { a: pa, b: pb, status: m.status || 'idle', winnerId: m.winner_id, loserId: m.loser_id, dbId: m.id } as any;
-        }
+        const pa = players.find((p) => String(p.id) === String(m.player_a_id)) || { id: String(m.player_a_id), name: m.player_a_name || 'Player' };
+        const pb = players.find((p) => String(p.id) === String(m.player_b_id)) || { id: String(m.player_b_id), name: m.player_b_name || 'Player' };
+        const key = `${m.stage}-${m.match_number}`;
+        nextState[key] = { a: pa, b: pb, status: m.status || 'idle', winnerId: m.winner_id, loserId: m.loser_id, dbId: m.id } as any;
       });
       setMatchesState((s) => ({ ...s, ...nextState }));
       setBracketReady(true);
       toast.success("Tournament bracket initialized!");
     } catch (err) {
-      console.warn("Server bracket init failed, using local initialization");
+      console.warn("Server bracket init failed:", err);
+      // If this tournament is server-backed, do not fallback to a local-only bracket
+      // (server matches won't have DB ids which are required to start matches).
+      if (!String(tournamentId).startsWith('local-')) {
+        const msg = err?.response?.data?.message || '';
+        // If bracket already exists, hydrate from server instead of erroring out
+        if (typeof msg === 'string' && msg.toLowerCase().includes('already initialized')) {
+          try {
+            const res = await api.get(`/tournaments/${tournamentId}/matches`);
+            const matches = res.data?.matches || [];
+            const nextState: Record<string, Match> = {};
+            matches.forEach((m: any) => {
+              const pa = players.find((p) => String(p.id) === String(m.player_a_id)) || { id: String(m.player_a_id), name: m.player_a_name || 'Player' };
+              const pb = players.find((p) => String(p.id) === String(m.player_b_id)) || { id: String(m.player_b_id), name: m.player_b_name || 'Player' };
+              const key = `${m.stage}-${m.match_number}`;
+              nextState[key] = { a: pa, b: pb, status: m.status || 'idle', winnerId: m.winner_id, loserId: m.loser_id, dbId: m.id } as any;
+            });
+            setMatchesState((s) => ({ ...s, ...nextState }));
+            setBracketReady(true);
+            toast.success('Bracket already initialized; synced from server');
+          } catch (fetchErr) {
+            toast.error(err?.response?.data?.message || 'Failed to initialize bracket on server');
+          }
+        } else {
+          toast.error(err?.response?.data?.message || 'Failed to initialize bracket on server');
+        }
+        return;
+      }
+
+      // Local-only flow: create client-side matches when running in local mode
       const idxA = 0, idxB = 1, idxC = 2, idxD = 3;
       const a = players[idxA], b = players[idxB], c = players[idxC], d = players[idxD];
       setMatchesState({
@@ -226,7 +273,6 @@ export default function TournamentLobby({ tournamentId }: Props) {
     });
 
     setMatchToResolve(null);
-    setPendingMatch(null);
     toast.success(`🏆 ${winner.name} wins!`);
 
     // Send to backend
