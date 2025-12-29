@@ -164,50 +164,52 @@ export default function Board({
 
     window.addEventListener("keydown", handleKeyDown);
     window.addEventListener("keyup", handleKeyUp);
-    loop();
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown);
-      window.removeEventListener("keyup", handleKeyUp);
-    };
-  }, [bounds]);
 
-  useEffect(() => {
-    if (startGameCounter > 0) return;
-    const interval = setInterval(() => {
-      nextY = ballYRef.current + dyRef.current;
-      if (nextY >= ballLimits.bottomMax || nextY <= ballLimits.topMax) {
-        dyRef.current = -dyRef.current;
-        nextY = ballYRef.current + dyRef.current;
-      }
+        <div className="absolute left-1/2 top-0 h-full w-[0.5%] -translate-x-1/2 bg-white-smoke z-20"></div>
 
-      nextX = ballXRef.current + dxRef.current;
+        {startGame && startGameCounter > 0 && (
+          <p
+            className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 font-extrabold text-white opacity-90 z-50 transition-all duration-200"
+          >
+            {startGameCounter}
+          </p>
+        )}
 
-      const ball = ballRef.current;
-      const leftPaddle = leftPaddleRef.current;
-      const rightPaddle = rightPaddleRef.current;
+        <div
+          ref={ballRef}
+          className="absolute left-1/2 top-1/2 w-[24px] h-[24px] rounded-full z-20"
+          style={{
+            backgroundColor:
+              _ballColor === "default"
+                ? "#FF007F"
+                : _ballColor === "white"
+                ? "white"
+                : _ballColor === "green"
+                ? "green"
+                : _ballColor === "yellow"
+                ? "yellow"
+                : "#FF007F",
+            transform: `translate(-50%, -50%) translate(${ballOffsetX}px, ${ballOffsetY}px)`,
+          }}
+        ></div>
 
-      if (ball && leftPaddle && rightPaddle) {
-        const ballTop = nextY - ball.offsetHeight / 2;
-        const ballBottom = nextY + ball.offsetHeight / 2;
-        const leftTop = leftPaddlePosRef.current - leftPaddle.offsetHeight / 2;
-        const leftBottom = leftPaddlePosRef.current + leftPaddle.offsetHeight / 2;
-        const rightTop = rightPaddlePosRef.current - rightPaddle.offsetHeight / 2;
-        const rightBottom = rightPaddlePosRef.current + rightPaddle.offsetHeight / 2;
-
-        if (
-          nextX <= ballLimits.leftMax + leftPaddle.offsetWidth &&
-          ballBottom >= leftTop &&
-          ballTop <= leftBottom
-        ) {
-          dxRef.current = -dxRef.current;
-          nextX = ballXRef.current + dxRef.current;
-        } else if (
-          nextX >= ballLimits.rightMax - rightPaddle.offsetWidth &&
-          ballBottom >= rightTop &&
-          ballTop <= rightBottom
-        ) {
-          dxRef.current = -dxRef.current;
-          nextX = ballXRef.current + dxRef.current;
+        <div
+          ref={rightPaddleRef}
+          className="absolute right-0 top-1/2 w-[19px] h-[20%] rounded-sm z-20"
+          style={{
+            backgroundColor:
+              _paddleColor === "default"
+                ? "#FF007F"
+                : _paddleColor === "white"
+                ? "white"
+                : _paddleColor === "green"
+                ? "green"
+                : _paddleColor === "yellow"
+                ? "yellow"
+                : "#FF007F",
+            transform: `translateY(-50%) translateY(${rightPaddleOffset}px)`,
+          }}
+        ></div>
         } else if (nextX >= ballLimits.rightMax) {
           nextX = 0;
           nextY = 0;
