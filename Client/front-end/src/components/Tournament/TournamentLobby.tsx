@@ -16,6 +16,7 @@ export default function TournamentLobby({ tournamentId }: Props) {
   const currentUser = auth.user;
 
   const [players, setPlayers] = useState<Player[]>([]);
+  const [tournamentInfo, setTournamentInfo] = useState<any>(null);
   const [nameEntry, setNameEntry] = useState("");
   const [otpOpen, setOtpOpen] = useState(false);
   const [verifyTarget, setVerifyTarget] = useState<Player | null>(null);
@@ -26,12 +27,14 @@ export default function TournamentLobby({ tournamentId }: Props) {
   const [bracketReady, setBracketReady] = useState(false);
   const [tournamentComplete, setTournamentComplete] = useState(false);
   const [standings, setStandings] = useState<any>(null);
+  const [creatorName, setCreatorName] = useState<string | null>(null);
 
   // Load initial data
   useEffect(() => {
     const load = async () => {
       try {
         const res = await api.get(`/tournaments/${tournamentId}`);
+        setTournamentInfo(res.data || null);
         const remotePlayers: Player[] = res.data?.players?.map((p: any) => ({ 
           id: String(p.player_id || p.id), 
           name: p.display_name || p.name 
@@ -48,6 +51,16 @@ export default function TournamentLobby({ tournamentId }: Props) {
         if (res.data?.status === 'completed') {
           setTournamentComplete(true);
         }
+        // fetch creator username if available
+        try {
+          const cid = res.data?.creator_id;
+          if (cid) {
+            const u = await api.get(`/userInfo/${cid}`);
+            setCreatorName(u.data?.userInof?.username || null);
+          }
+        } catch (e) {
+          // ignore
+        }
       } catch (err) {
         console.warn("Could not load tournament from server, using local mode");
         const creatorId = String(currentUser?.id || `creator-${Date.now()}`);
@@ -59,6 +72,21 @@ export default function TournamentLobby({ tournamentId }: Props) {
     };
     load();
   }, [tournamentId]);
+
+  // when tournamentInfo available and no creatorName yet, try to fetch
+  useEffect(() => {
+    if (!tournamentInfo || creatorName) return;
+    const cid = tournamentInfo?.creator_id;
+    if (!cid) return;
+    (async () => {
+      try {
+        const u = await api.get(`/userInfo/${cid}`);
+        setCreatorName(u.data?.userInof?.username || null);
+      } catch (e) {
+        // ignore
+      }
+    })();
+  }, [tournamentInfo]);
 
   // Auto-initialize bracket when 4 players present
   useEffect(() => {
@@ -121,9 +149,18 @@ export default function TournamentLobby({ tournamentId }: Props) {
 
   const requestOtpAndVerify = async (a: Player, b: Player, matchId?: string) => {
     try {
-      // Ask server (creator) to send OTPs to both players in the match
-      await api.post(`/tournaments/${tournamentId}/send-otp/match`, { matchId });
-      toast.success(`OTPs sent to players' emails`);
+      // If this is a server-backed tournament, require creator auth
+      if (!String(tournamentId).startsWith('local-')) {
+        if (!currentUser || !currentUser.id) return toast.error('Must be logged in to start matches');
+        if (!tournamentInfo || tournamentInfo.creator_id !== currentUser.id) return toast.error('Only the tournament creator can start matches from server');
+
+        // Ask server (creator) to send OTPs to both players in the match
+        await api.post(`/tournaments/${tournamentId}/send-otp/match`, { matchId });
+        toast.success(`OTPs sent to players' emails`);
+      } else {
+        // local mode: simulate OTP sent
+        toast.success('OTP sent (local mode)');
+      }
       setVerifyTarget(b);
       const id = matchId || `m-${Date.now()}`;
       setPendingMatch({ a, b, matchId: id });
@@ -252,6 +289,9 @@ export default function TournamentLobby({ tournamentId }: Props) {
   return (
     <div className="max-w-4xl mx-auto mt-8 p-4">
       <h2 className="text-2xl font-semibold mb-6">Tournament Lobby — {tournamentId}</h2>
+      {creatorName && (
+        <div className="text-sm text-gray-600 mb-4">Creator: {creatorName}</div>
+      )}
 
       {/* Players Grid */}
       <div className="mb-8 bg-white/50 rounded-lg p-4 border">
@@ -307,7 +347,7 @@ export default function TournamentLobby({ tournamentId }: Props) {
                       <div className="flex gap-2 justify-between">
                         <button 
                           onClick={() => startMatch(semiId)} 
-                          disabled={m.status !== 'idle'}
+                          disabled={m.status !== 'idle' || (!String(tournamentId).startsWith('local-') && tournamentInfo && currentUser?.id !== tournamentInfo.creator_id)}
                           className="flex-1 px-2 py-1 rounded text-sm bg-green-600 text-white hover:bg-green-700 disabled:opacity-50"
                         >
                           {m.status === 'idle' ? 'Start' : m.status}
@@ -343,7 +383,7 @@ export default function TournamentLobby({ tournamentId }: Props) {
                         </div>
                         <button 
                           onClick={() => startMatch(matchId)} 
-                          disabled={m.status !== 'idle'}
+                          disabled={m.status !== 'idle' || (!String(tournamentId).startsWith('local-') && tournamentInfo && currentUser?.id !== tournamentInfo.creator_id)}
                           className="w-full px-2 py-1 rounded text-sm bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50"
                         >
                           {m.status === 'idle' ? 'Start' : m.status}
