@@ -1,5 +1,7 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
 import { TournamentController } from '../controllers/tournament';
+import { db } from '../databases/db';
+import jwt from 'jsonwebtoken';
 // Use an any-typed reference to avoid TypeScript static member resolution issues during runtime
 const TC: any = (TournamentController as any);
 import { Server } from '../server';
@@ -9,7 +11,28 @@ export function registerTournamentRoutes() {
   Server.route('post', '/tournaments', async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const { name, password } = request.body as { name: string; password: string };
-      const user: any = (request as any).user;
+      let user: any = (request as any).user;
+
+      // If no user from refresh-token middleware, try Authorization header (access token)
+      if (!user || !user.id) {
+        const authHeader = (request.headers as any).authorization || (request.headers as any).Authorization;
+        if (authHeader && typeof authHeader === 'string' && authHeader.startsWith('Bearer ')) {
+          const token = authHeader.slice(7);
+          try {
+            const payload: any = jwt.verify(token, process.env.ACCESS_TOKEN || '');
+            // fetch user by id
+            user = await new Promise((resolve) => {
+              db.get('SELECT * FROM players WHERE id = ?', [payload.id], (err, row) => {
+                if (err) return resolve(null);
+                resolve(row || null);
+              });
+            });
+            if (user) (request as any).user = user;
+          } catch (e) {
+            // ignore and fall through to unauthenticated response
+          }
+        }
+      }
 
       // Must be logged in to create tournament
       if (!user || !user.id) {
@@ -30,7 +53,23 @@ export function registerTournamentRoutes() {
   // Get all tournaments with user join status
   Server.route('get', '/tournaments', async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const user: any = (request as any).user;
+      let user: any = (request as any).user;
+      if (!user || !user.id) {
+        const authHeader = (request.headers as any).authorization || (request.headers as any).Authorization;
+        if (authHeader && typeof authHeader === 'string' && authHeader.startsWith('Bearer ')) {
+          const token = authHeader.slice(7);
+          try {
+            const payload: any = jwt.verify(token, process.env.ACCESS_TOKEN || '');
+            user = await new Promise((resolve) => {
+              db.get('SELECT * FROM players WHERE id = ?', [payload.id], (err, row) => {
+                if (err) return resolve(null);
+                resolve(row || null);
+              });
+            });
+            if (user) (request as any).user = user;
+          } catch (e) {}
+        }
+      }
       const tournaments = await TC.getAllTournaments();
       
       // Add join status if user is authenticated
@@ -54,7 +93,23 @@ export function registerTournamentRoutes() {
   Server.route('get', '/tournaments/:id', async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const { id } = request.params as { id: string };
-      const user: any = (request as any).user;
+      let user: any = (request as any).user;
+      if (!user || !user.id) {
+        const authHeader = (request.headers as any).authorization || (request.headers as any).Authorization;
+        if (authHeader && typeof authHeader === 'string' && authHeader.startsWith('Bearer ')) {
+          const token = authHeader.slice(7);
+          try {
+            const payload: any = jwt.verify(token, process.env.ACCESS_TOKEN || '');
+            user = await new Promise((resolve) => {
+              db.get('SELECT * FROM players WHERE id = ?', [payload.id], (err, row) => {
+                if (err) return resolve(null);
+                resolve(row || null);
+              });
+            });
+            if (user) (request as any).user = user;
+          } catch (e) {}
+        }
+      }
       const tournament = await TC.getTournamentWithStatus(parseInt(id), user?.id);
       reply.send(tournament);
     } catch (error: any) {
@@ -67,7 +122,24 @@ export function registerTournamentRoutes() {
     try {
       const { id } = request.params as { id: string };
       const { password } = request.body as { password: string };
-      const user: any = (request as any).user;
+      let user: any = (request as any).user;
+
+      if (!user || !user.id) {
+        const authHeader = (request.headers as any).authorization || (request.headers as any).Authorization;
+        if (authHeader && typeof authHeader === 'string' && authHeader.startsWith('Bearer ')) {
+          const token = authHeader.slice(7);
+          try {
+            const payload: any = jwt.verify(token, process.env.ACCESS_TOKEN || '');
+            user = await new Promise((resolve) => {
+              db.get('SELECT * FROM players WHERE id = ?', [payload.id], (err, row) => {
+                if (err) return resolve(null);
+                resolve(row || null);
+              });
+            });
+            if (user) (request as any).user = user;
+          } catch (e) {}
+        }
+      }
 
       if (!user || !user.id) {
         return reply.status(401).send({ message: 'Must be logged in to join tournaments' });
@@ -97,7 +169,23 @@ export function registerTournamentRoutes() {
     try {
       const { id } = request.params as { id: string };
       const { username, password } = request.body as { username: string; password: string };
-      const user: any = (request as any).user;
+      let user: any = (request as any).user;
+      if (!user || !user.id) {
+        const authHeader = (request.headers as any).authorization || (request.headers as any).Authorization;
+        if (authHeader && typeof authHeader === 'string' && authHeader.startsWith('Bearer ')) {
+          const token = authHeader.slice(7);
+          try {
+            const payload: any = jwt.verify(token, process.env.ACCESS_TOKEN || '');
+            user = await new Promise((resolve) => {
+              db.get('SELECT * FROM players WHERE id = ?', [payload.id], (err, row) => {
+                if (err) return resolve(null);
+                resolve(row || null);
+              });
+            });
+            if (user) (request as any).user = user;
+          } catch (e) {}
+        }
+      }
 
       if (!user || !user.id) {
         return reply.status(401).send({ message: 'Must be logged in to add players' });
