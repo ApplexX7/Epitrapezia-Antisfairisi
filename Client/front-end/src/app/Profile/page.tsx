@@ -6,24 +6,52 @@ import { ChartRadarDefault } from '@/components/RadarGraph'
 import { ChartAreaDefault } from '@/components/TimeWInGraph'
 import { PingPong, CrownSimple , Star} from "@phosphor-icons/react/ssr";
 import { useAuth } from '@/components/hooks/authProvider';
+import { useSearchParams } from 'next/navigation';
+import api from '@/lib/axios';
 
 
 export default function Profile() {
-  const { user} = useAuth();
+  const { user: currentUser } = useAuth();
+  const searchParams = useSearchParams();
+  const profileUsername = searchParams.get('user');
+  const [profileUser, setProfileUser] = React.useState(currentUser);
+  const [isOwnProfile, setIsOwnProfile] = React.useState(true);
+
+  React.useEffect(() => {
+    if (profileUsername && profileUsername !== currentUser?.username) {
+      // Fetch other user's profile
+      api.get(`/user/${profileUsername}`)
+        .then(response => {
+          setProfileUser(response.data.user);
+          setIsOwnProfile(false);
+        })
+        .catch(error => {
+          console.error("Error fetching user profile:", error);
+          // Fallback to current user
+          setProfileUser(currentUser);
+          setIsOwnProfile(true);
+        });
+    } else {
+      // Show current user's profile
+      setProfileUser(currentUser);
+      setIsOwnProfile(true);
+    }
+  }, [profileUsername, currentUser]);
     return (
       <div className="flex h-full w-full flex-col py-10">
       <h1 className="pl-20 text-shadow-md text-4xl -mb-6 font-semibold
         bg-gradient-to-r from-white-smoke to-white-smoke/60
-        text-transparent bg-clip-text z-10" >My Account</h1>
-        <div className="grid py-5 px-10 grid-cols-5 grid-rows-8 gap-5 w-full h-full max-w-480">
+        text-transparent bg-clip-text z-10" >{isOwnProfile ? 'My Account' : `${profileUser?.username}'s Profile`}</h1>
+      <div className="-mt-4 grid grid-cols-4 
+        gap-5 w-full h-[calc(100%-232px)] p-5  auto-rows-min">
           <BoxLayout className="w-full h-ful   card col-span-3 row-span-2">
-            <Playerinfo/>
+            <Playerinfo user={profileUser}/>
           </BoxLayout>
-          <BoxLayout className="grid  gap-5 col-span-2 grid-rows-8 row-span-8" >
-            <BoxLayout className="card row-span-4 col-span-2">
+          <BoxLayout className="grid  gap-5 col-span-1 grid-rows-8 row-span-8" >
+            <BoxLayout className="card row-span-4 col-span-1">
               <ChartRadarDefault/>
             </BoxLayout>
-            <BoxLayout className="card row-span-4  col-span-2">
+            <BoxLayout className="card row-span-4  col-span-1">
             </BoxLayout>
           </BoxLayout>
           <BoxLayout className="grid grid-flow-col col-span-3 row-span-2 gap-5 ">

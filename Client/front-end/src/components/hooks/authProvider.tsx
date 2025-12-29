@@ -46,11 +46,12 @@ export const useAuth = create<AuthState>((set) => {
           const res = await api.get("/auth/refresh");
           if (res.data?.token?.accessToken && res.data.user) {
             const initSocket = useSocketStore.getState().initSocket;
-            const currentSocket = useSocketStore.getState().socket;
+            const disconnectSocket = useSocketStore.getState().disconnectSocket;
+            // Disconnect existing socket if any
+            disconnectSocket();
             set({ user: res.data.user, accessToken: res.data.token.accessToken, checkingAuth: false });
-            if (!currentSocket) {
-                initSocket(res.data.user,res.data.token.accessToken);
-            }
+            // Initialize new socket with fresh token
+            initSocket(res.data.user, res.data.token.accessToken);
           } else {
             toast.error("Session expired. Please sign in again ⚠️");
             set({ user: null, accessToken: null, checkingAuth: false });

@@ -101,8 +101,8 @@ export function registerSocketHandlers(io: Server) {
           }
         );
 
-        // Add experience points (10 XP per hour)
-        const xpGained = Math.floor(sessionDurationHours * 10);
+        // Add experience points (1.3 XP per hour for attendance)
+        const xpGained = Math.floor(sessionDurationHours * 1.3);
         if (xpGained > 0) {
           db.run(
             `UPDATE players SET experience = experience + ? WHERE id = ?`,
@@ -114,7 +114,7 @@ export function registerSocketHandlers(io: Server) {
           );
         }
       }
-    }, 300000); // Update every 5 minutes
+    }, 300000);
 
     console.log(`🟢 ${user.username} connected. Total connections: ${onlineUsers[user.id].length}`);
 

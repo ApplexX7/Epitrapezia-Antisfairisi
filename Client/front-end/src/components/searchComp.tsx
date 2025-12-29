@@ -12,7 +12,8 @@ import toast from "react-hot-toast";
 export default function SearchCompo( { search }: { search: boolean }){
     const searchParams = useSearchParams();
     const pathname = usePathname();
-    const {replace } = useRouter();
+    const router = useRouter();
+    const { replace } = router;
     const [searchItems, setSearchItems] = useState(searchParams.get('query') || '');
     const [results, setResults] = useState<User[]>([]);
     const [isLoading, setIsLoading] = useState(false);
@@ -119,10 +120,8 @@ export default function SearchCompo( { search }: { search: boolean }){
                 {results.map((item: User, index) => (
                   <li
                     key={index}
-                    className="z-10 w-full text-black py-1 
-                    px-2 gap-2 font-medium justify-between 
-                    flex items-center
-                   hover:bg-blue-purple/20 rounded-md"
+                    className="z-10 w-full text-black py-1 px-2 gap-2 font-medium justify-between flex items-center hover:bg-blue-purple/20 rounded-md cursor-pointer"
+                    onClick={() => router.push(`/Profile?user=${encodeURIComponent(item.username)}`)}
                   >
                     <div className="flex gap-3 items-center">
                       <Image
@@ -137,7 +136,7 @@ export default function SearchCompo( { search }: { search: boolean }){
                       </span>
                     </div>
 
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2" onClick={e => e.stopPropagation()}>
                       {item.friendstatus === "none" && (
                         <button
                           onClick={() =>

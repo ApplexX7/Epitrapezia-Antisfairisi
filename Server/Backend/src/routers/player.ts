@@ -7,5 +7,5 @@ import { getUserInfo } from "../controllers/getUserInfo";
 export function playerSettings(){
     Server.instance().post("/settings/avatar", playerAvatare());
     Server.instance().get("/search", UserSearch());
-    Server.instance().get('/userInfo/:id', getUserInfo);
+    Server.instance().get('/user/:id', getUserInfo);
 }

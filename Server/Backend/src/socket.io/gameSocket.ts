@@ -25,6 +25,31 @@ interface GameRoom {
 
 let matchmakingQueue: UserSocket[] = [];
 const activeRooms: Record<string, GameRoom> = {};
+
+// Function to update player level based on experience
+function updateLevel(playerId: number) {
+  db.get(
+    `SELECT experience FROM players WHERE id = ?`,
+    [playerId],
+    (err, row: { experience: number }) => {
+      if (err) {
+        console.error("Error getting experience:", err);
+        return;
+      }
+      const experience = row.experience;
+      // Level calculation: level = floor(experience / 100) + 1
+      const newLevel = Math.floor(experience / 100) + 1;
+      
+      db.run(
+        `UPDATE players SET level = ? WHERE id = ?`,
+        [newLevel, playerId],
+        (updateErr) => {
+          if (updateErr) console.error("Error updating level:", updateErr);
+        }
+      );
+    }
+  );
+}
 // avoid race 
 async function recordMatchResult(room: GameRoom, winnerId: number, loserId: number) {
   if (room.recorded) return;
@@ -49,6 +74,28 @@ async function recordMatchResult(room: GameRoom, winnerId: number, loserId: numb
         (err: any) => (err ? reject(err) : resolve())
       );
     });
+
+    // Add XP for games played and wins
+    // Both players get 5 XP for playing, winner gets additional 10 XP bonus
+    await new Promise<void>((resolve, reject) => {
+      db.run(
+        `UPDATE players SET experience = experience + 5 WHERE id = ?`,
+        [loserId],
+        (err: any) => (err ? reject(err) : resolve())
+      );
+    });
+    
+    await new Promise<void>((resolve, reject) => {
+      db.run(
+        `UPDATE players SET experience = experience + 15 WHERE id = ?`,
+        [winnerId],
+        (err: any) => (err ? reject(err) : resolve())
+      );
+    });
+
+    // Update levels for both players
+    updateLevel(winnerId);
+    updateLevel(loserId);
 
     // insert to game historiy
     try {

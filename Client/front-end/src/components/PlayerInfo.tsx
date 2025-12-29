@@ -1,7 +1,7 @@
 import { Progress } from '@/components/animate-ui/components/radix/progress';
 import {InstagramLogo, GithubLogo } from "@phosphor-icons/react/ssr";
 import Image from "next/image";
-import { useAuth } from '@/components/hooks/authProvider';
+import { User } from '@/components/hooks/authProvider';
 
 
 export type UserInfo = {
@@ -10,8 +10,7 @@ export type UserInfo = {
 };
 
 
-export default function Playerinfo(){
-  const user = useAuth.getState().user;
+export default function Playerinfo({ user }: { user?: User }){
   return (
     <div className="flex px-10 gap-1 items-center w-full h-full rouded-[35px]">
       <div className="py-5 flex flex-col items-center justify-center h-full w-[250px]">
@@ -38,14 +37,14 @@ export default function Playerinfo(){
             <p className="pl-2 text-[12px]">{`${user?.dateJoined ? user?.dateJoined : "Joined April 2022"}`}</p>
           </div>
         </div>
-        <p className="self-end font-bold mr-8 text-md">{`${user?.exp ? "2000/3000" : "1900/3000"}`}</p>
+        <p className="self-end font-bold mr-8 text-md">{`${user?.experience ? `${user.experience % 100}/100` : "0/100"}`}</p>
         <div className="relative">
-          <Progress className="h-15 inset-shadow-sm w-full" value={20} />
+          <Progress className="h-15 inset-shadow-sm w-full" value={user?.progression || 0} />
           <h1 className="text-2xl font-bold absolute  self-center 
             bg-gradient-to-r from-[#0D0C22] to-[#762675]
             text-transparent bg-clip-text inset-0 
             text-shadow-2xs text-center top-1/4">
-            {`Level: ${user?.exp ? 20 : 9}`}
+            {`Level: ${user?.level || 1}`}
           </h1>
         </div>
       </div>
