@@ -175,6 +175,72 @@ export default function Board({
   }, [bounds]);
 
   useEffect(() => {
+    if (!startGame || startGameCounter > 0) return;
+
+    const interval = setInterval(() => {
+      nextY = ballYRef.current + dyRef.current;
+      if (nextY >= ballLimits.bottomMax || nextY <= ballLimits.topMax) {
+        dyRef.current = -dyRef.current;
+        nextY = ballYRef.current + dyRef.current;
+      }
+
+      nextX = ballXRef.current + dxRef.current;
+
+      const ball = ballRef.current;
+      const leftPaddle = leftPaddleRef.current;
+      const rightPaddle = rightPaddleRef.current;
+
+      if (ball && leftPaddle && rightPaddle) {
+        const ballTop = nextY - ball.offsetHeight / 2;
+        const ballBottom = nextY + ball.offsetHeight / 2;
+        const leftTop = leftPaddlePosRef.current - leftPaddle.offsetHeight / 2;
+        const leftBottom = leftPaddlePosRef.current + leftPaddle.offsetHeight / 2;
+        const rightTop = rightPaddlePosRef.current - rightPaddle.offsetHeight / 2;
+        const rightBottom = rightPaddlePosRef.current + rightPaddle.offsetHeight / 2;
+
+        if (
+          nextX <= ballLimits.leftMax + leftPaddle.offsetWidth &&
+          ballBottom >= leftTop &&
+          ballTop <= leftBottom
+        ) {
+          dxRef.current = -dxRef.current;
+          nextX = ballXRef.current + dxRef.current;
+        } else if (
+          nextX >= ballLimits.rightMax - rightPaddle.offsetWidth &&
+          ballBottom >= rightTop &&
+          ballTop <= rightBottom
+        ) {
+          dxRef.current = -dxRef.current;
+          nextX = ballXRef.current + dxRef.current;
+        } else if (nextX >= ballLimits.rightMax) {
+          nextX = 0;
+          nextY = 0;
+          dxRef.current = dxRef.current * 1.2;
+          dyRef.current = dyRef.current * 1.2;
+          stepRef.current = stepRef.current * 1.2;
+          setPlayerOneScore((prev) => prev + 1);
+          setStartGameCounter(3);
+        } else if (nextX <= ballLimits.leftMax) {
+          nextX = 0;
+          nextY = 0;
+          dxRef.current = dxRef.current * 1.2;
+          dyRef.current = dyRef.current * 1.2;
+          stepRef.current = stepRef.current * 1.15;
+          setPlayerTwoScore((prev) => prev + 1);
+          setStartGameCounter(3);
+        }
+      }
+
+      ballXRef.current = nextX;
+      ballYRef.current = nextY;
+      setBallOffsetX(nextX);
+      setBallOffsetY(nextY);
+    }, 16);
+
+    return () => clearInterval(interval);
+  }, [ballLimits, startGameCounter, startGame]);
+
+  useEffect(() => {
     const handleWin = (winner: "playerOne" | "playerTwo") => {
       try {
         if (typeof onGameEnd === 'function') onGameEnd(winner);
