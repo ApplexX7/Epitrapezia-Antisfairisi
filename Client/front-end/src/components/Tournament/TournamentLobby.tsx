@@ -440,14 +440,7 @@ export default function TournamentLobby({ tournamentId }: Props) {
         </div>
       )}
 
-      {/* OTP Modal */}
-      <OtpModal 
-        open={otpOpen} 
-        onClose={() => { setOtpOpen(false); setPendingMatch(null); }} 
-        tournamentId={tournamentId} 
-        playerId={verifyTarget?.id || ""} 
-        onVerified={onOtpVerified} 
-      />
+      {/* OTP flow removed — matches start immediately by creator */}
 
       {/* Match Resolution Modal */}
       {matchToResolve && matchesState[matchToResolve] && (
