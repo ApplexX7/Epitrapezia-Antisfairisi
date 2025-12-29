@@ -214,6 +214,130 @@ export function createBlockTable() {
     });
 }
 
+export function createTournamentTable() {
+    db.run(
+        `CREATE TABLE IF NOT EXISTS tournaments (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            creator_id INTEGER NOT NULL,
+            password TEXT NOT NULL,
+            status TEXT DEFAULT 'pending', -- pending | in_progress | completed
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (creator_id) REFERENCES players(id) ON DELETE CASCADE
+        )`,
+        (err) => {
+            if (err) {
+                console.error("Error creating tournaments table:", err.message);
+            } else {
+                console.log('Table "tournaments" created or already exists.');
+            }
+        }
+    );
+}
+
+export function createTournamentPlayersTable() {
+    db.run(
+        `CREATE TABLE IF NOT EXISTS tournament_players (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            tournament_id INTEGER NOT NULL,
+            player_id INTEGER NOT NULL,
+            display_name TEXT NOT NULL,
+            joined_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE(tournament_id, player_id),
+            FOREIGN KEY (tournament_id) REFERENCES tournaments(id) ON DELETE CASCADE,
+            FOREIGN KEY (player_id) REFERENCES players(id) ON DELETE CASCADE
+        )`,
+        (err) => {
+            if (err) {
+                console.error("Error creating tournament_players table:", err.message);
+            } else {
+                console.log('Table "tournament_players" created or already exists.');
+            }
+        }
+    );
+}
+
+export function createTournamentMatchesTable() {
+    db.run(
+        `CREATE TABLE IF NOT EXISTS tournament_matches (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            tournament_id INTEGER NOT NULL,
+            stage TEXT NOT NULL, -- semi | final | third
+            match_number INTEGER NOT NULL,
+            player_a_id INTEGER,
+            player_b_id INTEGER,
+            winner_id INTEGER,
+            loser_id INTEGER,
+            status TEXT DEFAULT 'idle', -- idle | otp_sent | verified | finished
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (tournament_id) REFERENCES tournaments(id) ON DELETE CASCADE,
+            FOREIGN KEY (player_a_id) REFERENCES players(id) ON DELETE SET NULL,
+            FOREIGN KEY (player_b_id) REFERENCES players(id) ON DELETE SET NULL,
+            FOREIGN KEY (winner_id) REFERENCES players(id) ON DELETE SET NULL,
+            FOREIGN KEY (loser_id) REFERENCES players(id) ON DELETE SET NULL
+        )`,
+        (err) => {
+            if (err) {
+                console.error("Error creating tournament_matches table:", err.message);
+            } else {
+                console.log('Table "tournament_matches" created or already exists.');
+            }
+        }
+    );
+}
+
+export function createTournamentOTPTable() {
+    db.run(
+        `CREATE TABLE IF NOT EXISTS tournament_otps (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            tournament_id INTEGER NOT NULL,
+            player_id INTEGER NOT NULL,
+            match_id INTEGER NOT NULL,
+            otp_code TEXT NOT NULL,
+            expires_at DATETIME NOT NULL,
+            verified INTEGER DEFAULT 0,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (tournament_id) REFERENCES tournaments(id) ON DELETE CASCADE,
+            FOREIGN KEY (player_id) REFERENCES players(id) ON DELETE CASCADE,
+            FOREIGN KEY (match_id) REFERENCES tournament_matches(id) ON DELETE CASCADE
+        )`,
+        (err) => {
+            if (err) {
+                console.error("Error creating tournament_otps table:", err.message);
+            } else {
+                console.log('Table "tournament_otps" created or already exists.');
+            }
+        }
+    );
+}
+
+export function createTournamentResultsTable() {
+    db.run(
+        `CREATE TABLE IF NOT EXISTS tournament_results (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            tournament_id INTEGER NOT NULL UNIQUE,
+            first_place_id INTEGER,
+            second_place_id INTEGER,
+            third_place_id INTEGER,
+            fourth_place_id INTEGER,
+            completed_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (tournament_id) REFERENCES tournaments(id) ON DELETE CASCADE,
+            FOREIGN KEY (first_place_id) REFERENCES players(id) ON DELETE SET NULL,
+            FOREIGN KEY (second_place_id) REFERENCES players(id) ON DELETE SET NULL,
+            FOREIGN KEY (third_place_id) REFERENCES players(id) ON DELETE SET NULL,
+            FOREIGN KEY (fourth_place_id) REFERENCES players(id) ON DELETE SET NULL
+        )`,
+        (err) => {
+            if (err) {
+                console.error("Error creating tournament_results table:", err.message);
+            } else {
+                console.log('Table "tournament_results" created or already exists.');
+            }
+        }
+    );
+}
+
 export function createsDbTabes(){
     createTable();
     createOTPTable();
@@ -223,4 +347,9 @@ export function createsDbTabes(){
     createGameStats();
     createGameHistory();
     createBlockTable();
+    createTournamentTable();
+    createTournamentPlayersTable();
+    createTournamentMatchesTable();
+    createTournamentOTPTable();
+    createTournamentResultsTable();
 }
