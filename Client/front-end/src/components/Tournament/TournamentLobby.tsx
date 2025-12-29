@@ -27,6 +27,21 @@ export default function TournamentLobby({ tournamentId }: Props) {
   const [standings, setStandings] = useState<any>(null);
   const [creatorName, setCreatorName] = useState<string | null>(null);
 
+  const hydrateMatches = async (playerList: Player[]) => {
+    const matchesRes = await api.get(`/tournaments/${tournamentId}/matches`);
+    const matches = matchesRes.data?.matches || [];
+    if (!matches.length) return;
+    const nextState: Record<string, Match> = {};
+    matches.forEach((m: any) => {
+      const pa = playerList.find((p) => String(p.id) === String(m.player_a_id)) || { id: String(m.player_a_id), name: m.player_a_name || 'Player' };
+      const pb = playerList.find((p) => String(p.id) === String(m.player_b_id)) || { id: String(m.player_b_id), name: m.player_b_name || 'Player' };
+      const key = `${m.stage}-${m.match_number}`;
+      nextState[key] = { a: pa, b: pb, status: m.status || 'idle', winnerId: m.winner_id ? String(m.winner_id) : null, loserId: m.loser_id ? String(m.loser_id) : null, dbId: m.id } as any;
+    });
+    setMatchesState((s) => ({ ...s, ...nextState }));
+    setBracketReady(true);
+  };
+
   // Load initial data
   useEffect(() => {
     const load = async () => {
@@ -59,24 +74,16 @@ export default function TournamentLobby({ tournamentId }: Props) {
         } catch (e) {
           // ignore
         }
+        // Prefer creator username from players list if available
+        if (!creatorName && res.data?.players?.length) {
+          const creatorPlayer = res.data.players.find((p: any) => p.player_id === res.data.creator_id);
+          if (creatorPlayer?.display_name) setCreatorName(creatorPlayer.display_name);
+        }
 
         // Fetch matches (if any) to hydrate bracket
         try {
-          const matchesRes = await api.get(`/tournaments/${tournamentId}/matches`);
-          const matches = matchesRes.data?.matches || [];
-          if (matches.length) {
-            const nextState: Record<string, Match> = {};
-            matches.forEach((m: any) => {
-              const pa = remotePlayers.find((p) => String(p.id) === String(m.player_a_id)) || { id: String(m.player_a_id), name: m.player_a_name || 'Player' };
-              const pb = remotePlayers.find((p) => String(p.id) === String(m.player_b_id)) || { id: String(m.player_b_id), name: m.player_b_name || 'Player' };
-              const key = `${m.stage}-${m.match_number}`;
-              nextState[key] = { a: pa, b: pb, status: m.status || 'idle', winnerId: m.winner_id ? String(m.winner_id) : null, loserId: m.loser_id ? String(m.loser_id) : null, dbId: m.id } as any;
-            });
-            setMatchesState((s) => ({ ...s, ...nextState }));
-            setBracketReady(true);
-          }
+          await hydrateMatches(remotePlayers.length ? remotePlayers : []);
         } catch (err) {
-          // If there are no matches yet, ignore; otherwise log
           if (process.env.NODE_ENV !== 'production') console.warn('Could not fetch matches on load', err);
         }
       } catch (err) {
@@ -112,6 +119,19 @@ export default function TournamentLobby({ tournamentId }: Props) {
       initializeBracket();
     }
   }, [players]);
+
+  // Periodically sync match statuses when bracket exists (helps clear in_progress after games)
+  useEffect(() => {
+    if (!bracketReady || String(tournamentId).startsWith('local-')) return;
+    const id = setInterval(async () => {
+      try {
+        await hydrateMatches(players);
+      } catch (e) {
+        // ignore transient errors
+      }
+    }, 5000);
+    return () => clearInterval(id);
+  }, [bracketReady, tournamentId, players]);
 
   const addLocalPlayer = async () => {
     const username = nameEntry.trim();
@@ -185,17 +205,7 @@ export default function TournamentLobby({ tournamentId }: Props) {
         // If bracket already exists, hydrate from server instead of erroring out
         if (typeof msg === 'string' && msg.toLowerCase().includes('already initialized')) {
           try {
-            const res = await api.get(`/tournaments/${tournamentId}/matches`);
-            const matches = res.data?.matches || [];
-            const nextState: Record<string, Match> = {};
-            matches.forEach((m: any) => {
-              const pa = players.find((p) => String(p.id) === String(m.player_a_id)) || { id: String(m.player_a_id), name: m.player_a_name || 'Player' };
-              const pb = players.find((p) => String(p.id) === String(m.player_b_id)) || { id: String(m.player_b_id), name: m.player_b_name || 'Player' };
-              const key = `${m.stage}-${m.match_number}`;
-              nextState[key] = { a: pa, b: pb, status: m.status || 'idle', winnerId: m.winner_id, loserId: m.loser_id, dbId: m.id } as any;
-            });
-            setMatchesState((s) => ({ ...s, ...nextState }));
-            setBracketReady(true);
+            await hydrateMatches(players);
             toast.success('Bracket already initialized; synced from server');
           } catch (fetchErr) {
             toast.error(err?.response?.data?.message || 'Failed to initialize bracket on server');

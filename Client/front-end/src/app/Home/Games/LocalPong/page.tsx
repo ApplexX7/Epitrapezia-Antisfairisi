@@ -21,23 +21,23 @@ export default function LocalPong() {
         const p1 = search.get('p1');
         const p2 = search.get('p2');
 
+        const [resultReported, setResultReported] = useState(false);
+        const [reportError, setReportError] = useState<string | null>(null);
+
         const onGameEnd = useCallback(async (winner: "playerOne" | "playerTwo") => {
-            // map winner to player id
             const winnerId = winner === 'playerOne' ? p1 : p2;
             const loserId = winner === 'playerOne' ? p2 : p1;
             try {
                 if (t && t !== 'local' && m) {
                     await api.post(`/tournaments/${t}/result`, { matchId: Number(m), winnerId: Number(winnerId), loserId: Number(loserId) });
-                    // create finals if ready happens on server
                 }
-            } catch (e) {
+                setResultReported(true);
+                setReportError(null);
+            } catch (e: any) {
                 console.warn('Failed to report match result', e);
-            } finally {
-                // navigate back to tournament lobby if possible
-                if (t && t !== 'local') router.push(`/Home/Games/Tournament/lobby/${t}`);
-                else router.push('/Home/Games/Tournament');
+                setReportError(e?.response?.data?.message || 'Failed to report result');
             }
-        }, [t, m, p1, p2, router]);
+        }, [t, m, p1, p2]);
 
         return (
      <>
@@ -61,7 +61,7 @@ export default function LocalPong() {
      playerOneScore = {rightPlayerScore}
      playerTwoScore = {leftPlayerScore}
      />
-    <Board 
+        <Board 
      playerOneScore = {rightPlayerScore}
      playerTwoScore= {leftPlayerScore}
      setPlayerOneScore = {setRightPlayerScore}
@@ -70,8 +70,30 @@ export default function LocalPong() {
      _ballColor = {ballColor}
      _paddleColor = {paddleColor}
      _gameDiff = {gameDiff}
-    onGameEnd={onGameEnd}
+        onGameEnd={onGameEnd}
      />
+
+        {resultReported && (
+            <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+                <div className="bg-white rounded-xl shadow-2xl p-6 max-w-sm w-full text-center space-y-4">
+                    <h3 className="text-lg font-bold">Match finished</h3>
+                    {reportError ? (
+                        <p className="text-red-600 text-sm">{reportError}</p>
+                    ) : (
+                        <p className="text-gray-700 text-sm">Result reported to the tournament.</p>
+                    )}
+                    <button
+                        onClick={() => {
+                            if (t && t !== 'local') router.push(`/Home/Games/Tournament/lobby/${t}`);
+                            else router.push('/Home/Games/Tournament');
+                        }}
+                        className="w-full px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700"
+                    >
+                        Return to tournament
+                    </button>
+                </div>
+            </div>
+        )}
      </>
     );
 }
