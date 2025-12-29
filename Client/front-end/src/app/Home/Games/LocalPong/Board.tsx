@@ -22,6 +22,7 @@ export default function Board({
   _boardColor,
   _ballColor,
   _gameDiff,
+  _paddleColor,
   showStartButton = true
 }: BoardProps) {
   let [lostPlayer, setLostPlayer] = useState("");
