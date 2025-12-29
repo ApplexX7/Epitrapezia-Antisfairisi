@@ -355,16 +355,14 @@ export default function Board({
               : "#FF007F", transform: `translateY(-50%) translateY(${rightPaddleOffset}px)` }}
         ></div>
 
-{!startGame && !showVictoryVideo && (
-  {showStartButton && (
-    <button
-      onClick={handleGameStartClick}
-      className="absolute z-30 left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[10%] h-[8%] rounded-md bg-[#FF007F] hover:bg-[#e60073] shadow-md hover:shadow-lg transition-all duration-200 cursor-pointer text-white font-semibold"
-    >
-      Start
-    </button>
-  )}
-
+{!startGame && !showVictoryVideo && showStartButton && (
+  <button
+    onClick={handleGameStartClick}
+    className="absolute z-30 left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[10%] h-[8%] rounded-md bg-[#FF007F] hover:bg-[#e60073] shadow-md hover:shadow-lg transition-all duration-200 cursor-pointer text-white font-semibold"
+  >
+    Start
+  </button>
+)}
 
       </div>
     </div>
