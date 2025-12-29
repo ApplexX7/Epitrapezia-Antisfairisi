@@ -27,17 +27,25 @@ export default function LocalPong() {
         const onGameEnd = useCallback(async (winner: "playerOne" | "playerTwo") => {
             const winnerId = winner === 'playerOne' ? p1 : p2;
             const loserId = winner === 'playerOne' ? p2 : p1;
+            if (!winnerId || !loserId) {
+                setReportError('Missing player ids for result reporting');
+                setResultReported(true);
+                return;
+            }
             try {
                 if (t && t !== 'local' && m) {
                     await api.post(`/tournaments/${t}/result`, { matchId: Number(m), winnerId: Number(winnerId), loserId: Number(loserId) });
                 }
-                setResultReported(true);
                 setReportError(null);
             } catch (e: any) {
                 console.warn('Failed to report match result', e);
                 setReportError(e?.response?.data?.message || 'Failed to report result');
+            } finally {
+                setResultReported(true);
+                // Immediately return to tournament lobby when applicable
+                if (t && t !== 'local') router.push(`/Home/Games/Tournament/lobby/${t}`);
             }
-        }, [t, m, p1, p2]);
+        }, [t, m, p1, p2, router]);
 
         return (
      <>
@@ -71,22 +79,19 @@ export default function LocalPong() {
      _paddleColor = {paddleColor}
      _gameDiff = {gameDiff}
         onGameEnd={onGameEnd}
+        showStartButton={!resultReported}
      />
-
-        {resultReported && (
+        {resultReported && !t && (
             <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
                 <div className="bg-white rounded-xl shadow-2xl p-6 max-w-sm w-full text-center space-y-4">
                     <h3 className="text-lg font-bold">Match finished</h3>
                     {reportError ? (
                         <p className="text-red-600 text-sm">{reportError}</p>
                     ) : (
-                        <p className="text-gray-700 text-sm">Result reported to the tournament.</p>
+                        <p className="text-gray-700 text-sm">Result recorded.</p>
                     )}
                     <button
-                        onClick={() => {
-                            if (t && t !== 'local') router.push(`/Home/Games/Tournament/lobby/${t}`);
-                            else router.push('/Home/Games/Tournament');
-                        }}
+                        onClick={() => router.push('/Home/Games/Tournament')}
                         className="w-full px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700"
                     >
                         Return to tournament

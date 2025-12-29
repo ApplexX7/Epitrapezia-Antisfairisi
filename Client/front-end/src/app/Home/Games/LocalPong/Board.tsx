@@ -11,6 +11,7 @@ type BoardProps = {
   _gameDiff: string;
   _paddleColor: string;
   onGameEnd?: (winner: "playerOne" | "playerTwo") => void;
+  showStartButton?: boolean;
 };
 
 export default function Board({
@@ -21,7 +22,7 @@ export default function Board({
   _boardColor,
   _ballColor,
   _gameDiff,
-  _paddleColor
+  showStartButton = true
 }: BoardProps) {
   let [lostPlayer, setLostPlayer] = useState("");
   const boardRef = useRef<HTMLDivElement | null>(null);
@@ -355,13 +356,14 @@ export default function Board({
         ></div>
 
 {!startGame && !showVictoryVideo && (
-  <button
-    onClick={handleGameStartClick}
-    className="absolute z-30 left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[10%] h-[8%] rounded-md bg-[#FF007F] hover:bg-[#e60073] shadow-md hover:shadow-lg transition-all duration-200 cursor-pointer text-white font-semibold"
-  >
-    Start a New Game
-  </button>
-)}
+  {showStartButton && (
+    <button
+      onClick={handleGameStartClick}
+      className="absolute z-30 left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[10%] h-[8%] rounded-md bg-[#FF007F] hover:bg-[#e60073] shadow-md hover:shadow-lg transition-all duration-200 cursor-pointer text-white font-semibold"
+    >
+      Start
+    </button>
+  )}
 
 
       </div>
