@@ -303,31 +303,37 @@ export default function Board({
         <div
           ref={leftPaddleRef}
           className="absolute left-0 top-1/2 w-[19px] h-[20%] rounded-sm z-20"
-          style={{ backgroundColor:
-            _paddleColor === "default"
-              ? "#FF007F"
-              : _paddleColor === "white"
-              ? "white"
-              : _paddleColor === "green"
-              ? "green"
-              : _paddleColor === "yellow"
-              ? "yellow"
-              : "#FF007F", transform: `translateY(-50%) translateY(${leftPaddleOffset}px)` }}
+          style={{
+            backgroundColor:
+              _paddleColor === "default"
+                ? "#FF007F"
+                : _paddleColor === "white"
+                ? "white"
+                : _paddleColor === "green"
+                ? "green"
+                : _paddleColor === "yellow"
+                ? "yellow"
+                : "#FF007F",
+            transform: `translateY(-50%) translateY(${leftPaddleOffset}px)`,
+          }}
         ></div>
-
-        <div className="absolute left-1/2 top-0 h-full w-[0.5%] -translate-x-1/2 bg-white-smoke z-20"></div>
-        {startGame && startGameCounter > 0 && (
-      <p
-    className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 font-extrabold text-white opacity-90 z-50 transition-all duration-200"
-    style={{ fontSize: "15vh", lineHeight: "1" }}
-    >
-    {startGameCounter}
-    </p>
-)}
-
         <div
-          ref={ballRef}
-          className="absolute left-1/2 top-1/2 w-[24px] h-[24px] rounded-full z-20"
+          ref={rightPaddleRef}
+          className="absolute right-0 top-1/2 w-[19px] h-[20%] rounded-sm z-20"
+          style={{
+            backgroundColor:
+              _paddleColor === "default"
+                ? "#FF007F"
+                : _paddleColor === "white"
+                ? "white"
+                : _paddleColor === "green"
+                ? "green"
+                : _paddleColor === "yellow"
+                ? "yellow"
+                : "#FF007F",
+            transform: `translateY(-50%) translateY(${rightPaddleOffset}px)`,
+          }}
+        ></div>
           style={{ backgroundColor:
             _ballColor === "default"
               ? "#FF007F"
