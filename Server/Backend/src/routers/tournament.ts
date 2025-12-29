@@ -191,8 +191,8 @@ export function registerTournamentRoutes() {
         return reply.status(401).send({ message: 'Must be logged in to add players' });
       }
 
-      if (!username || !password) {
-        return reply.status(400).send({ message: 'Username and password are required' });
+      if (!username) {
+        return reply.status(400).send({ message: 'Username is required' });
       }
 
       await TC.addPlayerByUsername(parseInt(id), username, password, user.id);

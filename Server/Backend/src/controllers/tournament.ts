@@ -107,9 +107,13 @@ export class TournamentController {
       db.get(verifySql, [tournamentId], (err, tournament: any) => {
         if (err) return reject({ status: 400, message: 'Failed to verify tournament', error: (err as any)?.message || String(err) });
         if (!tournament) return reject({ status: 404, message: 'Tournament not found' });
-        if (tournament.password !== password) return reject({ status: 401, message: 'Invalid password' });
+        // If requester is the creator, they may add players without supplying the password
+        const isCreator = tournament.creator_id === requesterId;
+        if (!isCreator) {
+          if (tournament.password !== password) return reject({ status: 401, message: 'Invalid password' });
+          if (tournament.creator_id !== requesterId) return reject({ status: 403, message: 'Only the creator can add players' });
+        }
         if (tournament.status !== 'pending') return reject({ status: 409, message: 'Tournament already started' });
-        if (tournament.creator_id !== requesterId) return reject({ status: 403, message: 'Only the creator can add players' });
 
         const playerSql = `SELECT id FROM players WHERE username = ?`;
         db.get(playerSql, [username], (err, player: any) => {

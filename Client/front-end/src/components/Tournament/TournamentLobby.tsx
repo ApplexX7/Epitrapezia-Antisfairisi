@@ -4,6 +4,7 @@ import api from "@/lib/axios";
 import toast from "react-hot-toast";
 import OtpModal from "./OtpModal";
 import { useAuth } from "@/components/hooks/authProvider";
+import { useRouter } from "next/navigation";
 
 type Player = { id: string; name: string; local?: boolean };
 
@@ -14,6 +15,7 @@ type Props = { tournamentId: string };
 export default function TournamentLobby({ tournamentId }: Props) {
   const auth = useAuth();
   const currentUser = auth.user;
+  const router = useRouter();
 
   const [players, setPlayers] = useState<Player[]>([]);
   const [tournamentInfo, setTournamentInfo] = useState<any>(null);
@@ -114,6 +116,24 @@ export default function TournamentLobby({ tournamentId }: Props) {
         return toast.error("Player already added");
       }
 
+      // If tournament is server-backed, call add-player endpoint so it's persisted
+      if (!String(tournamentId).startsWith('local-')) {
+        try {
+          const body: any = { username };
+          // if current user is not creator we would need password; creator may omit it
+          const resp = await api.post(`/tournaments/${tournamentId}/add-player`, body);
+          const tour = resp.data?.tournament;
+          const remotePlayers: Player[] = tour?.players?.map((p: any) => ({ id: String(p.player_id || p.id), name: p.display_name || p.name })) || [];
+          setPlayers(remotePlayers);
+          setNameEntry("");
+          toast.success(`${username} added to tournament`);
+          return;
+        } catch (err: any) {
+          console.warn("Server add-player failed:", err);
+          return toast.error(err?.response?.data?.message || 'Failed to add player on server');
+        }
+      }
+
       const p: Player = { id: String(matched.id), name: matched.username, local: true };
       setPlayers((s) => [...s, p]);
       setNameEntry("");
@@ -157,6 +177,11 @@ export default function TournamentLobby({ tournamentId }: Props) {
         // Ask server (creator) to send OTPs to both players in the match
         await api.post(`/tournaments/${tournamentId}/send-otp/match`, { matchId });
         toast.success(`OTPs sent to players' emails`);
+        // If current user is the creator (host), navigate to local Pong to start the game
+        if (tournamentInfo && currentUser?.id === tournamentInfo.creator_id) {
+          const q = `?match=${encodeURIComponent(String(matchId || ''))}&p1=${encodeURIComponent(a.name)}&p2=${encodeURIComponent(b.name)}`;
+          router.push(`/Home/Games/LocalPong${q}`);
+        }
       } else {
         // local mode: simulate OTP sent
         toast.success('OTP sent (local mode)');
