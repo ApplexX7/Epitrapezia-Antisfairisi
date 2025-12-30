@@ -11,6 +11,7 @@ import { Message } from "./routers/message";
 import { seenMsg } from "./routers/seenMsg"
 import { gameStatesRouters } from "./routers/gameStates";
 import { attendanceRouters } from "./routers/attendance";
+import { registerTournamentRoutes } from "./routers/tournament";
 
 createsDbTabes();
 
@@ -31,6 +32,7 @@ app.addHook("onRequest", async (req: FastifyRequest, reply: FastifyReply) => {
     "/auth/google/callback",
     "/auth/verify-otp",
     "/auth/resend-otp",
+    "/tournaments", // Tournament routes are public with password protection
   ];
 
   if (publicRoutes.some((r) => routeUrl.startsWith(r))) {
@@ -56,6 +58,7 @@ app.addHook("onRequest", async (req: FastifyRequest, reply: FastifyReply) => {
 
 async function bootstrap() {
   await authRouters();
+  registerTournamentRoutes();
   await Server.start();
 }
 

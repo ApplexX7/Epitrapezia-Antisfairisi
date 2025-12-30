@@ -1,5 +1,7 @@
-'use client'
-import React, { useState } from "react";
+"use client"
+import React, { useState, useCallback, useEffect } from "react";
+import { useSearchParams, useRouter } from 'next/navigation';
+import api from '@/lib/axios';
 import Board from "./Board";
 import ScoreBar from "./ScoreBar";
 import GameCostum from "./GameCostum";
@@ -12,8 +14,84 @@ export default function LocalPong() {
     let [paddleColor, setPaddleColor] = useState("default");
     let [gameDiff, setGameDiff] = useState("easy");
     let [openSettings, setOpenSettings] = useState(true);
-    return (
-     <>
+        const [redirectCountdown, setRedirectCountdown] = useState<number | null>(null);
+        const search = useSearchParams();
+        const router = useRouter();
+        const t = search.get('t');
+        const m = search.get('m');
+        const p1 = search.get('p1');
+        const p2 = search.get('p2');
+        const isTournamentGame = !!(t && t !== 'local');
+
+        const [resultReported, setResultReported] = useState(false);
+        const [reportError, setReportError] = useState<string | null>(null);
+
+          const goToTournament = useCallback(() => {
+              if (isTournamentGame) return router.replace(`/Home/Games/Tournament/lobby/${t}`);
+              return router.replace('/Home/Games/Tournament');
+          }, [isTournamentGame, router, t]);
+
+          const onGameEnd = useCallback(async (winner: "playerOne" | "playerTwo") => {
+              const winnerId = winner === 'playerOne' ? p1 : p2;
+              const loserId = winner === 'playerOne' ? p2 : p1;
+              if (!winnerId || !loserId) {
+                  setReportError('Missing player ids for result reporting');
+                  setResultReported(true);
+                  if (isTournamentGame) setRedirectCountdown(3);
+                  return;
+              }
+
+              const matchIdNum = m ? Number(m) : null;
+              const payload = {
+                matchId: matchIdNum && !Number.isNaN(matchIdNum) ? matchIdNum : m,
+                winnerId: Number(winnerId) || winnerId,
+                loserId: Number(loserId) || loserId,
+              } as any;
+
+              try {
+                  if (isTournamentGame) {
+                      await api.post(`/tournaments/${t}/result`, payload);
+                  }
+                  setReportError(null);
+              } catch (e: any) {
+                  console.warn('Failed to report match result', e);
+                  setReportError(e?.response?.data?.message || 'Failed to report result');
+              } finally {
+                  setResultReported(true);
+                  if (isTournamentGame) setRedirectCountdown(3);
+              }
+          }, [t, m, p1, p2, router, isTournamentGame]);
+
+        useEffect(() => {
+            if (!isTournamentGame || !resultReported) return;
+            if (redirectCountdown === null) setRedirectCountdown(3);
+        }, [isTournamentGame, resultReported, redirectCountdown]);
+
+        useEffect(() => {
+            if (redirectCountdown === null) return;
+            if (redirectCountdown <= 0) return goToTournament();
+
+            const timer = setTimeout(() => {
+                setRedirectCountdown((prev) => (prev === null ? prev : prev - 1));
+            }, 1000);
+
+            return () => clearTimeout(timer);
+        }, [redirectCountdown, goToTournament]);
+
+    // Fallback: if Board misses the end callback, detect win state from scores and trigger finish
+    useEffect(() => {
+        if (resultReported) return;
+        const leftLead = leftPlayerScore - rightPlayerScore;
+        const rightLead = rightPlayerScore - leftPlayerScore;
+        if (rightPlayerScore > 5 && rightLead >= 2) {
+            onGameEnd('playerOne');
+        } else if (leftPlayerScore > 5 && leftLead >= 2) {
+            onGameEnd('playerTwo');
+        }
+    }, [leftPlayerScore, rightPlayerScore, onGameEnd, resultReported]);
+
+          return (
+       <>
      <OpenGameCostumButton
         isOpen = {openSettings}
         setIsOpen={setOpenSettings}
@@ -34,16 +112,54 @@ export default function LocalPong() {
      playerOneScore = {rightPlayerScore}
      playerTwoScore = {leftPlayerScore}
      />
-     <Board 
-     playerOneScore = {rightPlayerScore}
-     playerTwoScore= {leftPlayerScore}
-     setPlayerOneScore = {setRightPlayerScore}
-     setPlayerTwoScore = {setLeftPlayerScore}
-     _boardColor = {boardColor}
-     _ballColor = {ballColor}
-     _paddleColor = {paddleColor}
-     _gameDiff = {gameDiff}
-     />
+          <Board 
+      playerOneScore = {rightPlayerScore}
+      playerTwoScore= {leftPlayerScore}
+      setPlayerOneScore = {setRightPlayerScore}
+      setPlayerTwoScore = {setLeftPlayerScore}
+      _boardColor = {boardColor}
+      _ballColor = {ballColor}
+      _paddleColor = {paddleColor}
+      _gameDiff = {gameDiff}
+          onGameEnd={onGameEnd}
+          showStartButton={!resultReported}
+      />
+          {resultReported && isTournamentGame && (
+            <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+                <div className="bg-white rounded-xl shadow-2xl p-6 max-w-sm w-full text-center space-y-4">
+                    <h3 className="text-lg font-bold">Match finished</h3>
+                    {reportError ? (
+                        <p className="text-red-600 text-sm">{reportError}</p>
+                    ) : (
+                        <p className="text-gray-700 text-sm">Returning to the tournament lobby{redirectCountdown !== null ? ` in ${redirectCountdown}s` : ''}.</p>
+                    )}
+                    <button
+                        onClick={goToTournament}
+                        className="w-full px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700"
+                    >
+                        Go to tournament lobby
+                    </button>
+                </div>
+            </div>
+        )}
+        {resultReported && !t && (
+            <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+                <div className="bg-white rounded-xl shadow-2xl p-6 max-w-sm w-full text-center space-y-4">
+                    <h3 className="text-lg font-bold">Match finished</h3>
+                    {reportError ? (
+                        <p className="text-red-600 text-sm">{reportError}</p>
+                    ) : (
+                        <p className="text-gray-700 text-sm">Result recorded.</p>
+                    )}
+                    <button
+                        onClick={goToTournament}
+                        className="w-full px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700"
+                    >
+                        Return to tournament
+                    </button>
+                </div>
+            </div>
+        )}
      </>
     );
 }

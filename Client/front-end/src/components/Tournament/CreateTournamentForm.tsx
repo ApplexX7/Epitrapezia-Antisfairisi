@@ -13,6 +13,13 @@ export default function CreateTournamentForm(): JSX.Element {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    // Client-side validation: require password >= 3 chars
+    if (!password || password.length < 3) {
+      toast.error("Password must be at least 3 characters");
+      setLoading(false);
+      return;
+    }
+
     try {
       const res = await api.post("/tournaments", { name, password });
       const id = res.data?.id || res.data?.tournamentId || null;
@@ -20,10 +27,16 @@ export default function CreateTournamentForm(): JSX.Element {
       toast.success("Tournament created");
       router.push(`/Home/Games/Tournament/lobby/${id}`);
     } catch (err: any) {
-      // fallback: create local id and navigate so frontend can be tested without backend
-      const fallbackId = `local-${Date.now()}`;
-      toast.error(err?.response?.data?.message || "Failed to create on server — using local lobby");
-      router.push(`/Home/Games/Tournament/lobby/${fallbackId}`);
+      const serverMsg = err?.response?.data?.message;
+      if (serverMsg) {
+        // show server validation error and do not navigate
+        toast.error(serverMsg);
+      } else {
+        // network/offline fallback: allow local testing
+        const fallbackId = `local-${Date.now()}`;
+        toast.error("Failed to create on server — using local lobby");
+        router.push(`/Home/Games/Tournament/lobby/${fallbackId}`);
+      }
     } finally {
       setLoading(false);
     }

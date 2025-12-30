@@ -1,0 +1,33 @@
+{
+  "name": "WebPong Game",
+  "image": "mcr.microsoft.com/devcontainers/universal:2",
+  "forwardPorts": [8080, 3000, 5173],
+  "portsAttributes": {
+    "8080": {
+      "label": "Backend API",
+      "onAutoForward": "notify",
+      "visibility": "public"
+    },
+    "3000": {
+      "label": "Frontend",
+      "onAutoForward": "notify",
+      "visibility": "public"
+    },
+    "5173": {
+      "label": "Vite Dev Server",
+      "onAutoForward": "notify",
+      "visibility": "public"
+    }
+  },
+  "postCreateCommand": "npm install --legacy-peer-deps",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode",
+        "ms-mssql.mssql",
+        "rangav.vscode-thunder-client"
+      ]
+    }
+  }
+}

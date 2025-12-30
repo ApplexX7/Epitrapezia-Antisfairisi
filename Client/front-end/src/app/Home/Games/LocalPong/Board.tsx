@@ -10,6 +10,8 @@ type BoardProps = {
   _ballColor: string;
   _gameDiff: string;
   _paddleColor: string;
+  onGameEnd?: (winner: "playerOne" | "playerTwo") => void;
+  showStartButton?: boolean;
 };
 
 export default function Board({
@@ -20,7 +22,8 @@ export default function Board({
   _boardColor,
   _ballColor,
   _gameDiff,
-  _paddleColor
+  _paddleColor,
+  showStartButton = true
 }: BoardProps) {
   let [lostPlayer, setLostPlayer] = useState("");
   const boardRef = useRef<HTMLDivElement | null>(null);
@@ -162,7 +165,9 @@ export default function Board({
 
     window.addEventListener("keydown", handleKeyDown);
     window.addEventListener("keyup", handleKeyUp);
+
     loop();
+
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
       window.removeEventListener("keyup", handleKeyUp);
@@ -170,7 +175,8 @@ export default function Board({
   }, [bounds]);
 
   useEffect(() => {
-    if (startGameCounter > 0) return;
+    if (!startGame || startGameCounter > 0) return;
+
     const interval = setInterval(() => {
       nextY = ballYRef.current + dyRef.current;
       if (nextY >= ballLimits.bottomMax || nextY <= ballLimits.topMax) {
@@ -232,10 +238,15 @@ export default function Board({
     }, 16);
 
     return () => clearInterval(interval);
-  }, [ballLimits, startGameCounter]);
+  }, [ballLimits, startGameCounter, startGame]);
 
   useEffect(() => {
     const handleWin = (winner: "playerOne" | "playerTwo") => {
+      try {
+        if (typeof onGameEnd === 'function') onGameEnd(winner);
+      } catch (e) {
+        // swallow
+      }
       nextX = 0;
       nextY = 0;
       dxRef.current = 10;
@@ -274,90 +285,87 @@ export default function Board({
     }}
   >
       <div ref={boardRef} className="relative w-full h-full ">
-      {showVictoryVideo && (
-  <div className="absolute inset-0 w-full h-full flex flex-col items-center justify-center z-40">
-    <video
-      className="absolute top-0 left-0 w-full h-full object-cover z-0"
-      autoPlay
-      muted
-      loop
-    >
-      <source src="/lost.mp4" type="video/mp4" />
-    </video>
-    <p
-      className="text-white font-extrabold text-[10vw] z-50 text-center"
-    >
-      {lostPlayer} is underdog
-    </p>
-  </div>
-)}
-
+        {showVictoryVideo && (
+          <div className="absolute inset-0 w-full h-full flex flex-col items-center justify-center z-40">
+            <video className="absolute top-0 left-0 w-full h-full object-cover z-0" autoPlay muted loop>
+              <source src="/lost.mp4" type="video/mp4" />
+            </video>
+            <p className="text-white font-extrabold text-[10vw] z-50 text-center">
+              {lostPlayer} is underdog
+            </p>
+          </div>
+        )}
 
         <div
           ref={leftPaddleRef}
           className="absolute left-0 top-1/2 w-[19px] h-[20%] rounded-sm z-20"
-          style={{ backgroundColor:
-            _paddleColor === "default"
-              ? "#FF007F"
-              : _paddleColor === "white"
-              ? "white"
-              : _paddleColor === "green"
-              ? "green"
-              : _paddleColor === "yellow"
-              ? "yellow"
-              : "#FF007F", transform: `translateY(-50%) translateY(${leftPaddleOffset}px)` }}
+          style={{
+            backgroundColor:
+              _paddleColor === "default"
+                ? "#FF007F"
+                : _paddleColor === "white"
+                ? "white"
+                : _paddleColor === "green"
+                ? "green"
+                : _paddleColor === "yellow"
+                ? "yellow"
+                : "#FF007F",
+            transform: `translateY(-50%) translateY(${leftPaddleOffset}px)`,
+          }}
         ></div>
 
         <div className="absolute left-1/2 top-0 h-full w-[0.5%] -translate-x-1/2 bg-white-smoke z-20"></div>
+
         {startGame && startGameCounter > 0 && (
-      <p
-    className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 font-extrabold text-white opacity-90 z-50 transition-all duration-200"
-    style={{ fontSize: "15vh", lineHeight: "1" }}
-    >
-    {startGameCounter}
-    </p>
-)}
+          <p className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 font-extrabold text-white opacity-90 z-50 transition-all duration-200">
+            {startGameCounter}
+          </p>
+        )}
 
         <div
           ref={ballRef}
           className="absolute left-1/2 top-1/2 w-[24px] h-[24px] rounded-full z-20"
-          style={{ backgroundColor:
-            _ballColor === "default"
-              ? "#FF007F"
-              : _ballColor === "white"
-              ? "white"
-              : _ballColor === "green"
-              ? "green"
-              : _ballColor === "yellow"
-              ? "yellow"
-              : "#FF007F", transform: `translate(-50%, -50%) translate(${ballOffsetX}px, ${ballOffsetY}px)` }}
+          style={{
+            backgroundColor:
+              _ballColor === "default"
+                ? "#FF007F"
+                : _ballColor === "white"
+                ? "white"
+                : _ballColor === "green"
+                ? "green"
+                : _ballColor === "yellow"
+                ? "yellow"
+                : "#FF007F",
+            transform: `translate(-50%, -50%) translate(${ballOffsetX}px, ${ballOffsetY}px)`,
+          }}
         ></div>
 
         <div
           ref={rightPaddleRef}
           className="absolute right-0 top-1/2 w-[19px] h-[20%] rounded-sm z-20"
-          style={{ backgroundColor:
-            _paddleColor === "default"
-              ? "#FF007F"
-              : _paddleColor === "white"
-              ? "white"
-              : _paddleColor === "green"
-              ? "green"
-              : _paddleColor === "yellow"
-              ? "yellow"
-              : "#FF007F", transform: `translateY(-50%) translateY(${rightPaddleOffset}px)` }}
+          style={{
+            backgroundColor:
+              _paddleColor === "default"
+                ? "#FF007F"
+                : _paddleColor === "white"
+                ? "white"
+                : _paddleColor === "green"
+                ? "green"
+                : _paddleColor === "yellow"
+                ? "yellow"
+                : "#FF007F",
+            transform: `translateY(-50%) translateY(${rightPaddleOffset}px)`,
+          }}
         ></div>
 
-{!startGame && !showVictoryVideo && (
-  <button
-    onClick={handleGameStartClick}
-    className="absolute z-30 left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[10%] h-[8%] rounded-md bg-[#FF007F] hover:bg-[#e60073] shadow-md hover:shadow-lg transition-all duration-200 cursor-pointer text-white font-semibold"
-  >
-    Start a New Game
-  </button>
-)}
-
-
+        {!startGame && !showVictoryVideo && showStartButton && (
+          <button
+            onClick={handleGameStartClick}
+            className="absolute z-30 left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[10%] h-[8%] rounded-md bg-[#FF007F] hover:bg-[#e60073] shadow-md hover:shadow-lg transition-all duration-200 cursor-pointer text-white font-semibold"
+          >
+            Start
+          </button>
+        )}
       </div>
     </div>
   );
