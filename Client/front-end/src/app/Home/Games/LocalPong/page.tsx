@@ -21,14 +21,15 @@ export default function LocalPong() {
         const m = search.get('m');
         const p1 = search.get('p1');
         const p2 = search.get('p2');
+        const isTournamentGame = !!(t && t !== 'local');
 
         const [resultReported, setResultReported] = useState(false);
         const [reportError, setReportError] = useState<string | null>(null);
 
         const goToTournament = useCallback(() => {
-            if (t && t !== 'local') return router.push(`/Home/Games/Tournament/lobby/${t}`);
+            if (isTournamentGame) return router.push(`/Home/Games/Tournament/lobby/${t}`);
             return router.push('/Home/Games/Tournament');
-        }, [router, t]);
+        }, [isTournamentGame, router, t]);
 
         const onGameEnd = useCallback(async (winner: "playerOne" | "playerTwo") => {
             const winnerId = winner === 'playerOne' ? p1 : p2;
@@ -39,7 +40,7 @@ export default function LocalPong() {
                 return;
             }
             try {
-                if (t && t !== 'local' && m) {
+                if (isTournamentGame && m) {
                     await api.post(`/tournaments/${t}/result`, { matchId: Number(m), winnerId: Number(winnerId), loserId: Number(loserId) });
                 }
                 setReportError(null);
@@ -48,9 +49,14 @@ export default function LocalPong() {
                 setReportError(e?.response?.data?.message || 'Failed to report result');
             } finally {
                 setResultReported(true);
-                if (t && t !== 'local') setRedirectCountdown(3);
+                if (isTournamentGame) setRedirectCountdown(3);
             }
-        }, [t, m, p1, p2, router]);
+        }, [t, m, p1, p2, router, isTournamentGame]);
+
+        useEffect(() => {
+            if (!isTournamentGame || !resultReported) return;
+            if (redirectCountdown === null) setRedirectCountdown(3);
+        }, [isTournamentGame, resultReported, redirectCountdown]);
 
         useEffect(() => {
             if (redirectCountdown === null) return;
@@ -85,19 +91,19 @@ export default function LocalPong() {
      playerOneScore = {rightPlayerScore}
      playerTwoScore = {leftPlayerScore}
      />
-        <Board 
-     playerOneScore = {rightPlayerScore}
-     playerTwoScore= {leftPlayerScore}
-     setPlayerOneScore = {setRightPlayerScore}
-     setPlayerTwoScore = {setLeftPlayerScore}
-     _boardColor = {boardColor}
-     _ballColor = {ballColor}
-     _paddleColor = {paddleColor}
-     _gameDiff = {gameDiff}
-        onGameEnd={onGameEnd}
-        showStartButton={!resultReported}
-     />
-        {resultReported && t && t !== 'local' && (
+          <Board 
+      playerOneScore = {rightPlayerScore}
+      playerTwoScore= {leftPlayerScore}
+      setPlayerOneScore = {setRightPlayerScore}
+      setPlayerTwoScore = {setLeftPlayerScore}
+      _boardColor = {boardColor}
+      _ballColor = {ballColor}
+      _paddleColor = {paddleColor}
+      _gameDiff = {gameDiff}
+          onGameEnd={onGameEnd}
+          showStartButton={!resultReported}
+      />
+        {resultReported && isTournamentGame && (
             <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
                 <div className="bg-white rounded-xl shadow-2xl p-6 max-w-sm w-full text-center space-y-4">
                     <h3 className="text-lg font-bold">Match finished</h3>
