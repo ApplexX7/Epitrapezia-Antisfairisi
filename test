@@ -1,0 +1,115 @@
+interface VSBannerProps {
+  player1Name: string;
+  player2Name: string;
+  player1Avatar: string;
+  player2Avatar: string;
+  winner: { player: string; line: number[] } | null;
+  player1Score: number;
+  player2Score: number;
+}
+
+export default function VSBanner({
+  player1Name,
+  player2Name,
+  player1Avatar,
+  player2Avatar,
+  winner,
+  player1Score,
+  player2Score,
+}: VSBannerProps) {
+  const isPlayer1Winner = winner?.player === "X";
+  const isPlayer2Winner = winner?.player === "O";
+  const isPlayer1Champion = player1Score >= 3;
+  const isPlayer2Champion = player2Score >= 3;
+
+  return (
+    <div className="relative w-[95vw] sm:w-[90vw] lg:w-[38vw] mx-auto h-[64px] lg:h-[7vh] mb-4 lg:mb-[8vh] max-w-[650px]">
+      {/* Background */}
+      <div className="absolute inset-0 bg-white/10 backdrop-blur-sm rounded-full" />
+
+      {/* PLAYER 1 */}
+      <div
+        className={`absolute left-2 top-1/2 -translate-y-1/2 flex items-center gap-2 transition-all duration-300 ${
+          isPlayer1Winner || isPlayer1Champion
+            ? "scale-110"
+            : isPlayer2Winner || isPlayer2Champion
+            ? "opacity-40 scale-90"
+            : ""
+        }`}
+        style={{ minWidth: 0 }}
+      >
+        <div className="relative">
+          <img
+            src={player1Avatar}
+            alt="player 1"
+            className={`h-9 w-9 sm:h-10 sm:w-10 lg:h-[6vh] lg:w-[6vh] rounded-full object-cover ${
+              isPlayer1Winner || isPlayer1Champion
+                ? "ring-4 ring-yellow-400 shadow-lg shadow-yellow-400/50"
+                : ""
+            }`}
+          />
+          <div className="absolute -bottom-1 -right-1 bg-purple-600 text-white text-[10px] sm:text-xs font-bold rounded-full w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6 flex items-center justify-center border-2 border-white">
+            {player1Score}
+          </div>
+        </div>
+
+        <span className="font-bold text-xs sm:text-sm lg:text-lg truncate max-w-[80px] sm:max-w-[120px]">
+          {player1Name}
+        </span>
+
+        {isPlayer1Champion && <span className="text-lg lg:text-2xl">🏆</span>}
+        {isPlayer1Winner && !isPlayer1Champion && (
+          <span className="text-lg lg:text-2xl">👑</span>
+        )}
+      </div>
+
+      {/* VS CENTER */}
+      <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10">
+        <div className="relative text-2xl sm:text-3xl lg:text-5xl font-black tracking-wider flex">
+          <span className="bg-gradient-to-br from-purple-200 via-purple-300 to-purple-400 bg-clip-text text-transparent -translate-y-1">
+            V
+          </span>
+          <span className="bg-gradient-to-br from-purple-200 via-purple-300 to-purple-400 bg-clip-text text-transparent translate-y-1">
+            S
+          </span>
+        </div>
+      </div>
+
+      {/* PLAYER 2 */}
+      <div
+        className={`absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-2 transition-all duration-300 ${
+          isPlayer2Winner || isPlayer2Champion
+            ? "scale-110"
+            : isPlayer1Winner || isPlayer1Champion
+            ? "opacity-40 scale-90"
+            : ""
+        }`}
+        style={{ minWidth: 0 }}
+      >
+        {isPlayer2Champion && <span className="text-lg lg:text-2xl">🏆</span>}
+        {isPlayer2Winner && !isPlayer2Champion && (
+          <span className="text-lg lg:text-2xl">👑</span>
+        )}
+
+        <span className="font-bold text-xs sm:text-sm lg:text-lg truncate max-w-[80px] sm:max-w-[120px]">
+          {player2Name}
+        </span>
+
+        <div className="relative">
+          <img
+            src={player2Avatar}
+            alt="player 2"
+            className={`h-9 w-9 sm:h-10 sm:w-10 lg:h-[6vh] lg:w-[6vh] rounded-full object-cover ${
+              isPlayer2Winner || isPlayer2Champion
+                ? "ring-4 ring-yellow-400 shadow-lg shadow-yellow-400/50"
+                : ""
+            }`}
+          />
+          <div className="absolute -bottom-1 -left-1 bg-purple-600 text-white text-[10px] sm:text-xs font-bold rounded-full w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6 flex items-center justify-center border-2 border-white">
+            {player2Score}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
