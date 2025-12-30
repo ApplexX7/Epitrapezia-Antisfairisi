@@ -133,6 +133,32 @@ export default function TournamentLobby({ tournamentId }: Props) {
     return () => clearInterval(id);
   }, [bracketReady, tournamentId, players]);
 
+  // Re-sync matches when user returns to the tab/page (e.g., after back navigation)
+  useEffect(() => {
+    if (!bracketReady || String(tournamentId).startsWith('local-')) return;
+
+    const refresh = async () => {
+      try {
+        await hydrateMatches(players);
+      } catch (e) {
+        // ignore
+      }
+    };
+
+    const handleVisibility = () => {
+      if (!document.hidden) refresh();
+    };
+
+    window.addEventListener('focus', refresh);
+    document.addEventListener('visibilitychange', handleVisibility);
+    refresh();
+
+    return () => {
+      window.removeEventListener('focus', refresh);
+      document.removeEventListener('visibilitychange', handleVisibility);
+    };
+  }, [bracketReady, tournamentId, players]);
+
   const addLocalPlayer = async () => {
     const username = nameEntry.trim();
     if (!username) return toast.error("Enter a player name");

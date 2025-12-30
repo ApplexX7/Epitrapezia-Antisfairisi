@@ -1,5 +1,5 @@
 "use client"
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import { useSearchParams, useRouter } from 'next/navigation';
 import api from '@/lib/axios';
 import Board from "./Board";
@@ -14,6 +14,7 @@ export default function LocalPong() {
     let [paddleColor, setPaddleColor] = useState("default");
     let [gameDiff, setGameDiff] = useState("easy");
     let [openSettings, setOpenSettings] = useState(true);
+        const [redirectCountdown, setRedirectCountdown] = useState<number | null>(null);
         const search = useSearchParams();
         const router = useRouter();
         const t = search.get('t');
@@ -23,6 +24,11 @@ export default function LocalPong() {
 
         const [resultReported, setResultReported] = useState(false);
         const [reportError, setReportError] = useState<string | null>(null);
+
+        const goToTournament = useCallback(() => {
+            if (t && t !== 'local') return router.push(`/Home/Games/Tournament/lobby/${t}`);
+            return router.push('/Home/Games/Tournament');
+        }, [router, t]);
 
         const onGameEnd = useCallback(async (winner: "playerOne" | "playerTwo") => {
             const winnerId = winner === 'playerOne' ? p1 : p2;
@@ -42,10 +48,20 @@ export default function LocalPong() {
                 setReportError(e?.response?.data?.message || 'Failed to report result');
             } finally {
                 setResultReported(true);
-                // Immediately return to tournament lobby when applicable
-                if (t && t !== 'local') router.push(`/Home/Games/Tournament/lobby/${t}`);
+                if (t && t !== 'local') setRedirectCountdown(3);
             }
         }, [t, m, p1, p2, router]);
+
+        useEffect(() => {
+            if (redirectCountdown === null) return;
+            if (redirectCountdown <= 0) return goToTournament();
+
+            const timer = setTimeout(() => {
+                setRedirectCountdown((prev) => (prev === null ? prev : prev - 1));
+            }, 1000);
+
+            return () => clearTimeout(timer);
+        }, [redirectCountdown, goToTournament]);
 
         return (
      <>
@@ -81,6 +97,24 @@ export default function LocalPong() {
         onGameEnd={onGameEnd}
         showStartButton={!resultReported}
      />
+        {resultReported && t && t !== 'local' && (
+            <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+                <div className="bg-white rounded-xl shadow-2xl p-6 max-w-sm w-full text-center space-y-4">
+                    <h3 className="text-lg font-bold">Match finished</h3>
+                    {reportError ? (
+                        <p className="text-red-600 text-sm">{reportError}</p>
+                    ) : (
+                        <p className="text-gray-700 text-sm">Returning to the tournament lobby{redirectCountdown !== null ? ` in ${redirectCountdown}s` : ''}.</p>
+                    )}
+                    <button
+                        onClick={goToTournament}
+                        className="w-full px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700"
+                    >
+                        Go to tournament lobby
+                    </button>
+                </div>
+            </div>
+        )}
         {resultReported && !t && (
             <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
                 <div className="bg-white rounded-xl shadow-2xl p-6 max-w-sm w-full text-center space-y-4">
@@ -91,7 +125,7 @@ export default function LocalPong() {
                         <p className="text-gray-700 text-sm">Result recorded.</p>
                     )}
                     <button
-                        onClick={() => router.push('/Home/Games/Tournament')}
+                        onClick={goToTournament}
                         className="w-full px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700"
                     >
                         Return to tournament
