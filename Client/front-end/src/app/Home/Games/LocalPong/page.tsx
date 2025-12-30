@@ -27,8 +27,8 @@ export default function LocalPong() {
         const [reportError, setReportError] = useState<string | null>(null);
 
         const goToTournament = useCallback(() => {
-            if (isTournamentGame) return router.push(`/Home/Games/Tournament/lobby/${t}`);
-            return router.push('/Home/Games/Tournament');
+            if (isTournamentGame) return router.replace(`/Home/Games/Tournament/lobby/${t}`);
+            return router.replace('/Home/Games/Tournament');
         }, [isTournamentGame, router, t]);
 
         const onGameEnd = useCallback(async (winner: "playerOne" | "playerTwo") => {
@@ -71,6 +71,16 @@ export default function LocalPong() {
 
         return (
      <>
+            {isTournamentGame && (
+                <div className="fixed left-4 top-4 z-50">
+                    <button
+                        onClick={goToTournament}
+                        className="px-3 py-2 rounded-md bg-purple-600 text-white text-sm shadow hover:bg-purple-700"
+                    >
+                        Back to tournament
+                    </button>
+                </div>
+            )}
      <OpenGameCostumButton
         isOpen = {openSettings}
         setIsOpen={setOpenSettings}

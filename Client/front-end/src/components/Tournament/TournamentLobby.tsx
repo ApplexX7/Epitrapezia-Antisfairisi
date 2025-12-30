@@ -328,6 +328,12 @@ export default function TournamentLobby({ tournamentId }: Props) {
           loserId: loser.id,
         });
       }
+      // force refresh to clear in_progress after result
+      try {
+        await hydrateMatches(players);
+      } catch (err) {
+        // ignore
+      }
     } catch (err: any) {
       console.warn("Could not save to server:", err.message);
     }
