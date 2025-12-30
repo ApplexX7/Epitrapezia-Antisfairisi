@@ -78,6 +78,18 @@ export default function LocalPong() {
             return () => clearTimeout(timer);
         }, [redirectCountdown, goToTournament]);
 
+    // Fallback: if Board misses the end callback, detect win state from scores and trigger finish
+    useEffect(() => {
+        if (resultReported) return;
+        const leftLead = leftPlayerScore - rightPlayerScore;
+        const rightLead = rightPlayerScore - leftPlayerScore;
+        if (rightPlayerScore > 5 && rightLead >= 2) {
+            onGameEnd('playerOne');
+        } else if (leftPlayerScore > 5 && leftLead >= 2) {
+            onGameEnd('playerTwo');
+        }
+    }, [leftPlayerScore, rightPlayerScore, onGameEnd, resultReported]);
+
           return (
        <>
      <OpenGameCostumButton
