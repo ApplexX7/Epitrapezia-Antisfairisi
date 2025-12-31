@@ -11,6 +11,10 @@ interface ChatListProps {
   loadingHistory: boolean;
   onSelectChat: (username: string) => void;
   currentTime: { clock: string; date: string };
+  blockedUsers?: User[];
+  showBlockedList?: boolean;
+  onToggleBlockedList?: () => void;
+  onUnblock?: (username: string) => void;
 }
 
 export const ChatList = ({
@@ -19,7 +23,11 @@ export const ChatList = ({
   messages,
   loadingHistory,
   onSelectChat,
-  currentTime
+  currentTime,
+  blockedUsers = [],
+  showBlockedList = false,
+  onToggleBlockedList = () => {},
+  onUnblock = () => {},
 }: ChatListProps) => {
   const [isSearchActive, setIsSearchActive] = useState(false);
   const searchRef = useRef(null);
@@ -65,7 +73,7 @@ export const ChatList = ({
       <div className="flex gap-2 w-full justify-between py-5 items-center self-start">
         {!isSearchActive && (
           <h2 className="border-none font-bold text-2xl md:text-3xl text-black-nave pl-5 md:pl-10">
-            Recent chat
+            {showBlockedList ? "Blocked Users" : "Recent chat"}
           </h2>
         )}
         <div ref={searchRef} className={`flex gap-2 md:gap-4 px-3 md:px-5 ${isSearchActive ? 'w-full' : ''}`}>
@@ -89,6 +97,28 @@ export const ChatList = ({
       </div>
       
       <div className="flex flex-col mb-3 md:mb-5 px-5 md:px-10">
+        <div className="flex gap-2 mb-3">
+          <button
+            onClick={() => onToggleBlockedList()}
+            className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+              !showBlockedList 
+                ? 'bg-blue-500 text-white' 
+                : 'bg-white/10 text-white hover:bg-white/20'
+            }`}
+          >
+            Friends
+          </button>
+          <button
+            onClick={() => onToggleBlockedList()}
+            className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+              showBlockedList 
+                ? 'bg-red-500 text-white' 
+                : 'bg-white/10 text-white hover:bg-white/20'
+            }`}
+          >
+            Blocked ({blockedUsers.length})
+          </button>
+        </div>
         <div className="flex h-[2px] w-full bg-white/30 mx-auto mb-3 md:mb-5"></div>
       </div>
 
@@ -98,13 +128,15 @@ export const ChatList = ({
             <p>Loading conversations...</p>
           </div>
         )}
-        {!loadingHistory && onlineUsers.length === 0 ? (
-          <div className="text-center text-white/60 mt-10 px-4">
-            <p>No users online</p>
-            <p className="text-sm mt-2">Waiting for users to connect...</p>
-          </div>
-        ) : (
-          onlineUsers.map((u: any) => {
+        
+        {!showBlockedList ? (
+          !loadingHistory && onlineUsers.length === 0 ? (
+            <div className="text-center text-white/60 mt-10 px-4">
+              <p>No friends yet</p>
+              <p className="text-sm mt-2">Add friends to start chatting</p>
+            </div>
+          ) : (
+            onlineUsers.map((u: any) => {
             const chatMsgs = messages[u.username] || [];
             const lastMsg = chatMsgs[chatMsgs.length - 1];
             const unreadCount = getUnreadCount(u.username);
@@ -119,7 +151,9 @@ export const ChatList = ({
                 <div className="relative">
                   <Image src={u.avatar} alt="Profile" width={40} height={40}
                     className="rounded-full gap-2 ml-3 md:ml-7" />
-                  <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-none rounded-full"></div>
+                  <div className={`absolute bottom-0 right-0 w-3 h-3 border-2 border-white rounded-full ${
+                    u.isOnline ? 'bg-green-500' : 'bg-gray-400'
+                  }`}></div>
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-white font-medium text-sm md:text-base">{u.username}</p>
@@ -140,6 +174,36 @@ export const ChatList = ({
               </div>
             );
           })
+        )
+        ) : (
+          blockedUsers.length === 0 ? (
+            <div className="text-center text-white/60 mt-10 px-4">
+              <p>No blocked users</p>
+            </div>
+          ) : (
+            blockedUsers.map((u: any) => (
+              <div
+                key={`blocked-${u.id}`}
+                className="flex items-center gap-2 md:gap-3 m-0 p-3 md:p-4 hover:bg-white/20"
+              >
+                <div className="relative">
+                  <Image src={u.avatar} alt="Profile" width={40} height={40}
+                    className="rounded-full gap-2 ml-3 md:ml-7" />
+                  <div className="absolute bottom-0 right-0 w-3 h-3 border-2 border-white rounded-full bg-red-500"></div>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-white font-medium text-sm md:text-base">{u.username}</p>
+                  <p className="text-gray-400 text-xs md:text-sm">Blocked</p>
+                </div>
+                <button
+                  onClick={() => onUnblock(u.username)}
+                  className="px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg font-medium text-sm mr-3 md:mr-7"
+                >
+                  Unblock
+                </button>
+              </div>
+            ))
+          )
         )}
       </div>
     </div>

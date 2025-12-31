@@ -7,8 +7,7 @@ import api from "@/lib/axios";
 import { ChatList } from './companents/ChatList';
 import { ChatWindow } from './companents/ChatWindow';
 import { ChatHeader } from "./companents/ChatHeader";
-
-let friendImageUser = "/images/defaultimage.png"
+import toast from "react-hot-toast";
 
 export default function Home() {
   const [messages, setMessages] = useState({});
@@ -16,13 +15,15 @@ export default function Home() {
   const [inputMessage, setInputMessage] = useState("");
   const [showChatList, setShowChatList] = useState(false);
   const [loadingHistory, setLoadingHistory] = useState(false);
+  const [friendImageUser, setFriendImageUser] = useState("/images/defaultimage.png");
   
   const { user, accessToken } = useAuth.getState();
   const { socket, initSocket } = useSocketStore();
   const [onlineUsers, setOnlineUsers] = useState([]);
   const [friends, setFriends] = useState<User[]>([]);
   const friendsRef = useRef<User[]>([]);
-  const [blockedUsers, setBlockedUsers] = useState<number[]>([]);
+  const [blockedUsers, setBlockedUsers] = useState<User[]>([]);
+  const [showBlockedList, setShowBlockedList] = useState(false);
   
   const [time] = useState({
     clock: new Date().toLocaleTimeString([], { hour:"2-digit", minute: "2-digit" }),
@@ -31,10 +32,10 @@ export default function Home() {
 
   useEffect(() => {
     async function fetchAllHistory() {
-      if (!user || onlineUsers.length === 0) 
+      if (!user || friends.length === 0) 
         return;
 
-      const historyPromises = onlineUsers.map(async (recipient) => {
+      const historyPromises = friends.map(async (recipient) => {
         try {
           const { data } = await api.get("/message/history", {
             params: {
@@ -72,15 +73,15 @@ export default function Home() {
       });
     }
 
-    if (onlineUsers.length > 0) {
+    if (friends.length > 0) {
       fetchAllHistory();
     }
-  }, [onlineUsers.length, user])
+  }, [friends.length, user])
 
   const handleSendMessage = async () => {
   if (!inputMessage.trim() || !selectedChat) return;
 
-  const recipient = onlineUsers.find(u => u.username === selectedChat);
+  const recipient = friends.find(u => u.username === selectedChat);
   if (!recipient || !socket) return;
 
   const tempId = `temp-${Date.now()}`;
@@ -134,10 +135,10 @@ export default function Home() {
 
     // Handle 403 explicitly
     if (err.response?.status === 403) {
-      alert("🚫 You cannot send messages to this user (blocked).");
+      toast.error("🚫 You cannot send messages to this user (blocked).");
     } else {
       console.error("Error sending message:", err.response?.data || err);
-      alert("Failed to send message. Please try again.");
+      toast.error("Failed to send message. Please try again.");
     }
   }
 };
@@ -150,6 +151,11 @@ useEffect(() => {
       const { data } = await api.put("/friends/friendship", { id: user.id });
       setFriends(data.friendList);
       friendsRef.current = data.friendList;
+      
+      // Fetch blocked users
+      const blockedData = await api.put("/friends/blocked", { id: user.id });
+      setBlockedUsers(blockedData.data.blockedUsers || []);
+      
       initSocket(user, accessToken);
     } catch (err) {
       console.error(err);
@@ -164,15 +170,21 @@ useEffect(() => {
   
     const handleUsersList = (users: any[]) => {
       const filtered = users.filter(u => u.id !== user.id);
-  
+      
       setFriends(prev => {
-        const updatedFriends = prev.map(friend => ({
-          ...friend,
-          isOnline: filtered.some(u => u.id === friend.id),
-        }));
+        const updatedFriends = prev.map(friend => {
+          const isOnline = filtered.some(u => u.id === friend.id);
+          const onlineUser = filtered.find(u => u.id === friend.id);
+          return {
+            ...friend,
+            ...onlineUser, // Merge any updated data like avatar
+            isOnline,
+          };
+        });
   
-        friendsRef.current = updatedFriends; 
-        setOnlineUsers(updatedFriends.filter(f => f.isOnline));
+        friendsRef.current = updatedFriends;
+        const onlineList = updatedFriends.filter(f => f.isOnline);
+        setOnlineUsers(onlineList);
         return updatedFriends;
       });
     };
@@ -240,10 +252,10 @@ useEffect(() => {
     setSelectedChat(username);
     setShowChatList(false);
   
-    const recipient = onlineUsers.find(u => u.username === username);
+    const recipient = friends.find(u => u.username === username);
     if (!recipient) 
       return;
-    friendImageUser = recipient.avatar;
+    setFriendImageUser(recipient.avatar || "/images/defaultimage.png");
     
     const unreadMessageIds = (messages[username] || [])
       .filter(msg => msg.user === "other" && !msg.seen)
@@ -277,58 +289,118 @@ useEffect(() => {
   };
 
 const handleBlockUser = async (username) => {
+  console.log("🔒 Blocking user:", username);
   const recipient = friends.find(u => u.username === username);
-  if (!recipient) return;
+  
+  if (!recipient) {
+    console.error("User not found in friends list:", username);
+    toast.error("User not found");
+    return;
+  }
 
   try {
-    // 1. Close the chat window FIRST
-    setSelectedChat(null);
-    setShowChatList(true); // Show chat list on mobile
-    
-    // 2. Call backend API
+    console.log("📤 Sending block request for user ID:", recipient.id);
+    // 1. Call backend API
     await api.post("/friends/block", { friendId: recipient.id });
+    console.log("✅ Block request successful");
 
-    // 3. Update local state to remove the user from view
-    setFriends(prev => prev.filter(f => f.id !== recipient.id));
-    setOnlineUsers(prev => prev.filter(f => f.id !== recipient.id));
+    // 2. Close the chat window
+    setSelectedChat(null);
+    setShowChatList(true);
     
-    // 4. Clear messages for this user
+    // 3. Update local state to remove the user from friends list
+    setFriends(prev => prev.filter(f => f.id !== recipient.id));
+    
+    // 4. Add to blocked users list
+    setBlockedUsers(prev => [...prev, recipient]);
+    
+    // 5. Clear messages for this user
     setMessages(prev => {
       const updated = { ...prev };
       delete updated[username];
       return updated;
     });
     
-    alert(`${username} has been blocked.`);
-  } catch (err) {
-    console.error("Failed to block user:", err);
-    alert("Failed to block user. Please try again.");
+    toast.success(`${username} has been blocked.`);
+  } catch (err: any) {
+    console.error("❌ Failed to block user:", err.response?.data || err.message);
+    toast.error(`Failed to block user: ${err.response?.data?.message || err.message}`);
   }
 };
 
 const handleUnblockUser = async (username: string) => {
-  const recipient = friends.find(u => u.username === username);
-  if (!recipient) return;
+  console.log("🔓 Unblocking user:", username);
+  const recipient = showBlockedList 
+    ? blockedUsers.find(u => u.username === username)
+    : friends.find(u => u.username === username);
+  
+  if (!recipient) {
+    console.error("User not found:", username);
+    toast.error("User not found");
+    return;
+  }
 
   try {
+    console.log("📤 Sending unblock request for user ID:", recipient.id);
     await api.post("/friends/unblock", { friendId: recipient.id });
-    alert("User unblocked! You can now send messages.");
-    // Optionally refresh the chat state here
-  } catch (err) {
-    console.error("Unblock failed", err);
+    console.log("✅ Unblock request successful");
+    
+    // Remove from blocked users list
+    setBlockedUsers(prev => prev.filter(u => u.id !== recipient.id));
+    
+    // Refetch friends to update the list
+    const { data } = await api.put("/friends/friendship", { id: user.id });
+    setFriends(data.friendList);
+    friendsRef.current = data.friendList;
+    
+    toast.success(`${username} has been unblocked!`);
+  } catch (err: any) {
+    console.error("❌ Unblock failed:", err.response?.data || err.message);
+    toast.error(`Failed to unblock user: ${err.response?.data?.message || err.message}`);
   }
 };
+
+  const handleInviteToGame = () => {
+    if (!selectedChat) {
+      toast.error("Select a user first");
+      return;
+    }
+
+    const recipient = friends.find(u => u.username === selectedChat);
+    if (!recipient) {
+      toast.error("User not found");
+      return;
+    }
+
+    if (!socket) {
+      toast.error("Socket not connected");
+      return;
+    }
+
+    socket.emit("game:invite", { to: recipient.id, mode: "friendly" }, (resp?: any) => {
+      if (resp?.ok) toast.success("Game invite sent 🎮");
+      else toast.error(resp?.error || "Failed to send invite");
+    });
+  };
+
+  const isSelectedBlocked = selectedChat
+    ? blockedUsers.some(u => u.username === selectedChat)
+    : false;
   return (
     <div className="flex border-none h-[calc(100vh-80px)] justify-center shadow-[2px_2px_5px_3px_rgba(0,0,0,0.3)] 
     items-center bg-[#F5F5F5]/40 rounded-xl m-2 md:m-10 overflow-hidden">
       <div className={`${showChatList ? 'flex' : 'hidden md:flex'} flex-col h-full w-full md:w-2/3 lg:w-1/3`}>
         <ChatList
-          onlineUsers={onlineUsers}
+          onlineUsers={friends}
           selectedChat={selectedChat}
           messages={messages}
           loadingHistory={loadingHistory}
           onSelectChat={handleSelectChat}
           currentTime={time}
+          blockedUsers={blockedUsers}
+          showBlockedList={showBlockedList}
+          onToggleBlockedList={() => setShowBlockedList(!showBlockedList)}
+          onUnblock={handleUnblockUser}
         />
       </div>
       
@@ -345,6 +417,8 @@ const handleUnblockUser = async (username: string) => {
         setShowChatList={setShowChatList}
         onBlock={() => selectedChat && handleBlockUser(selectedChat)}
         onUnblock={() => selectedChat && handleUnblockUser(selectedChat)}
+        isBlocked={isSelectedBlocked}
+        onInvite={handleInviteToGame}
       />
     </div>
   );

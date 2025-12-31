@@ -48,12 +48,33 @@ async function getFriendIds(userId: number): Promise<number[]> {
           ELSE player_id
         END as friend_id
       FROM friends
-      WHERE (player_id = ? OR friend_id = ?) AND status = 'accepted';
+      WHERE (player_id = ? OR friend_id = ?) 
+        AND status = 'accepted'
+        AND friend_id NOT IN (
+          SELECT blocked_id FROM block WHERE blocker_id = ?
+        )
+        AND friend_id NOT IN (
+          SELECT blocker_id FROM block WHERE blocked_id = ?
+        );
       `,
-      [userId, userId, userId],
+      [userId, userId, userId, userId, userId],
       (err, rows: { friend_id: number }[]) => {
         if (err) reject(err);
         else resolve(rows.map(r => r.friend_id));
+      }
+    );
+  });
+}
+
+// Function to get user data with avatar
+async function getUserWithAvatar(userId: number): Promise<any> {
+  return new Promise((resolve, reject) => {
+    db.get(
+      `SELECT id, username, avatar FROM players WHERE id = ?`,
+      [userId],
+      (err, row) => {
+        if (err) reject(err);
+        else resolve(row);
       }
     );
   });
@@ -118,11 +139,33 @@ export function registerSocketHandlers(io: Server) {
 
     console.log(`🟢 ${user.username} connected. Total connections: ${onlineUsers[user.id].length}`);
 
-    // Notify friends that this user is online
+    // Get all accepted friends for this user
     const friendIds = await getFriendIds(user.id);
-    friendIds.forEach(fid => {
+    
+    // Send current online friends to the newly connected user
+    const onlineFriends: any[] = [];
+    for (const friendId of friendIds) {
+      if (onlineUsers[friendId]) {
+        // Fetch friend user data with avatar
+        const friendData = await getUserWithAvatar(friendId);
+        if (friendData) {
+          onlineFriends.push(friendData);
+        }
+      }
+    }
+    socket.emit("users-list", onlineFriends);
+
+    // Notify friends that this user is online and send updated users-list
+    friendIds.forEach(async (fid) => {
       if (onlineUsers[fid]) {
-        onlineUsers[fid].forEach(s => s.emit("friend-online", { id: user.id, username: user.username }));
+        // Get the newly online user's data with avatar
+        const newUserData = await getUserWithAvatar(user.id);
+        onlineUsers[fid].forEach(s => {
+          s.emit("friend-online", { id: user.id, username: user.username });
+          // Also send the updated users-list
+          const updatedList = onlineFriends.concat(newUserData);
+          s.emit("users-list", updatedList);
+        });
       }
     });
 
@@ -171,9 +214,25 @@ export function registerSocketHandlers(io: Server) {
 
         // Notify friends that this user is offline
         const friendIds = await getFriendIds(user.id);
-        friendIds.forEach(fid => {
+        friendIds.forEach(async (fid) => {
           if (onlineUsers[fid]) {
-            onlineUsers[fid].forEach(s => s.emit("friend-offline", { id: user.id }));
+            // Get updated list of online friends for this friend (excluding the user who just disconnected)
+            const updatedFriendsList: any[] = [];
+            const friendOfFriendIds = await getFriendIds(fid);
+            for (const friendOfFriendId of friendOfFriendIds) {
+              if (onlineUsers[friendOfFriendId] && friendOfFriendId !== user.id) {
+                const friendData = await getUserWithAvatar(friendOfFriendId);
+                if (friendData) {
+                  updatedFriendsList.push(friendData);
+                }
+              }
+            }
+            
+            onlineUsers[fid].forEach(s => {
+              s.emit("friend-offline", { id: user.id });
+              // Send updated users-list without the offline user
+              s.emit("users-list", updatedFriendsList);
+            });
           }
         });
       }

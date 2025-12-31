@@ -54,3 +54,37 @@ export async function unblockUser(req: FastifyRequest<{ Body: { friendId: number
         return reply.code(500).send({ message: "Database Error" });
     }
 }
+
+export async function getBlockedUsers(
+    req: FastifyRequest<{ Body: { id: number } }>,
+    reply: FastifyReply
+) {
+    const { id } = req.body;
+    
+    if (!id) {
+        return reply.code(401).send({ message: "Not Authorized" });
+    }
+
+    try {
+        const blockedUsers: User[] = await new Promise((resolve, reject) => {
+            db.all(
+                `
+                SELECT p.id, p.username, p.avatar
+                FROM block b
+                JOIN players p ON p.id = b.blocked_id
+                WHERE b.blocker_id = ?
+                `,
+                [id],
+                (err: any, rows: User[]) => {
+                    if (err) reject(err);
+                    else resolve(rows);
+                }
+            );
+        });
+        
+        return reply.send({ blockedUsers });
+    } catch (err: any) {
+        console.error(err);
+        return reply.code(500).send({ message: "Internal Server Error" });
+    }
+}

@@ -17,9 +17,15 @@ export async function Friendship(req: FastifyRequest<{ Body: { id: number } }>, 
         JOIN players p
           ON (p.id = f.friend_id AND f.player_id = ?)
              OR (p.id = f.player_id AND f.friend_id = ?)
-        WHERE f.status = 'accepted';
+        WHERE f.status = 'accepted'
+          AND p.id NOT IN (
+            SELECT blocked_id FROM block WHERE blocker_id = ?
+          )
+          AND p.id NOT IN (
+            SELECT blocker_id FROM block WHERE blocked_id = ?
+          );
         `,
-        [id, id],
+        [id, id, id, id],
         (err: any, rows: User[]) => {
           if (err) reject(err);
           else resolve(rows);
@@ -28,7 +34,7 @@ export async function Friendship(req: FastifyRequest<{ Body: { id: number } }>, 
     });
     const friend = friendList.map(friend => ({
       ...friend,
-      is_online: true,
+      isOnline: false,
     }));
     return reply.send({ friendList : friend });
   } catch (err: any) {

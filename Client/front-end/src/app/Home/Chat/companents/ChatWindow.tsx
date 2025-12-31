@@ -25,6 +25,8 @@ interface ChatWindowProps {
   onUnblock: () => void;
   showChatList: boolean;
   setShowChatList: (show: boolean) => void;
+  isBlocked?: boolean;
+  onInvite?: () => void;
 }
 
 export const ChatWindow = ({
@@ -39,7 +41,9 @@ export const ChatWindow = ({
   showChatList,
   setShowChatList,
   onBlock,
-  onUnblock
+  onUnblock,
+  isBlocked = false,
+  onInvite = () => {}
 }: ChatWindowProps) => {
   const [showMenu, setShowMenu] = useState(false);
 
@@ -55,6 +59,7 @@ export const ChatWindow = ({
             onBlock={onBlock}
             onUnblock={onUnblock}
             onBackToChats={onBackToChats}
+            onInvite={onInvite}
           />
 
           <ChatMessages messages={messages} userAvatar={userAvatar} />
@@ -63,6 +68,7 @@ export const ChatWindow = ({
             inputMessage={inputMessage}
             setInputMessage={setInputMessage}
             onSendMessage={onSendMessage}
+            isBlocked={isBlocked}
           />
         </>
       ) : (

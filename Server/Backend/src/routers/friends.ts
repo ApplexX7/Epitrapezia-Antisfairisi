@@ -2,7 +2,7 @@ import { Server } from "../server"
 import { Getfriends } from "../controllers/GetFriends";
 import { AccepteFriendRequest, FriendRequest, RemoveFriendRequest } from "../controllers/friendsRequets";
 import { Friendship } from "../controllers/friendship";
-import { blockUser, unblockUser } from "../controllers/unb_block";
+import { blockUser, unblockUser, getBlockedUsers } from "../controllers/unb_block";
 
 export function friends (){
     Server.instance().get("/friends/", Getfriends());
@@ -12,4 +12,5 @@ export function friends (){
     Server.instance().put("/friends/friendship", Friendship);
     Server.instance().post("/friends/block", blockUser);
     Server.instance().post("/friends/unblock", unblockUser);
+    Server.instance().put("/friends/blocked", getBlockedUsers);
 }

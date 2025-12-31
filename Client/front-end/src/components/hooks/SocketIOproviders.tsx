@@ -11,6 +11,7 @@ export interface Notification {
   from?: { id: string; username: string };
   time: string;
   read: boolean;
+  payload?: any;
 }
 
 interface SocketStore {
@@ -20,6 +21,7 @@ interface SocketStore {
   initSocket: (user: User, token: string) => void;
   disconnectSocket: () => void;
   addNotification: (notif: Notification) => void;
+  markAsRead: (id: string) => void;
   markAllAsRead: () => void;
   clearNotifications: () => void;
 }
@@ -67,8 +69,9 @@ export const useSocketStore = create<SocketStore>((set, get) => ({
         type: notif.type,
         message: notif.message || "",
         from: notif.from,
-        time: new Date().toISOString(),
+        time: notif.time || new Date().toISOString(),
         read: false,
+        payload: notif.payload,
       };
 
       // Store in Zustand
@@ -80,6 +83,21 @@ export const useSocketStore = create<SocketStore>((set, get) => ({
           ? `📨 New friend request from ${notif.from?.username}`
           : notif.message
       );
+    });
+
+    // Legacy friend request event
+    socket.on("friend:request", (payload: any) => {
+      const newNotif: Notification = {
+        id: `friend-request-${payload?.from?.id}-${Date.now()}`,
+        type: "friend-request",
+        message: payload?.message || "You have a new friend request",
+        from: payload?.from,
+        time: new Date().toISOString(),
+        read: false,
+      };
+
+      get().addNotification(newNotif);
+      toast(`📨 New friend request from ${payload?.from?.username || "Unknown"}`);
     });
 
     set({ socket });
@@ -96,6 +114,13 @@ export const useSocketStore = create<SocketStore>((set, get) => ({
   addNotification: (notif: Notification) =>
     set((state) => ({
       notifications: [notif, ...state.notifications],
+    })),
+
+  markAsRead: (id: string) =>
+    set((state) => ({
+      notifications: state.notifications.map((n) =>
+        n.id === id ? { ...n, read: true } : n
+      ),
     })),
 
   markAllAsRead: () =>

@@ -8,12 +8,62 @@ import { CustomButton } from "@/components/CostumButton"
 import { NavigationMenuDemo } from "@/components/profileBar"
 import { useState } from "react";
 import Link from "next/link";
+import { useSocketStore } from "./hooks/SocketIOproviders";
+import api from "@/lib/axios";
+import toast from "react-hot-toast";
+import { useRouter } from "next/navigation";
 import SearchCompo from "./searchComp";
 
 export default function HomeNavBar (){
     const [clicked, isClicked] = useState(false);
     const [search, isSearching] = useState(false);
-    const [notif, isnotif] = useState(false);
+        const [notif, isnotif] = useState(false);
+
+        const notifications = useSocketStore((state: any) => state.notifications);
+        const markAllAsRead = useSocketStore((state: any) => state.markAllAsRead);
+        const markAsRead = useSocketStore((state: any) => state.markAsRead);
+        const socket = useSocketStore((state: any) => state.socket);
+        const unreadCount = notifications.filter((n: any) => !n.read).length;
+        const router = useRouter();
+
+        const handleFriendAction = async (notif: any, action: "accept" | "decline") => {
+            if (!notif?.from?.id) return;
+            try {
+                if (action === "accept") {
+                    await api.post("/friends/Accept", { friendId: notif.from.id });
+                    toast.success("Friend request accepted 🤝");
+                } else {
+                    await api.post("/friends/Remove", { friendId: notif.from.id });
+                    toast("Friend request declined", { icon: "👋" });
+                }
+                markAsRead(notif.id);
+            } catch (err: any) {
+                console.error("Failed to update friend request", err?.response?.data || err);
+                toast.error(err?.response?.data?.message || "Action failed");
+            }
+        };
+
+        const handleGameInviteResponse = (notif: any, status: "accepted" | "declined") => {
+            if (!notif?.from?.id || !socket) return;
+            socket.emit("game:invite:response", { to: Number(notif.from.id), status });
+            if (status === "accepted") {
+                toast.success("Launching games page");
+                router.push("/Home/Games");
+            } else {
+                toast("Invite declined", { icon: "✋" });
+            }
+            markAsRead(notif.id);
+        };
+
+        const toggleNotifications = () => {
+            isnotif(!notif);
+            if (!notif) markAllAsRead();
+        };
+
+        const formatTime = (iso: string) => {
+            const d = new Date(iso);
+            return `${d.toLocaleDateString()} ${d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`;
+        };
     return (
         <div className="relative mt-10 min-[1400px]:-mt-5 min-[1400px]:mb-0 mb-10 flex justify-center items-center gap-5 w-full xl:px-10 px-5">
             <Image className="hidden ml-10 min-[1400px]:block w-[180px] h-[200px]"  alt="Logo for  a ping pong" src="/images/Logo-S.png" width={500} height={500} priority/>
@@ -105,17 +155,82 @@ export default function HomeNavBar (){
                     <MagnifyingGlass size={36} color="#0d0c22" weight="bold"/>
                 </CustomButton>
                 <div className="relative h-full flex items-center">
-                    <CustomButton onClick={() => isnotif(!notif)}
+                                        <CustomButton onClick={toggleNotifications}
                         className="bg-white-smoke/30 w-[48px] h-[48px] sm:w-[84px] sm:h-full"> 
                       <Bell size={36} color="#0d0c22" weight="bold" />
+                                            {unreadCount > 0 && (
+                                                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full px-2 py-0.5">
+                                                    {unreadCount}
+                                                </span>
+                                            )}
                     </CustomButton>
 
                     {notif && (
                       <div className="absolute top-full mt-3 right-0 z-10
-                          w-fit 
-                          bg-white-smoke/30 rounded-xl 
-                          backdrop-blur-sm p-3">
-                        <p className="text-black">No notifications</p>
+                                                    w-[320px] max-h-[420px] overflow-auto
+                                                    bg-white-smoke/30 rounded-xl 
+                                                    backdrop-blur-sm p-3 space-y-3">
+                                                {notifications.length === 0 && (
+                                                    <p className="text-black">No notifications</p>
+                                                )}
+
+                                                {notifications.map((n: any) => (
+                                                    <div
+                                                        key={n.id}
+                                                        className="bg-white/50 rounded-lg p-3 text-black-nave shadow-sm space-y-2"
+                                                    >
+                                                        <div className="flex items-start justify-between gap-2">
+                                                            <div>
+                                                                <p className="font-semibold capitalize">{n.type.replace(/-/g, " ")}</p>
+                                                                <p className="text-sm">{n.message}</p>
+                                                            </div>
+                                                            <span className="text-[10px] text-gray-600 whitespace-nowrap">{formatTime(n.time)}</span>
+                                                        </div>
+
+                                                        {n.type === "friend-request" && (
+                                                            <div className="flex gap-2">
+                                                                <button
+                                                                    className="flex-1 bg-green-500 text-white rounded-md py-1 text-sm hover:bg-green-600"
+                                                                    onClick={() => handleFriendAction(n, "accept")}
+                                                                >
+                                                                    Accept
+                                                                </button>
+                                                                <button
+                                                                    className="flex-1 bg-red-500 text-white rounded-md py-1 text-sm hover:bg-red-600"
+                                                                    onClick={() => handleFriendAction(n, "decline")}
+                                                                >
+                                                                    Decline
+                                                                </button>
+                                                            </div>
+                                                        )}
+
+                                                        {n.type === "game-invite" && (
+                                                            <div className="flex gap-2">
+                                                                <button
+                                                                    className="flex-1 bg-blue-500 text-white rounded-md py-1 text-sm hover:bg-blue-600"
+                                                                    onClick={() => handleGameInviteResponse(n, "accepted")}
+                                                                >
+                                                                    Accept
+                                                                </button>
+                                                                <button
+                                                                    className="flex-1 bg-gray-400 text-white rounded-md py-1 text-sm hover:bg-gray-500"
+                                                                    onClick={() => handleGameInviteResponse(n, "declined")}
+                                                                >
+                                                                    Decline
+                                                                </button>
+                                                            </div>
+                                                        )}
+
+                                                        {n.type === "friend-accepted" && (
+                                                            <button
+                                                                className="w-full bg-gray-200 rounded-md py-1 text-sm text-black"
+                                                                onClick={() => markAsRead(n.id)}
+                                                            >
+                                                                Dismiss
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                ))}
                       </div>
                     )}
                   </div>
