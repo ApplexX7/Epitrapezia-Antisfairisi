@@ -95,12 +95,33 @@ export default function LocalPong() {
         useEffect(() => {
             const loadAvatars = async () => {
                 try {
+                    const extractAvatar = (res: any): string | null => {
+                        const d = res?.data;
+                        return (
+                            d?.user?.avatar ??
+                            d?.userInof?.avatar ??
+                            d?.userInfo?.avatar ??
+                            null
+                        );
+                    };
+
+                    const fetchUser = async (id: string) => {
+                        try {
+                            // Backend route: GET /user/:id
+                            return await api.get(`/user/${id}`);
+                        } catch {
+                            // Fallback (some older client code uses this path)
+                            return await api.get(`/userInfo/${id}`);
+                        }
+                    };
+
                     const [a, b] = await Promise.all([
-                        p1 ? api.get(`/userInfo/${p1}`) : Promise.resolve(null),
-                        p2 ? api.get(`/userInfo/${p2}`) : Promise.resolve(null),
+                        p1 ? fetchUser(p1) : Promise.resolve(null),
+                        p2 ? fetchUser(p2) : Promise.resolve(null),
                     ]);
-                    const aAvatar = (a as any)?.data?.user?.avatar;
-                    const bAvatar = (b as any)?.data?.user?.avatar;
+
+                    const aAvatar = extractAvatar(a);
+                    const bAvatar = extractAvatar(b);
                     if (aAvatar) setPlayerOneAvatar(aAvatar);
                     if (bAvatar) setPlayerTwoAvatar(bAvatar);
                 } catch (e) {
