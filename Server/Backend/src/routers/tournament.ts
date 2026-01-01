@@ -280,6 +280,39 @@ export function registerTournamentRoutes() {
     }
   });
 
+  // Accept/ready a specific match (must be one of the match players)
+  Server.route('post', '/tournaments/:id/matches/:matchId/accept', async (request: FastifyRequest, reply: FastifyReply) => {
+    try {
+      const { id, matchId } = request.params as { id: string; matchId: string };
+      let user: any = (request as any).user;
+      // If middleware didn't populate user, try Authorization header (access token)
+      if (!user || !user.id) {
+        const authHeader = (request.headers as any).authorization || (request.headers as any).Authorization;
+        if (authHeader && typeof authHeader === 'string' && authHeader.startsWith('Bearer ')) {
+          const token = authHeader.slice(7);
+          try {
+            const payload: any = jwt.verify(token, process.env.ACCESS_TOKEN || '');
+            user = await new Promise((resolve) => {
+              db.get('SELECT * FROM players WHERE id = ?', [payload.id], (err, row) => {
+                if (err) return resolve(null);
+                resolve(row || null);
+              });
+            });
+            if (user) (request as any).user = user;
+          } catch (e) {
+            // ignore and let auth check below handle
+          }
+        }
+      }
+
+      if (!user || !user.id) return reply.status(401).send({ message: 'Must be logged in' });
+      await TC.acceptMatch(parseInt(id), parseInt(matchId), user.id);
+      reply.send({ message: 'Accepted' });
+    } catch (error: any) {
+      reply.status(error.status || 500).send({ message: error.message });
+    }
+  });
+
   // Record match result
   Server.route('post', '/tournaments/:id/result', async (request: FastifyRequest, reply: FastifyReply) => {
     try {

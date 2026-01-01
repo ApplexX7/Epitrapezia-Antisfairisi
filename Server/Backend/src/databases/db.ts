@@ -306,6 +306,8 @@ export function createTournamentMatchesTable() {
             match_number INTEGER NOT NULL,
             player_a_id INTEGER,
             player_b_id INTEGER,
+            player_a_accepted INTEGER DEFAULT 0,
+            player_b_accepted INTEGER DEFAULT 0,
             winner_id INTEGER,
             loser_id INTEGER,
             status TEXT DEFAULT 'idle', -- idle | in_progress | finished
@@ -328,6 +330,18 @@ export function createTournamentMatchesTable() {
                         if (indexErr) console.error('Error creating tournament_matches unique index:', indexErr.message);
                     }
                 );
+
+                // Backward-compatible migration for older databases
+                db.run(`ALTER TABLE tournament_matches ADD COLUMN player_a_accepted INTEGER DEFAULT 0`, (alterErr : any) => {
+                    if (alterErr && !alterErr.message.includes('duplicate column name')) {
+                        console.error('Error adding player_a_accepted column:', alterErr.message);
+                    }
+                });
+                db.run(`ALTER TABLE tournament_matches ADD COLUMN player_b_accepted INTEGER DEFAULT 0`, (alterErr : any) => {
+                    if (alterErr && !alterErr.message.includes('duplicate column name')) {
+                        console.error('Error adding player_b_accepted column:', alterErr.message);
+                    }
+                });
             }
         }
     );

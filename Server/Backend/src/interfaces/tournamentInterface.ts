@@ -23,6 +23,8 @@ export interface TournamentMatch {
   match_number: number;
   player_a_id: number | null;
   player_b_id: number | null;
+  player_a_accepted?: number | null;
+  player_b_accepted?: number | null;
   winner_id: number | null;
   loser_id: number | null;
   status: 'idle' | 'in_progress' | 'finished';

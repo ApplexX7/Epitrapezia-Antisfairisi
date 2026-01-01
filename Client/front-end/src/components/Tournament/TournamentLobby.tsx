@@ -6,7 +6,16 @@ import { useRouter } from "next/navigation";
 
 type Player = { id: string; name: string; local?: boolean };
 
-type Match = { a?: Player | null; b?: Player | null; winnerId?: string | null; loserId?: string | null; status?: string; dbId?: number | string };
+type Match = {
+  a?: Player | null;
+  b?: Player | null;
+  winnerId?: string | null;
+  loserId?: string | null;
+  status?: string;
+  dbId?: number | string;
+  acceptedA?: boolean;
+  acceptedB?: boolean;
+};
 
 type Props = { tournamentId: string };
 
@@ -36,10 +45,40 @@ export default function TournamentLobby({ tournamentId }: Props) {
       const pa = playerList.find((p) => String(p.id) === String(m.player_a_id)) || { id: String(m.player_a_id), name: m.player_a_name || 'Player' };
       const pb = playerList.find((p) => String(p.id) === String(m.player_b_id)) || { id: String(m.player_b_id), name: m.player_b_name || 'Player' };
       const key = `${m.stage}-${m.match_number}`;
-      nextState[key] = { a: pa, b: pb, status: m.status || 'idle', winnerId: m.winner_id ? String(m.winner_id) : null, loserId: m.loser_id ? String(m.loser_id) : null, dbId: m.id } as any;
+      nextState[key] = {
+        a: pa,
+        b: pb,
+        status: m.status || 'idle',
+        winnerId: m.winner_id ? String(m.winner_id) : null,
+        loserId: m.loser_id ? String(m.loser_id) : null,
+        dbId: m.id,
+        acceptedA: Number(m.player_a_accepted || 0) === 1,
+        acceptedB: Number(m.player_b_accepted || 0) === 1,
+      } as any;
     });
     setMatchesState((s) => ({ ...s, ...nextState }));
     setBracketReady(true);
+  };
+
+  const acceptMatch = async (key: string) => {
+    try {
+      if (!currentUser || !currentUser.id) {
+        setErrorMessage('Must be logged in');
+        return;
+      }
+      const match = matchesState[key];
+      const dbId = (match as any)?.dbId;
+      if (!dbId) {
+        setErrorMessage('Server match id not found');
+        return;
+      }
+      await api.post(`/tournaments/${tournamentId}/matches/${dbId}/accept`, {});
+      setErrorMessage(null);
+      await hydrateMatches(players);
+    } catch (err: any) {
+      // keep errors quiet unless truly important
+      setErrorMessage('Failed to accept match');
+    }
   };
 
   // Load initial data
@@ -311,6 +350,12 @@ export default function TournamentLobby({ tournamentId }: Props) {
           return;
         }
 
+        // Verification step: both players must accept before creator can start
+        if (!match?.acceptedA || !match?.acceptedB) {
+          setErrorMessage('Waiting for both players to accept');
+          return;
+        }
+
         const resp = await api.post(`/tournaments/${tournamentId}/start-match`, { matchId: dbId });
         const matchInfo = resp.data?.match;
         setErrorMessage(null);
@@ -327,8 +372,8 @@ export default function TournamentLobby({ tournamentId }: Props) {
       }
     } catch (err: any) {
       const status = err?.response?.status;
-      // Suppress noisy state errors like "Tournament already started".
-      if (status === 409) setErrorMessage(null);
+      // 409 is important here: it can mean players haven't accepted yet.
+      if (status === 409) setErrorMessage('Waiting for both players to accept');
       else setErrorMessage('Failed to start match');
     }
   };
@@ -529,10 +574,30 @@ export default function TournamentLobby({ tournamentId }: Props) {
                         <span className="text-gray-500">vs</span>
                         <span className={m.winnerId === m.b.id ? 'font-bold text-green-700' : ''}>{m.b.name}</span>
                       </div>
+                      {!String(tournamentId).startsWith('local-') && (
+                        <div className="mb-2 text-xs text-gray-700 flex items-center justify-between">
+                          <div>
+                            P1: {m.acceptedA ? 'Accepted' : 'Waiting'} • P2: {m.acceptedB ? 'Accepted' : 'Waiting'}
+                          </div>
+                          {currentUser?.id && (String(currentUser.id) === String(m.a?.id) || String(currentUser.id) === String(m.b?.id)) && (
+                            <button
+                              onClick={() => acceptMatch(semiId)}
+                              disabled={m.status !== 'idle' || (String(currentUser.id) === String(m.a?.id) ? m.acceptedA : m.acceptedB)}
+                              className="px-2 py-1 rounded text-xs bg-purple-600 text-white hover:bg-purple-700 disabled:opacity-50"
+                            >
+                              Accept
+                            </button>
+                          )}
+                        </div>
+                      )}
                       <div className="flex gap-2 justify-between">
                         <button 
                           onClick={() => startMatch(semiId)} 
-                          disabled={m.status !== 'idle' || (!String(tournamentId).startsWith('local-') && tournamentInfo && currentUser?.id !== tournamentInfo.creator_id)}
+                          disabled={
+                            m.status !== 'idle' ||
+                            (!String(tournamentId).startsWith('local-') &&
+                              (currentUser?.id !== tournamentInfo?.creator_id || !m.acceptedA || !m.acceptedB))
+                          }
                           className="flex-1 px-2 py-1 rounded text-sm bg-green-600 text-white hover:bg-green-700 disabled:opacity-50"
                         >
                           {m.status === 'idle' ? 'Start' : m.status}
@@ -566,9 +631,29 @@ export default function TournamentLobby({ tournamentId }: Props) {
                           <span className="text-gray-500">vs</span>
                           <span className={m.winnerId === m.b.id ? 'font-bold text-green-700' : ''}>{m.b.name}</span>
                         </div>
+                        {!String(tournamentId).startsWith('local-') && (
+                          <div className="mb-2 text-xs text-gray-700 flex items-center justify-between">
+                            <div>
+                              P1: {m.acceptedA ? 'Accepted' : 'Waiting'} • P2: {m.acceptedB ? 'Accepted' : 'Waiting'}
+                            </div>
+                            {currentUser?.id && (String(currentUser.id) === String(m.a?.id) || String(currentUser.id) === String(m.b?.id)) && (
+                              <button
+                                onClick={() => acceptMatch(matchId)}
+                                disabled={m.status !== 'idle' || (String(currentUser.id) === String(m.a?.id) ? m.acceptedA : m.acceptedB)}
+                                className="px-2 py-1 rounded text-xs bg-purple-600 text-white hover:bg-purple-700 disabled:opacity-50"
+                              >
+                                Accept
+                              </button>
+                            )}
+                          </div>
+                        )}
                         <button 
                           onClick={() => startMatch(matchId)} 
-                          disabled={m.status !== 'idle' || (!String(tournamentId).startsWith('local-') && tournamentInfo && currentUser?.id !== tournamentInfo.creator_id)}
+                          disabled={
+                            m.status !== 'idle' ||
+                            (!String(tournamentId).startsWith('local-') &&
+                              (currentUser?.id !== tournamentInfo?.creator_id || !m.acceptedA || !m.acceptedB))
+                          }
                           className="w-full px-2 py-1 rounded text-sm bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50"
                         >
                           {m.status === 'idle' ? 'Start' : m.status}

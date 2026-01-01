@@ -336,12 +336,18 @@ export class TournamentController {
         if (!tour) return reject({ status: 404, message: 'Tournament not found' });
         if (tour.creator_id !== requesterId) return reject({ status: 403, message: 'Only the tournament creator can start matches' });
 
-        const matchSql = `SELECT id, player_a_id, player_b_id, status FROM tournament_matches WHERE id = ? AND tournament_id = ?`;
+        const matchSql = `SELECT id, player_a_id, player_b_id, status, player_a_accepted, player_b_accepted FROM tournament_matches WHERE id = ? AND tournament_id = ?`;
         db.get(matchSql, [matchId, tournamentId], (err, match: any) => {
           if (err) return reject({ status: 400, message: 'Failed to fetch match', error: (err as any)?.message || String(err) });
           if (!match) return reject({ status: 404, message: 'Match not found' });
           if (match.status === 'in_progress') return reject({ status: 409, message: 'Match already in progress' });
           if (match.status === 'finished') return reject({ status: 409, message: 'Match already finished' });
+
+          // Verification step: both players must explicitly accept playing this match
+          // (from their own accounts) before the creator can start it.
+          const aOk = Number(match.player_a_accepted || 0) === 1;
+          const bOk = Number(match.player_b_accepted || 0) === 1;
+          if (!aOk || !bOk) return reject({ status: 409, message: 'Both players must accept before starting' });
 
           // mark match as in_progress
           const updateMatch = `UPDATE tournament_matches SET status = 'in_progress' WHERE id = ? AND tournament_id = ?`;
@@ -363,6 +369,32 @@ export class TournamentController {
               });
             });
           });
+        });
+      });
+    });
+  }
+
+  /**
+   * Accept/ready a match as one of its players.
+   * This is the lightweight verification step before the creator starts the game.
+   */
+  static acceptMatch(tournamentId: number, matchId: number, requesterId: number): Promise<void> {
+    return new Promise((resolve, reject) => {
+      const matchSql = `SELECT id, player_a_id, player_b_id, status FROM tournament_matches WHERE id = ? AND tournament_id = ?`;
+      db.get(matchSql, [matchId, tournamentId], (err, match: any) => {
+        if (err) return reject({ status: 400, message: 'Failed to fetch match', error: (err as any)?.message || String(err) });
+        if (!match) return reject({ status: 404, message: 'Match not found' });
+        if (match.status !== 'idle') return reject({ status: 409, message: 'Match is not available for acceptance' });
+
+        let column: 'player_a_accepted' | 'player_b_accepted' | null = null;
+        if (String(match.player_a_id) === String(requesterId)) column = 'player_a_accepted';
+        else if (String(match.player_b_id) === String(requesterId)) column = 'player_b_accepted';
+        if (!column) return reject({ status: 403, message: 'Only match players can accept' });
+
+        const sql = `UPDATE tournament_matches SET ${column} = 1 WHERE id = ? AND tournament_id = ?`;
+        db.run(sql, [matchId, tournamentId], (err) => {
+          if (err) return reject({ status: 400, message: 'Failed to accept match', error: (err as any)?.message || String(err) });
+          resolve();
         });
       });
     });
