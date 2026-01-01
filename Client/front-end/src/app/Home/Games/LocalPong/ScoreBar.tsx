@@ -5,11 +5,22 @@ import React from "react";
 type ScoreBarProps = {
   playerOneScore: number;
   playerTwoScore: number;
+  playerOneName?: string;
+  playerTwoName?: string;
+  playerOneAvatar?: string;
+  playerTwoAvatar?: string;
 };
 
-export default function ScoreBar({ playerOneScore, playerTwoScore }: ScoreBarProps) {
-  const playerOneName = "asedoun";
-  const playerTwoName = "asedoun";
+export default function ScoreBar({
+  playerOneScore,
+  playerTwoScore,
+  playerOneName,
+  playerTwoName,
+  playerOneAvatar,
+  playerTwoAvatar,
+}: ScoreBarProps) {
+  const p1Name = playerOneName || "Player 1";
+  const p2Name = playerTwoName || "Player 2";
 
   const imageWidth = 100;
 
@@ -33,7 +44,7 @@ export default function ScoreBar({ playerOneScore, playerTwoScore }: ScoreBarPro
           className="absolute top-1/2 -translate-y-1/2 font-bold"
           style={{ left: `${imageWidth / 2 + 10}px` }}
         >
-          {playerOneName}
+          {p1Name}
         </span>
 
         <span
@@ -46,13 +57,13 @@ export default function ScoreBar({ playerOneScore, playerTwoScore }: ScoreBarPro
           className="absolute top-1/2 -translate-y-1/2 font-bold"
           style={{ right: `${imageWidth / 2 + 10}px` }}
         >
-          {playerTwoName}
+          {p2Name}
         </span>
       </div>
 
       <div className="absolute top-0 left-0 h-full -translate-x-1/2 flex items-center">
         <Image
-          src="/images/player1.png"
+          src={playerOneAvatar || "/images/player1.png"}
           alt="Player 1"
           width={imageWidth}
           height={100}
@@ -63,7 +74,7 @@ export default function ScoreBar({ playerOneScore, playerTwoScore }: ScoreBarPro
 
       <div className="absolute top-0 right-0 h-full translate-x-1/2 flex items-center">
         <Image
-          src="/images/player2.png"
+          src={playerTwoAvatar || "/images/player2.png"}
           alt="Player 2"
           width={imageWidth}
           height={100}
