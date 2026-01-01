@@ -1,7 +1,6 @@
 "use client";
 import React, { useEffect, useState } from "react";
 import api from "@/lib/axios";
-import toast from "react-hot-toast";
 import { useRouter } from "next/navigation";
 import { useSocketStore } from "@/components/hooks/SocketIOproviders";
 
@@ -16,6 +15,7 @@ export default function JoinTournament(): JSX.Element {
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
   const [passwords, setPasswords] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const router = useRouter();
   const { socket } = useSocketStore();
 
@@ -24,8 +24,9 @@ export default function JoinTournament(): JSX.Element {
       try {
         const res = await api.get("/tournaments");
         setTournaments(res.data?.tournaments || []);
+        setErrorMessage(null);
       } catch (err) {
-        toast.error("Failed to load tournaments");
+        setErrorMessage("Failed to load tournaments");
         // keep empty list if server unavailable
         setTournaments([]);
       } finally {
@@ -40,15 +41,13 @@ export default function JoinTournament(): JSX.Element {
     if (!socket) return;
 
     const handleTournamentUpdate = (data: { tournamentId: number; tournament: any }) => {
-      console.log("Tournament updated:", data);
-      
       // Update the specific tournament in the list
-      setTournaments((prev) =>
-        prev.map((t) =>
+      setTournaments((prev: Tournament[]) =>
+        prev.map((t: Tournament) =>
           t.id === String(data.tournamentId)
             ? {
                 ...t,
-                playerCount: data.tournament.playerCount || t.playerCount,
+                playerCount: data.tournament.playerCount ?? t.playerCount,
                 isUserJoined: data.tournament.isUserJoined ?? t.isUserJoined,
               }
             : t
@@ -64,7 +63,8 @@ export default function JoinTournament(): JSX.Element {
   }, [socket]);
 
   const handleChange = (id: string, value: string) => {
-    setPasswords((p) => ({ ...p, [id]: value }));
+    setPasswords((p: Record<string, string>) => ({ ...p, [id]: value }));
+    if (errorMessage) setErrorMessage(null);
   };
 
   const handleJoin = async (t: Tournament) => {
@@ -76,15 +76,16 @@ export default function JoinTournament(): JSX.Element {
     try {
       const pwd = passwords[t.id] || "";
       if (!pwd) {
-        return toast.error("Enter tournament password");
+        setErrorMessage("Enter tournament password");
+        return;
       }
 
       const res = await api.post(`/tournaments/${t.id}/join`, { password: pwd });
       const id = res.data?.tournament?.id || t.id;
-      toast.success("Joined tournament!");
+      setErrorMessage(null);
       router.push(`/Home/Games/Tournament/lobby/${id}`);
     } catch (err: any) {
-      toast.error(err?.response?.data?.message || "Join failed — check password");
+      setErrorMessage(err?.response?.data?.message || "Join failed — check password");
     }
   };
 
@@ -96,13 +97,19 @@ export default function JoinTournament(): JSX.Element {
     );
   }
 
-  const joinedTournaments = tournaments.filter((t) => t.isUserJoined);
-  const availableTournaments = tournaments.filter((t) => !t.isUserJoined);
+  const joinedTournaments = tournaments.filter((t: Tournament) => t.isUserJoined);
+  const availableTournaments = tournaments.filter((t: Tournament) => !t.isUserJoined);
 
   return (
     <div className="flex justify-center mt-10 px-4">
       <div className="w-full max-w-3xl">
         <h1 className="text-3xl font-bold text-purple-700 mb-8 text-center">Join a Tournament</h1>
+
+        {errorMessage && (
+          <div className="mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+            {errorMessage}
+          </div>
+        )}
 
         {/* Your Tournaments */}
         {joinedTournaments.length > 0 && (
@@ -178,7 +185,7 @@ export default function JoinTournament(): JSX.Element {
                         type="password"
                         value={passwords[t.id] || ""}
                         onChange={(e) => handleChange(t.id, e.target.value)}
-                        onKeyPress={(e) => e.key === "Enter" && handleJoin(t)}
+                        onKeyDown={(e) => e.key === "Enter" && handleJoin(t)}
                         placeholder="Enter password"
                         className="bg-white/30 text-white font-bold px-3 py-1 rounded-lg outline-none placeholder-white/60 ml-2 flex-1"
                       />

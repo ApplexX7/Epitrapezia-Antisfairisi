@@ -1,7 +1,6 @@
 "use client";
 import React, { useEffect, useState } from "react";
 import api from "@/lib/axios";
-import toast from "react-hot-toast";
 import { useAuth } from "@/components/hooks/authProvider";
 import { useRouter } from "next/navigation";
 
@@ -26,6 +25,7 @@ export default function TournamentLobby({ tournamentId }: Props) {
   const [tournamentComplete, setTournamentComplete] = useState(false);
   const [standings, setStandings] = useState<any>(null);
   const [creatorName, setCreatorName] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const hydrateMatches = async (playerList: Player[]) => {
     const matchesRes = await api.get(`/tournaments/${tournamentId}/matches`);
@@ -76,7 +76,7 @@ export default function TournamentLobby({ tournamentId }: Props) {
         }
         // Prefer creator username from players list if available
         if (!creatorName && res.data?.players?.length) {
-          const creatorPlayer = res.data.players.find((p: any) => p.player_id === res.data.creator_id);
+          const creatorPlayer = res.data.players.find((p: any) => String(p.player_id) === String(res.data.creator_id));
           if (creatorPlayer?.display_name) setCreatorName(creatorPlayer.display_name);
         }
 
@@ -96,7 +96,7 @@ export default function TournamentLobby({ tournamentId }: Props) {
       }
     };
     load();
-  }, [tournamentId]);
+  }, [tournamentId, currentUser?.id, currentUser?.username]);
 
   // when tournamentInfo available and no creatorName yet, try to fetch
   useEffect(() => {
@@ -111,7 +111,7 @@ export default function TournamentLobby({ tournamentId }: Props) {
         // ignore
       }
     })();
-  }, [tournamentInfo]);
+  }, [tournamentInfo, creatorName]);
 
   // Auto-initialize bracket when 4 players present
   useEffect(() => {
@@ -161,21 +161,32 @@ export default function TournamentLobby({ tournamentId }: Props) {
 
   const addLocalPlayer = async () => {
     const username = nameEntry.trim();
-    if (!username) return toast.error("Enter a player name");
-    if (players.length >= 4) return toast.error("Tournament is limited to 4 players");
-    if (!currentUser || !currentUser.id) return toast.error("You must be logged in to validate players");
+    if (!username) {
+      setErrorMessage("Enter a player name");
+      return;
+    }
+    if (players.length >= 4) {
+      setErrorMessage("Tournament is limited to 4 players");
+      return;
+    }
+    if (!currentUser || !currentUser.id) {
+      setErrorMessage("You must be logged in to validate players");
+      return;
+    }
 
     try {
       const res = await api.get("/search", { params: { query: username } });
       const results = res.data?.result || [];
       const matched = results.find((u: any) => u.username === username);
       if (!matched) {
-        return toast.error("Username not found in platform");
+        setErrorMessage("Username not found in platform");
+        return;
       }
       // Prevent duplicates
       if (players.some((p) => p.id === String(matched.id))) {
         setNameEntry("");
-        return toast.error("Player already added");
+        setErrorMessage("Player already added");
+        return;
       }
 
       // If tournament is server-backed, call add-player endpoint so it's persisted
@@ -188,21 +199,22 @@ export default function TournamentLobby({ tournamentId }: Props) {
           const remotePlayers: Player[] = tour?.players?.map((p: any) => ({ id: String(p.player_id || p.id), name: p.display_name || p.name })) || [];
           setPlayers(remotePlayers);
           setNameEntry("");
-          toast.success(`${username} added to tournament`);
+          setErrorMessage(null);
           return;
         } catch (err: any) {
           console.warn("Server add-player failed:", err);
-          return toast.error(err?.response?.data?.message || 'Failed to add player on server');
+          setErrorMessage(err?.response?.data?.message || 'Failed to add player on server');
+          return;
         }
       }
 
       const p: Player = { id: String(matched.id), name: matched.username, local: true };
       setPlayers((s) => [...s, p]);
       setNameEntry("");
-      toast.success(`${p.name} added to tournament`);
+      setErrorMessage(null);
     } catch (err: any) {
       console.warn("User lookup failed:", err);
-      toast.error("Failed to validate username");
+      setErrorMessage("Failed to validate username");
     }
   };
 
@@ -221,8 +233,8 @@ export default function TournamentLobby({ tournamentId }: Props) {
       });
       setMatchesState((s) => ({ ...s, ...nextState }));
       setBracketReady(true);
-      toast.success("Tournament bracket initialized!");
-    } catch (err) {
+      setErrorMessage(null);
+    } catch (err: any) {
       console.warn("Server bracket init failed:", err);
       // If this tournament is server-backed, do not fallback to a local-only bracket
       // (server matches won't have DB ids which are required to start matches).
@@ -232,12 +244,12 @@ export default function TournamentLobby({ tournamentId }: Props) {
         if (typeof msg === 'string' && msg.toLowerCase().includes('already initialized')) {
           try {
             await hydrateMatches(players);
-            toast.success('Bracket already initialized; synced from server');
+            setErrorMessage(null);
           } catch (fetchErr) {
-            toast.error(err?.response?.data?.message || 'Failed to initialize bracket on server');
+            setErrorMessage(err?.response?.data?.message || 'Failed to initialize bracket on server');
           }
         } else {
-          toast.error(err?.response?.data?.message || 'Failed to initialize bracket on server');
+          setErrorMessage(err?.response?.data?.message || 'Failed to initialize bracket on server');
         }
         return;
       }
@@ -256,17 +268,26 @@ export default function TournamentLobby({ tournamentId }: Props) {
   const requestStartMatch = async (a: Player, b: Player, key: string) => {
     try {
       if (!String(tournamentId).startsWith('local-')) {
-        if (!currentUser || !currentUser.id) return toast.error('Must be logged in to start matches');
-        if (!tournamentInfo || tournamentInfo.creator_id !== currentUser.id) return toast.error('Only the tournament creator can start matches from server');
+        if (!currentUser || !currentUser.id) {
+          setErrorMessage('Must be logged in to start matches');
+          return;
+        }
+        if (!tournamentInfo || tournamentInfo.creator_id !== currentUser.id) {
+          setErrorMessage('Only the tournament creator can start matches from server');
+          return;
+        }
 
         // find DB id for this match
         const match = (matchesState[key] as any) || (matchesState as any)[key];
         const dbId = match?.dbId;
-        if (!dbId) return toast.error('Server match id not found');
+        if (!dbId) {
+          setErrorMessage('Server match id not found');
+          return;
+        }
 
         const resp = await api.post(`/tournaments/${tournamentId}/start-match`, { matchId: dbId });
         const matchInfo = resp.data?.match;
-        toast.success('Match started');
+        setErrorMessage(null);
         // navigate host to LocalPong with useful params
         const q = `?t=${encodeURIComponent(String(tournamentId))}&m=${encodeURIComponent(String(dbId))}&p1=${encodeURIComponent(String(a.id))}&p2=${encodeURIComponent(String(b.id))}&n1=${encodeURIComponent(a.name)}&n2=${encodeURIComponent(b.name)}`;
         router.push(`/Home/Games/LocalPong${q}`);
@@ -279,13 +300,16 @@ export default function TournamentLobby({ tournamentId }: Props) {
         router.push(`/Home/Games/LocalPong${q}`);
       }
     } catch (err: any) {
-      toast.error(err?.response?.data?.message || 'Failed to start match');
+      setErrorMessage(err?.response?.data?.message || 'Failed to start match');
     }
   };
 
   const resolveMatch = async (matchId: string, winnerId: string) => {
     const match = matchesState[matchId];
-    if (!match || !match.a || !match.b) return toast.error("Match data missing");
+    if (!match || !match.a || !match.b) {
+      setErrorMessage("Match data missing");
+      return;
+    }
 
     const loser = match.a.id === winnerId ? match.b : match.a;
     const winner = match.a.id === winnerId ? match.a : match.b;
@@ -309,7 +333,7 @@ export default function TournamentLobby({ tournamentId }: Props) {
     });
 
     setMatchToResolve(null);
-    toast.success(`🏆 ${winner.name} wins!`);
+    setErrorMessage(null);
 
     // Send to backend
     try {
@@ -340,9 +364,15 @@ export default function TournamentLobby({ tournamentId }: Props) {
   };
 
   const startMatch = (matchId: string) => {
-    if (!bracketReady && !matchId.startsWith('semi')) return toast.error("Bracket not initialized");
+    if (!bracketReady && !matchId.startsWith('semi')) {
+      setErrorMessage("Bracket not initialized");
+      return;
+    }
     const match = matchesState[matchId];
-    if (!match || !match.a || !match.b) return toast.error("Match not ready");
+    if (!match || !match.a || !match.b) {
+      setErrorMessage("Match not ready");
+      return;
+    }
     
     const dialog = confirm(`Start match: ${match.a.name} vs ${match.b.name}?`);
     if (dialog) {
@@ -355,7 +385,8 @@ export default function TournamentLobby({ tournamentId }: Props) {
     const t = matchesState['third-1'];
     
     if (!f?.winnerId || !f?.loserId || !t?.winnerId || !t?.loserId) {
-      return toast.error("All matches must be completed first");
+      setErrorMessage("All matches must be completed first");
+      return;
     }
 
     try {
@@ -366,7 +397,7 @@ export default function TournamentLobby({ tournamentId }: Props) {
         fourthId: t.loserId,
       });
       setTournamentComplete(true);
-      toast.success("🎉 Tournament completed!");
+      setErrorMessage(null);
     } catch (err: any) {
       console.warn("Could not save completion:", err.message);
       setTournamentComplete(true);
@@ -412,6 +443,12 @@ export default function TournamentLobby({ tournamentId }: Props) {
         <div className="text-sm text-gray-600 mb-4">Creator: {creatorName}</div>
       )}
 
+      {errorMessage && (
+        <div className="mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+          {errorMessage}
+        </div>
+      )}
+
       {/* Players Grid */}
       <div className="mb-8 bg-white/50 rounded-lg p-4 border">
         <h3 className="font-semibold mb-4">Players ({players.length}/4)</h3>
@@ -427,7 +464,7 @@ export default function TournamentLobby({ tournamentId }: Props) {
               <input 
                 value={nameEntry} 
                 onChange={(e) => setNameEntry(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && addLocalPlayer()}
+                onKeyDown={(e) => e.key === 'Enter' && addLocalPlayer()}
                 placeholder="Name" 
                 className="px-2 py-1 rounded text-sm text-center" 
               />

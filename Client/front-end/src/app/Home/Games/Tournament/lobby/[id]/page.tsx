@@ -5,7 +5,8 @@ import TournamentLobby from "@/components/Tournament/TournamentLobby";
 
 export default function LobbyPage() {
   const params = useParams();
-  const id = params?.id || "unknown";
+  const raw = (params as any)?.id;
+  const id = Array.isArray(raw) ? raw[0] : raw || "unknown";
 
   return (
     <div className="min-h-screen px-4 py-8">

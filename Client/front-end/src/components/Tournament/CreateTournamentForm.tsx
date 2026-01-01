@@ -2,20 +2,20 @@
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import api from "@/lib/axios";
-import toast from "react-hot-toast";
 
 export default function CreateTournamentForm(): JSX.Element {
   const router = useRouter();
   const [name, setName] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     // Client-side validation: require password >= 3 chars
     if (!password || password.length < 3) {
-      toast.error("Password must be at least 3 characters");
+      setErrorMessage("Password must be at least 3 characters");
       setLoading(false);
       return;
     }
@@ -24,17 +24,17 @@ export default function CreateTournamentForm(): JSX.Element {
       const res = await api.post("/tournaments", { name, password });
       const id = res.data?.id || res.data?.tournamentId || null;
       if (!id) throw new Error("Invalid server response");
-      toast.success("Tournament created");
+      setErrorMessage(null);
       router.push(`/Home/Games/Tournament/lobby/${id}`);
     } catch (err: any) {
       const serverMsg = err?.response?.data?.message;
       if (serverMsg) {
         // show server validation error and do not navigate
-        toast.error(serverMsg);
+        setErrorMessage(serverMsg);
       } else {
         // network/offline fallback: allow local testing
         const fallbackId = `local-${Date.now()}`;
-        toast.error("Failed to create on server — using local lobby");
+        setErrorMessage("Failed to create on server — using local lobby");
         router.push(`/Home/Games/Tournament/lobby/${fallbackId}`);
       }
     } finally {
@@ -44,6 +44,12 @@ export default function CreateTournamentForm(): JSX.Element {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
+      {errorMessage && (
+        <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+          {errorMessage}
+        </div>
+      )}
+
       <label className="block">
         <span className="text-sm font-medium text-gray-700">Tournament name</span>
         <div className="mt-2 relative">
