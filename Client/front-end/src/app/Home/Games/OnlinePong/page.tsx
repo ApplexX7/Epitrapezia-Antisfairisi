@@ -202,11 +202,11 @@ const [opponentAvatar, setOpponentAvatar] = useState<string | null>(null);
        setCurrentDiff={setGameDiff}
        setCurrentPaddle={setPaddleColor}
        />
-        <Link href="/Home/Games/">
+        {/* <Link href="/Home/Games/">
        <Button className="fixed bg-purple-400 top-4 left-4 cursor-pointer">
           Back To Games
        </Button>
-        </Link>
+        </Link> */}
           <button
             className="px-6 py-3 bg-purple-600 rounded hover:bg-purple-800 cursor-pointer transition"
             onClick={handleJoin}
