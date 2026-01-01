@@ -3,6 +3,7 @@ import React, { useEffect, useState } from "react";
 import api from "@/lib/axios";
 import toast from "react-hot-toast";
 import { useRouter } from "next/navigation";
+import { useSocketStore } from "@/components/hooks/SocketIOproviders";
 
 type Tournament = { 
   id: string; 
@@ -16,6 +17,7 @@ export default function JoinTournament(): JSX.Element {
   const [passwords, setPasswords] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const router = useRouter();
+  const { socket } = useSocketStore();
 
   useEffect(() => {
     const load = async () => {
@@ -32,6 +34,34 @@ export default function JoinTournament(): JSX.Element {
     };
     load();
   }, []);
+
+  // Listen for tournament updates via socket
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleTournamentUpdate = (data: { tournamentId: number; tournament: any }) => {
+      console.log("Tournament updated:", data);
+      
+      // Update the specific tournament in the list
+      setTournaments((prev) =>
+        prev.map((t) =>
+          t.id === String(data.tournamentId)
+            ? {
+                ...t,
+                playerCount: data.tournament.playerCount || t.playerCount,
+                isUserJoined: data.tournament.isUserJoined ?? t.isUserJoined,
+              }
+            : t
+        )
+      );
+    };
+
+    socket.on("tournament:updated", handleTournamentUpdate);
+
+    return () => {
+      socket.off("tournament:updated", handleTournamentUpdate);
+    };
+  }, [socket]);
 
   const handleChange = (id: string, value: string) => {
     setPasswords((p) => ({ ...p, [id]: value }));

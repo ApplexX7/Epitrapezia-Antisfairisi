@@ -158,6 +158,15 @@ export function registerTournamentRoutes() {
 
       // Return updated tournament status
       const tournament = await TC.getTournamentWithStatus(parseInt(id), user.id);
+      
+      // Emit socket event to notify all clients about the update
+      try {
+        const io = Server.socket();
+        io.emit('tournament:updated', { tournamentId: parseInt(id), tournament });
+      } catch (err) {
+        console.error('Failed to emit socket event:', err);
+      }
+      
       reply.send({ message: 'Joined tournament successfully', tournament });
     } catch (error: any) {
       reply.status(error.status || 500).send({ message: error.message });
@@ -198,6 +207,15 @@ export function registerTournamentRoutes() {
       await TC.addPlayerByUsername(parseInt(id), username, password, user.id);
       // Return updated tournament status
       const tournament = await TC.getTournamentWithStatus(parseInt(id), user.id);
+      
+      // Emit socket event to notify all clients about the update
+      try {
+        const io = Server.socket();
+        io.emit('tournament:updated', { tournamentId: parseInt(id), tournament });
+      } catch (err) {
+        console.error('Failed to emit socket event:', err);
+      }
+      
       reply.send({ message: 'Player added successfully', tournament });
     } catch (error: any) {
       reply.status(error.status || 500).send({ message: error.message });

@@ -34,12 +34,32 @@ export class TournamentController {
     });
   }
 
-  static getAllTournaments(): Promise<Tournament[]> {
+  static getAllTournaments(): Promise<(Tournament & { playerCount: number })[]> {
     return new Promise((resolve, reject) => {
       const sql = `SELECT * FROM tournaments WHERE status IN ('pending', 'in_progress') ORDER BY created_at DESC LIMIT 20`;
-      db.all(sql, (err, rows) => {
+      db.all(sql, async (err, rows) => {
         if (err) return reject({ status: 400, message: 'Failed to fetch tournaments', error: (err as any)?.message || String(err) });
-        resolve((rows as Tournament[]) || []);
+        
+        const tournaments = rows as Tournament[] || [];
+        
+        // Get player count for each tournament
+        const tournamentsWithCount = await Promise.all(
+          tournaments.map(async (tournament) => {
+            return new Promise<Tournament & { playerCount: number }>((resolve) => {
+              const countSql = `SELECT COUNT(*) as count FROM tournament_players WHERE tournament_id = ?`;
+              db.get(countSql, [tournament.id], (err, result: any) => {
+                if (err) {
+                  console.error('Error getting player count:', err);
+                  resolve({ ...tournament, playerCount: 0 });
+                } else {
+                  resolve({ ...tournament, playerCount: result.count || 0 });
+                }
+              });
+            });
+          })
+        );
+        
+        resolve(tournamentsWithCount);
       });
     });
   }
