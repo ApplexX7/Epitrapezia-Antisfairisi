@@ -87,10 +87,27 @@ export default function TournamentLobby({ tournamentId }: Props) {
           if (process.env.NODE_ENV !== 'production') console.warn('Could not fetch matches on load', err);
         }
       } catch (err) {
-        console.warn("Could not load tournament from server, using local mode");
-        const creatorId = String(currentUser?.id || `creator-${Date.now()}`);
-        const creatorName = currentUser?.username || "Creator";
-        setPlayers([{ id: creatorId, name: creatorName, local: true }]);
+        // If the tournament does not exist (or cannot be loaded), do NOT silently
+        // create a new lobby for arbitrary URLs. Only allow local/offline mode
+        // when the id explicitly starts with `local-`.
+        if (String(tournamentId).startsWith('local-')) {
+          console.warn("Could not load tournament from server, using local mode");
+          const creatorId = String(currentUser?.id || `creator-${Date.now()}`);
+          const creatorName = currentUser?.username || "Creator";
+          setPlayers([{ id: creatorId, name: creatorName, local: true }]);
+        } else {
+          const status = (err as any)?.response?.status;
+          if (status === 404) setErrorMessage('Tournament not found');
+          else setErrorMessage('Failed to load tournament');
+
+          setTournamentInfo(null);
+          setPlayers([]);
+          setBracketReady(false);
+          setMatchesState({});
+          setTournamentComplete(false);
+          // Send the user back to the tournament list instead of rendering a fresh lobby.
+          router.replace('/Home/Games/Tournament/joinTournament');
+        }
       } finally {
         setLoading(false);
       }
