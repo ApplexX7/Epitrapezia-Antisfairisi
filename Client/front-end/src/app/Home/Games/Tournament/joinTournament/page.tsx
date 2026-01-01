@@ -85,7 +85,14 @@ export default function JoinTournament(): JSX.Element {
       setErrorMessage(null);
       router.push(`/Home/Games/Tournament/lobby/${id}`);
     } catch (err: any) {
-      setErrorMessage(err?.response?.data?.message || "Join failed — check password");
+      const status = err?.response?.status;
+      // Only show actionable errors. Avoid surfacing noisy server-state messages
+      // like "Tournament already started".
+      if (status === 401 || status === 403) {
+        setErrorMessage("Join failed — check password");
+      } else {
+        setErrorMessage(null);
+      }
     }
   };
 

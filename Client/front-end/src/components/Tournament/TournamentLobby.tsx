@@ -220,7 +220,13 @@ export default function TournamentLobby({ tournamentId }: Props) {
           return;
         } catch (err: any) {
           console.warn("Server add-player failed:", err);
-          setErrorMessage(err?.response?.data?.message || 'Failed to add player on server');
+          const status = err?.response?.status;
+          // Keep UI quiet for noisy state errors (e.g., tournament already started).
+          if (status === 409) {
+            setErrorMessage(null);
+          } else {
+            setErrorMessage('Failed to add player');
+          }
           return;
         }
       }
@@ -263,10 +269,13 @@ export default function TournamentLobby({ tournamentId }: Props) {
             await hydrateMatches(players);
             setErrorMessage(null);
           } catch (fetchErr) {
-            setErrorMessage(err?.response?.data?.message || 'Failed to initialize bracket on server');
+            setErrorMessage('Failed to initialize bracket');
           }
         } else {
-          setErrorMessage(err?.response?.data?.message || 'Failed to initialize bracket on server');
+          const status = err?.response?.status;
+          // Suppress noisy state errors like "Tournament already started".
+          if (status === 409) setErrorMessage(null);
+          else setErrorMessage('Failed to initialize bracket');
         }
         return;
       }
@@ -317,7 +326,10 @@ export default function TournamentLobby({ tournamentId }: Props) {
         router.push(`/Home/Games/LocalPong${q}`);
       }
     } catch (err: any) {
-      setErrorMessage(err?.response?.data?.message || 'Failed to start match');
+      const status = err?.response?.status;
+      // Suppress noisy state errors like "Tournament already started".
+      if (status === 409) setErrorMessage(null);
+      else setErrorMessage('Failed to start match');
     }
   };
 

@@ -29,8 +29,8 @@ export default function CreateTournamentForm(): JSX.Element {
     } catch (err: any) {
       const serverMsg = err?.response?.data?.message;
       if (serverMsg) {
-        // show server validation error and do not navigate
-        setErrorMessage(serverMsg);
+        // Avoid surfacing noisy/raw server messages. Keep it generic.
+        setErrorMessage("Failed to create tournament");
       } else {
         // network/offline fallback: allow local testing
         const fallbackId = `local-${Date.now()}`;
