@@ -57,10 +57,15 @@ export function registerNotifSocket(
       return;
     }
 
+    const key = inviteKey(Number(user.id), Number(to));
+    // New invite should reset any previous completed/in-flight state for this pair.
+    inviteStartInFlight.delete(key);
+    inviteCompleted.delete(key);
+
     // Track which exact socket sent this invite so we can start the match
     // on the same tab/session that initiated it.
     try {
-      pendingInvites.set(inviteKey(Number(user.id), Number(to)), {
+      pendingInvites.set(key, {
         inviterSocketId: socket.id,
         mode,
         createdAt: Date.now(),
@@ -84,7 +89,7 @@ export function registerNotifSocket(
   });
 
   // Response to a game invite (accept/decline)
-  socket.on("game:invite:response", async (data: any) => {
+  socket.on("game:invite:response", async (data: any, callback?: Function) => {
     const { to, status } = data || {};
     if (!to || !status) return;
 
@@ -168,6 +173,14 @@ export function registerNotifSocket(
           payload: { status, roomId },
           time: new Date().toISOString(),
         });
+      }
+    }
+
+    if (callback) {
+      if (status === "accepted") {
+        callback(roomId ? { ok: true, roomId } : { ok: false, error: "Failed to start match" });
+      } else {
+        callback({ ok: true });
       }
     }
   });

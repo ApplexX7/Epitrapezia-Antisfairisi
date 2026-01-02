@@ -73,13 +73,20 @@ export default function HomeNavBar (){
 
         const handleGameInviteResponse = (notif: any, status: "accepted" | "declined") => {
             if (!notif?.from?.id || !socket) return;
-            socket.emit("game:invite:response", { to: Number(notif.from.id), status });
-            if (status === "accepted") {
-                router.push("/Home/Games/OnlinePong");
-            } else {
-                toast("Invite declined", { icon: "✋" });
-            }
-            markAsRead(notif.id);
+            socket.emit(
+                "game:invite:response",
+                { to: Number(notif.from.id), status },
+                (resp?: any) => {
+                    if (status === "accepted") {
+                        const rid = resp?.roomId;
+                        if (rid) router.push(`/Home/Games/OnlinePong?roomId=${encodeURIComponent(rid)}`);
+                        else router.push("/Home/Games/OnlinePong");
+                    } else {
+                        toast("Invite declined", { icon: "✋" });
+                    }
+                    markAsRead(notif.id);
+                }
+            );
         };
 
         const toggleNotifications = () => {
