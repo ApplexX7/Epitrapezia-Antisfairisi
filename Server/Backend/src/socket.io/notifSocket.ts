@@ -11,6 +11,10 @@ type PendingInvite = {
 // Keyed by `${inviterId}:${inviteeId}`
 const pendingInvites = new Map<string, PendingInvite>();
 
+// Prevent double-start when multiple accept events arrive close together.
+// Keyed by `${inviterId}:${inviteeId}` and resolves to the created roomId (or undefined).
+const inviteStartInFlight = new Map<string, Promise<string | undefined>>();
+
 function inviteKey(inviterId: number, inviteeId: number) {
   return `${inviterId}:${inviteeId}`;
 }
@@ -83,34 +87,54 @@ export function registerNotifSocket(
     let roomId: string | undefined;
     if (status === "accepted" && onlineUsers[to] && onlineUsers[to].length > 0) {
       const key = inviteKey(Number(to), Number(user.id));
-      const pending = pendingInvites.get(key);
-      // prune stale invites (5 minutes)
-      const isStale = pending ? Date.now() - pending.createdAt > 5 * 60 * 1000 : false;
-      if (isStale) pendingInvites.delete(key);
 
-      const inviterSockets = onlineUsers[to];
-      const inviterSocketRaw =
-        pending && !isStale
-          ? inviterSockets.find((s) => s.id === pending.inviterSocketId)
-          : undefined;
+      // If a start is already in progress for this invite, await it.
+      const existing = inviteStartInFlight.get(key);
+      if (existing) {
+        roomId = await existing;
+      } else {
+        const startPromise = (async () => {
+          const pending = pendingInvites.get(key);
+          // prune stale invites (5 minutes)
+          const isStale = pending ? Date.now() - pending.createdAt > 5 * 60 * 1000 : false;
+          if (isStale) pendingInvites.delete(key);
 
-      const inviterSocket =
-        (inviterSocketRaw || inviterSockets[0]) as unknown as UserSocket;
-      const inviteeSocket = socket as unknown as UserSocket;
-      try {
-        const res = await createRoomAndStartGame(io, inviterSocket, inviteeSocket);
-        roomId = res?.roomId;
-      } catch (e) {
-        console.error("Failed to start invite game", e);
+          const inviterSockets = onlineUsers[to];
+          if (!inviterSockets || inviterSockets.length === 0) return undefined;
+
+          const inviterSocketRaw =
+            pending && !isStale
+              ? inviterSockets.find((s) => s.id === pending.inviterSocketId)
+              : undefined;
+
+          const inviterSocket =
+            (inviterSocketRaw || inviterSockets[0]) as unknown as UserSocket;
+          const inviteeSocket = socket as unknown as UserSocket;
+
+          try {
+            const res = await createRoomAndStartGame(io, inviterSocket, inviteeSocket);
+            return res?.roomId;
+          } catch {
+            return undefined;
+          } finally {
+            // One response completes the invite lifecycle.
+            pendingInvites.delete(key);
+          }
+        })();
+
+        inviteStartInFlight.set(key, startPromise);
+        try {
+          roomId = await startPromise;
+        } finally {
+          inviteStartInFlight.delete(key);
+        }
       }
-
-      // One response completes the invite lifecycle.
-      pendingInvites.delete(key);
     }
 
     // If declined, clear any pending invite record.
     if (status !== "accepted") {
       pendingInvites.delete(inviteKey(Number(to), Number(user.id)));
+      inviteStartInFlight.delete(inviteKey(Number(to), Number(user.id)));
     }
 
     if (onlineUsers[to]) {
