@@ -11,7 +11,7 @@ import Link from "next/link";
 import { useSocketStore } from "./hooks/SocketIOproviders";
 import api from "@/lib/axios";
 import toast from "react-hot-toast";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import SearchCompo from "./searchComp";
 
 export default function HomeNavBar (){
@@ -23,14 +23,24 @@ export default function HomeNavBar (){
         const markAllAsRead = useSocketStore((state: any) => state.markAllAsRead);
         const markAsRead = useSocketStore((state: any) => state.markAsRead);
         const socket = useSocketStore((state: any) => state.socket);
+        const lastMatched = useSocketStore((state: any) => state.lastMatched);
         const unreadCount = notifications.filter((n: any) => !n.read).length;
         const router = useRouter();
+        const pathname = usePathname();
+
+        useEffect(() => {
+            // If a room was created for me (invite accepted), ensure I land in OnlinePong.
+            // This is more reliable than relying on the notification's read state.
+            if (!lastMatched?.roomId) return;
+            if (pathname === "/Home/Games/OnlinePong") return;
+            toast.success("Match ready — launching game");
+            router.push("/Home/Games/OnlinePong");
+        }, [lastMatched, pathname, router]);
 
         useEffect(() => {
             // If I invited someone and they accepted, auto-launch OnlinePong
             const accepted = notifications.find(
                 (n: any) =>
-                    !n.read &&
                     n.type === "game-invite-response" &&
                     n.payload?.status === "accepted" &&
                     n.payload?.roomId
