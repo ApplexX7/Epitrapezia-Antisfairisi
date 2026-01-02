@@ -71,7 +71,7 @@ const [opponentAvatar, setOpponentAvatar] = useState<string | null>(null);
       setStatus(`⏳ ${payload.message}`);
 
     const handleMatched = (payload: MatchedPayload) => {
-      setStatus(`✅ Matched with ${payload.opponent.username}`);
+      setStatus(`Matched with ${payload.opponent.username}`);
       setOpponentName(payload.opponent.username);
       setOpponentAvatar(payload.opponent.avatar);
       setRoomId(payload.roomId);
@@ -85,10 +85,10 @@ const [opponentAvatar, setOpponentAvatar] = useState<string | null>(null);
     };
 
     const handleGameOver = (payload: GameOverPayload) =>
-      setStatus(`❌ ${payload.message}`);
+      setStatus(` ${payload.message}`);
     const handleGameOverWrapped = (payload: GameOverPayload) => {
       setGameOver(payload);
-      setStatus(`❌ ${payload.message}`);
+      setStatus(` ${payload.message}`);
     };
     socket.on("stopmatchmaking", handleStopMatchMacking);
     socket.on("waiting", handleWaiting);
