@@ -41,15 +41,20 @@ export default function HomeNavBar (){
             // If I invited someone and they accepted, auto-launch OnlinePong
             const accepted = notifications.find(
                 (n: any) =>
+                    !n.read &&
                     n.type === "game-invite-response" &&
                     n.payload?.status === "accepted" &&
                     n.payload?.roomId
             );
             if (!accepted) return;
+            if (pathname === "/Home/Games/OnlinePong") {
+                markAsRead(accepted.id);
+                return;
+            }
             toast.success("Invite accepted — starting match");
             markAsRead(accepted.id);
             router.push("/Home/Games/OnlinePong");
-        }, [notifications, markAsRead, router]);
+        }, [notifications, markAsRead, router, pathname]);
 
         const handleFriendAction = async (notif: any, action: "accept" | "decline") => {
             if (!notif?.from?.id) return;
