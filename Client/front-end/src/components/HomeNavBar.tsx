@@ -23,18 +23,9 @@ export default function HomeNavBar (){
         const markAllAsRead = useSocketStore((state: any) => state.markAllAsRead);
         const markAsRead = useSocketStore((state: any) => state.markAsRead);
         const socket = useSocketStore((state: any) => state.socket);
-        const lastMatched = useSocketStore((state: any) => state.lastMatched);
         const unreadCount = notifications.filter((n: any) => !n.read).length;
         const router = useRouter();
         const pathname = usePathname();
-
-        useEffect(() => {
-            // If a room was created for me (invite accepted), ensure I land in OnlinePong.
-            // This is more reliable than relying on the notification's read state.
-            if (!lastMatched?.roomId) return;
-            if (pathname === "/Home/Games/OnlinePong") return;
-            router.push("/Home/Games/OnlinePong");
-        }, [lastMatched, pathname, router]);
 
         useEffect(() => {
             // If I invited someone and they accepted, auto-launch OnlinePong
@@ -46,6 +37,15 @@ export default function HomeNavBar (){
                     n.payload?.roomId
             );
             if (!accepted) return;
+
+            // Only auto-redirect for a *fresh* notification to avoid random redirects
+            // caused by old unread items.
+            const notifTime = accepted.time ? new Date(accepted.time).getTime() : 0;
+            if (!notifTime || Date.now() - notifTime > 30_000) {
+                markAsRead(accepted.id);
+                return;
+            }
+
             if (pathname === "/Home/Games/OnlinePong") {
                 markAsRead(accepted.id);
                 return;
