@@ -245,8 +245,9 @@ export function registerGameSocket(io: Server, socket: UserSocket) {
     const room = activeRooms[roomId];
     if (!room) return;
 
-    // ensure the sender is actually a participant in this room 
-    const isParticipant = room.players.some((p) => p.user.id === socket.user.id);
+    // ensure the sender is actually a participant in this room (by socket id)
+    // so only the currently-bound tab controls the paddle.
+    const isParticipant = room.players.some((p) => p.id === socket.id);
     if (!isParticipant) {
       console.warn(`Unauthorized movePaddle from user ${socket.user?.username} for room ${roomId}`);
       return;
@@ -293,6 +294,50 @@ export function registerGameSocket(io: Server, socket: UserSocket) {
     // remove from queue if waiting
     const idx = matchmakingQueue.indexOf(socket);
     if (idx !== -1) matchmakingQueue.splice(idx, 1);
+  });
+
+  // Allows a participant to re-attach their current socket to an existing room.
+  // This fixes cases where a user navigates late / has multiple tabs.
+  socket.on("game:joinRoom", async (data: any, callback?: Function) => {
+    const { roomId } = data || {};
+    if (!roomId || typeof roomId !== "string") {
+      if (callback) callback({ ok: false, error: "Missing roomId" });
+      return;
+    }
+
+    const room = activeRooms[roomId];
+    if (!room) {
+      if (callback) callback({ ok: false, error: "Room not found" });
+      return;
+    }
+
+    const idx = room.players.findIndex((p) => p.user.id === socket.user.id);
+    if (idx === -1) {
+      if (callback) callback({ ok: false, error: "Not a participant" });
+      return;
+    }
+
+    const oldSocket = room.players[idx];
+    if (oldSocket && oldSocket.id !== socket.id) {
+      try {
+        oldSocket.leave(roomId);
+      } catch {}
+    }
+    room.players[idx] = socket;
+    socket.join(roomId);
+
+    const opponent = room.players[idx === 0 ? 1 : 0];
+    const opponentAvatar = opponent ? await getAvatar(opponent.user.id) : "/images/player2.png";
+
+    socket.emit("matched", {
+      opponent: opponent
+        ? { id: opponent.user.id, username: opponent.user.username, avatar: opponentAvatar }
+        : { id: -1, username: "Opponent", avatar: opponentAvatar },
+      role: idx === 0 ? "left" : "right",
+      roomId,
+    });
+
+    if (callback) callback({ ok: true, roomId });
   });
 }
 

@@ -8,6 +8,7 @@ import GameCostum from "./GameCostum";
 import RemoteScoreBoard from "./RemoteScoreBoard"
 import { Button } from "@/components/ui/button";
 import Link from 'next/link'
+import { useSearchParams } from "next/navigation";
 
 type WaitingPayload = {
   message: string;
@@ -35,6 +36,7 @@ export default function Page() {
     let [paddleColor, setPaddleColor] = useState("default");
     let [gameDiff, setGameDiff] = useState("easy");
   const { socket, isConnected, lastMatched, clearLastMatched } = useSocketStore();
+  const searchParams = useSearchParams();
   const [playerName, setPlayerName] = useState<string | null>(null);
 const [opponentName, setOpponentName] = useState<string | null>(null);
 const [opponentAvatar, setOpponentAvatar] = useState<string | null>(null);
@@ -107,6 +109,20 @@ const [opponentAvatar, setOpponentAvatar] = useState<string | null>(null);
     setRole(lastMatched.role);
     clearLastMatched();
   }, [lastMatched, roomId, clearLastMatched]);
+
+  // If we got routed here with a roomId (invite accepted) but missed 'matched', re-join.
+  useEffect(() => {
+    if (!socket) return;
+    if (roomId) return;
+    const qpRoomId = searchParams.get("roomId");
+    if (!qpRoomId) return;
+
+    socket.emit("game:joinRoom", { roomId: qpRoomId }, (resp?: any) => {
+      if (!resp?.ok) {
+        console.warn("Failed to join room", resp?.error);
+      }
+    });
+  }, [socket, roomId, searchParams]);
   let handleStopMatchMacking = () =>
     {
       setMatchupText("Join Matchup");

@@ -33,7 +33,6 @@ export default function HomeNavBar (){
             // This is more reliable than relying on the notification's read state.
             if (!lastMatched?.roomId) return;
             if (pathname === "/Home/Games/OnlinePong") return;
-            toast.success("Match ready — launching game");
             router.push("/Home/Games/OnlinePong");
         }, [lastMatched, pathname, router]);
 
@@ -51,9 +50,8 @@ export default function HomeNavBar (){
                 markAsRead(accepted.id);
                 return;
             }
-            toast.success("Invite accepted — starting match");
             markAsRead(accepted.id);
-            router.push("/Home/Games/OnlinePong");
+            router.push(`/Home/Games/OnlinePong?roomId=${encodeURIComponent(accepted.payload.roomId)}`);
         }, [notifications, markAsRead, router, pathname]);
 
         const handleFriendAction = async (notif: any, action: "accept" | "decline") => {
@@ -77,7 +75,6 @@ export default function HomeNavBar (){
             if (!notif?.from?.id || !socket) return;
             socket.emit("game:invite:response", { to: Number(notif.from.id), status });
             if (status === "accepted") {
-                toast.success("Launching games page");
                 router.push("/Home/Games/OnlinePong");
             } else {
                 toast("Invite declined", { icon: "✋" });
