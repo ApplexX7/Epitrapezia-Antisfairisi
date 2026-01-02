@@ -26,6 +26,20 @@ interface GameRoom {
 let matchmakingQueue: UserSocket[] = [];
 const activeRooms: Record<string, GameRoom> = {};
 
+function leaveAllGameRooms(player: UserSocket, keepRoomId?: string) {
+  try {
+    for (const r of player.rooms) {
+      if (r === player.id) continue;
+      if (keepRoomId && r === keepRoomId) continue;
+      if (typeof r === "string" && r.startsWith("room-")) {
+        try {
+          player.leave(r);
+        } catch {}
+      }
+    }
+  } catch {}
+}
+
 async function getAvatar(userId: number) {
   return new Promise<string>((resolve) => {
     db.get(
@@ -76,6 +90,10 @@ export async function createRoomAndStartGame(
   matchmakingQueue = matchmakingQueue.filter(
     (s) => s.id !== leftPlayer.id && s.id !== rightPlayer.id
   );
+
+  // Make sure each socket only participates in one game room at a time.
+  leaveAllGameRooms(leftPlayer, roomId);
+  leaveAllGameRooms(rightPlayer, roomId);
 
   leftPlayer.join(roomId);
   rightPlayer.join(roomId);
@@ -324,6 +342,8 @@ export function registerGameSocket(io: Server, socket: UserSocket) {
       } catch {}
     }
     room.players[idx] = socket;
+    // Ensure this socket won't receive gameState from other game rooms.
+    leaveAllGameRooms(socket, roomId);
     socket.join(roomId);
 
     const opponent = room.players[idx === 0 ? 1 : 0];

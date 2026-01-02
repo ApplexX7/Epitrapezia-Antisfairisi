@@ -15,6 +15,10 @@ const pendingInvites = new Map<string, PendingInvite>();
 // Keyed by `${inviterId}:${inviteeId}` and resolves to the created roomId (or undefined).
 const inviteStartInFlight = new Map<string, Promise<string | undefined>>();
 
+// After a room is created for an invite, reuse it for any repeated accepts
+// (e.g. double-click spam) for a short TTL.
+const inviteCompleted = new Map<string, { roomId: string; createdAt: number }>();
+
 function inviteKey(inviterId: number, inviteeId: number) {
   return `${inviterId}:${inviteeId}`;
 }
@@ -88,45 +92,62 @@ export function registerNotifSocket(
     if (status === "accepted" && onlineUsers[to] && onlineUsers[to].length > 0) {
       const key = inviteKey(Number(to), Number(user.id));
 
-      // If a start is already in progress for this invite, await it.
-      const existing = inviteStartInFlight.get(key);
-      if (existing) {
-        roomId = await existing;
-      } else {
-        const startPromise = (async () => {
-          const pending = pendingInvites.get(key);
-          // prune stale invites (5 minutes)
-          const isStale = pending ? Date.now() - pending.createdAt > 5 * 60 * 1000 : false;
-          if (isStale) pendingInvites.delete(key);
+      // If we've already created a room for this invite, reuse it.
+      const done = inviteCompleted.get(key);
+      if (done) {
+        const isExpired = Date.now() - done.createdAt > 2 * 60 * 1000;
+        if (!isExpired) {
+          roomId = done.roomId;
+        } else {
+          inviteCompleted.delete(key);
+        }
+      }
 
-          const inviterSockets = onlineUsers[to];
-          if (!inviterSockets || inviterSockets.length === 0) return undefined;
+      if (!roomId) {
+        // If a start is already in progress for this invite, await it.
+        const existing = inviteStartInFlight.get(key);
+        if (existing) {
+          roomId = await existing;
+        } else {
+          const startPromise = (async () => {
+            const pending = pendingInvites.get(key);
+            // prune stale invites (5 minutes)
+            const isStale = pending ? Date.now() - pending.createdAt > 5 * 60 * 1000 : false;
+            if (isStale) pendingInvites.delete(key);
 
-          const inviterSocketRaw =
-            pending && !isStale
-              ? inviterSockets.find((s) => s.id === pending.inviterSocketId)
-              : undefined;
+            const inviterSockets = onlineUsers[to];
+            if (!inviterSockets || inviterSockets.length === 0) return undefined;
 
-          const inviterSocket =
-            (inviterSocketRaw || inviterSockets[0]) as unknown as UserSocket;
-          const inviteeSocket = socket as unknown as UserSocket;
+            const inviterSocketRaw =
+              pending && !isStale
+                ? inviterSockets.find((s) => s.id === pending.inviterSocketId)
+                : undefined;
 
+            const inviterSocket =
+              (inviterSocketRaw || inviterSockets[0]) as unknown as UserSocket;
+            const inviteeSocket = socket as unknown as UserSocket;
+
+            try {
+              const res = await createRoomAndStartGame(io, inviterSocket, inviteeSocket);
+              return res?.roomId;
+            } catch {
+              return undefined;
+            } finally {
+              // One response completes the invite lifecycle.
+              pendingInvites.delete(key);
+            }
+          })();
+
+          inviteStartInFlight.set(key, startPromise);
           try {
-            const res = await createRoomAndStartGame(io, inviterSocket, inviteeSocket);
-            return res?.roomId;
-          } catch {
-            return undefined;
+            roomId = await startPromise;
           } finally {
-            // One response completes the invite lifecycle.
-            pendingInvites.delete(key);
+            inviteStartInFlight.delete(key);
           }
-        })();
+        }
 
-        inviteStartInFlight.set(key, startPromise);
-        try {
-          roomId = await startPromise;
-        } finally {
-          inviteStartInFlight.delete(key);
+        if (roomId) {
+          inviteCompleted.set(key, { roomId, createdAt: Date.now() });
         }
       }
     }
@@ -135,6 +156,7 @@ export function registerNotifSocket(
     if (status !== "accepted") {
       pendingInvites.delete(inviteKey(Number(to), Number(user.id)));
       inviteStartInFlight.delete(inviteKey(Number(to), Number(user.id)));
+      inviteCompleted.delete(inviteKey(Number(to), Number(user.id)));
     }
 
     if (onlineUsers[to]) {
