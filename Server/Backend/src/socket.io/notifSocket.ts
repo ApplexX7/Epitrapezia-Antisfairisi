@@ -1,5 +1,6 @@
 // notifSocket.ts
 import { Server, Socket } from "socket.io";
+import { createRoomAndStartGame, UserSocket } from "./gameSocket";
 
 interface OnlineUsers {
   [key: number]: Socket[];
@@ -52,9 +53,21 @@ export function registerNotifSocket(
   });
 
   // Response to a game invite (accept/decline)
-  socket.on("game:invite:response", (data: any) => {
+  socket.on("game:invite:response", async (data: any) => {
     const { to, status } = data || {};
     if (!to || !status) return;
+
+    let roomId: string | undefined;
+    if (status === "accepted" && onlineUsers[to] && onlineUsers[to].length > 0) {
+      const inviterSocket = onlineUsers[to][0] as unknown as UserSocket;
+      const inviteeSocket = socket as unknown as UserSocket;
+      try {
+        const res = await createRoomAndStartGame(io, inviterSocket, inviteeSocket);
+        roomId = res?.roomId;
+      } catch (e) {
+        console.error("Failed to start invite game", e);
+      }
+    }
 
     if (onlineUsers[to]) {
       for (const s of onlineUsers[to]) {
@@ -62,10 +75,11 @@ export function registerNotifSocket(
           type: "game-invite-response",
           message: `${user.username} ${status} your game invite`,
           from: { id: user.id, username: user.username },
-          payload: { status },
+          payload: { status, roomId },
           time: new Date().toISOString(),
         });
       }
     }
   });
 }
+

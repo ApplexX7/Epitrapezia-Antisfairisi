@@ -6,7 +6,7 @@ import { NavBar } from '@/components/Navbar'
 import { MagnifyingGlass , Bell} from "@phosphor-icons/react/ssr";
 import { CustomButton } from "@/components/CostumButton"
 import { NavigationMenuDemo } from "@/components/profileBar"
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useSocketStore } from "./hooks/SocketIOproviders";
 import api from "@/lib/axios";
@@ -25,6 +25,21 @@ export default function HomeNavBar (){
         const socket = useSocketStore((state: any) => state.socket);
         const unreadCount = notifications.filter((n: any) => !n.read).length;
         const router = useRouter();
+
+        useEffect(() => {
+            // If I invited someone and they accepted, auto-launch OnlinePong
+            const accepted = notifications.find(
+                (n: any) =>
+                    !n.read &&
+                    n.type === "game-invite-response" &&
+                    n.payload?.status === "accepted" &&
+                    n.payload?.roomId
+            );
+            if (!accepted) return;
+            toast.success("Invite accepted — starting match");
+            markAsRead(accepted.id);
+            router.push("/Home/Games/OnlinePong");
+        }, [notifications, markAsRead, router]);
 
         const handleFriendAction = async (notif: any, action: "accept" | "decline") => {
             if (!notif?.from?.id) return;
@@ -48,7 +63,7 @@ export default function HomeNavBar (){
             socket.emit("game:invite:response", { to: Number(notif.from.id), status });
             if (status === "accepted") {
                 toast.success("Launching games page");
-                router.push("/Home/Games");
+                router.push("/Home/Games/OnlinePong");
             } else {
                 toast("Invite declined", { icon: "✋" });
             }

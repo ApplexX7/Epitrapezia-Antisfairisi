@@ -2,7 +2,7 @@ import { Server, Socket } from "socket.io";
 import { v4 as uuidv4 } from "uuid";
 import { db, ensureGameStatsForPlayer } from "../databases/db";
 
-interface UserSocket extends Socket {
+export interface UserSocket extends Socket {
   user: {
     id: number;
     username: string;
@@ -25,6 +25,92 @@ interface GameRoom {
 
 let matchmakingQueue: UserSocket[] = [];
 const activeRooms: Record<string, GameRoom> = {};
+
+async function getAvatar(userId: number) {
+  return new Promise<string>((resolve) => {
+    db.get(
+      "SELECT avatar FROM players WHERE id = ?",
+      [userId],
+      (err: any, row: any) => {
+        if (err) {
+          console.error("Error fetching avatar for user", userId, err?.message || err);
+          return resolve("/images/player2.png");
+        }
+        resolve(row?.avatar ? row.avatar : "/images/player2.png");
+      }
+    );
+  });
+}
+
+export async function createRoomAndStartGame(
+  io: Server,
+  leftPlayer: UserSocket,
+  rightPlayer: UserSocket
+): Promise<{ roomId: string } | null> {
+  if (!leftPlayer?.user?.id || !rightPlayer?.user?.id) return null;
+  if (leftPlayer.user.id === rightPlayer.user.id) return null;
+
+  const roomId = `room-${uuidv4()}`;
+  const room: GameRoom = {
+    id: roomId,
+    players: [leftPlayer, rightPlayer],
+    // start with a slightly reduced ball speed
+    ball: { x: 0, y: 0, dx: 6, dy: 6 },
+    baseSpeed: { dx: 6, dy: 6 },
+    roundStart: Date.now(),
+    paddles: {
+      [leftPlayer.user.id]: 0,
+      [rightPlayer.user.id]: 0,
+    },
+    scores: {
+      [leftPlayer.user.id]: 0,
+      [rightPlayer.user.id]: 0,
+    },
+    paddleStep: 24,
+    loop: null,
+  };
+
+  activeRooms[roomId] = room;
+
+  // Remove both participants from matchmaking queue if present
+  matchmakingQueue = matchmakingQueue.filter(
+    (s) => s.id !== leftPlayer.id && s.id !== rightPlayer.id
+  );
+
+  leftPlayer.join(roomId);
+  rightPlayer.join(roomId);
+
+  const [leftAvatar, rightAvatar] = await Promise.all([
+    getAvatar(leftPlayer.user.id),
+    getAvatar(rightPlayer.user.id),
+  ]);
+
+  leftPlayer.emit("matched", {
+    opponent: {
+      id: rightPlayer.user.id,
+      username: rightPlayer.user.username,
+      avatar: rightAvatar,
+    },
+    role: "left",
+    roomId,
+  });
+
+  rightPlayer.emit("matched", {
+    opponent: {
+      id: leftPlayer.user.id,
+      username: leftPlayer.user.username,
+      avatar: leftAvatar,
+    },
+    role: "right",
+    roomId,
+  });
+
+  console.log(
+    `🏓 Room created: ${roomId} (${leftPlayer.user.username} vs ${rightPlayer.user.username})`
+  );
+  startGameLoop(io, room);
+  return { roomId };
+}
 
 // Function to update player level based on experience
 function updateLevel(playerId: number) {
@@ -149,73 +235,10 @@ export function registerGameSocket(io: Server, socket: UserSocket) {
     socket.emit("waiting", { message: "searching for opponent" });
   
     // match with first diff user
-    const opponent = matchmakingQueue.find(
-      (s) => s.user.id !== socket.user.id
-    );
+    const opponent = matchmakingQueue.find((s) => s.user.id !== socket.user.id);
     if (!opponent) return;
 
-  const roomId = `room-${uuidv4()}`;
-    const room: GameRoom = {
-      id: roomId,
-      players: [socket, opponent],
-      // start with a slightly reduced ball speed
-        ball: { x: 0, y: 0, dx: 6, dy: 6 },
-        baseSpeed: { dx: 6, dy: 6 },
-        roundStart: Date.now(),
-      paddles: {
-        [socket.user.id]: 0,
-        [opponent.user.id]: 0,
-      },
-      scores: {
-        [socket.user.id]: 0,
-        [opponent.user.id]: 0,
-      },
-      paddleStep: 24,
-      loop: null,
-    };
-
-  activeRooms[roomId] = room;
-  // remove both participants from the queue safely avoid splice(-1,1) edge case
-  matchmakingQueue = matchmakingQueue.filter((s) => s.id !== socket.id && s.id !== opponent.id);
-
-    socket.join(roomId);
-    opponent.join(roomId);
-
-    // get avatar from db , if not exist going back to default
-    const getAvatar = (userId: number) => new Promise<string>((resolve) => {
-      db.get(
-        "SELECT avatar FROM players WHERE id = ?",
-        [userId],
-        (err: any, row: any) => {
-          if (err) {
-            console.error("Error fetching avatar for user", userId, err?.message || err);
-            return resolve("/images/player2.png");
-          }
-          resolve((row && row.avatar) ? row.avatar : "/images/player2.png");
-        }
-      );
-    });
-
-    const [socketAvatar, opponentAvatar] = await Promise.all([
-      getAvatar(socket.user.id),
-      getAvatar(opponent.user.id),
-    ]);
-
-    socket.emit("matched", { 
-      opponent: { id: opponent.user.id, username: opponent.user.username, avatar: opponentAvatar },
-      role: "left",
-      roomId 
-    });
-    
-    opponent.emit("matched", { 
-      opponent: { id: socket.user.id, username: socket.user.username, avatar: socketAvatar },
-      role: "right",
-      roomId 
-    });
-
-    console.log(`🏓 Room created: ${roomId} (${socket.user.username} vs ${opponent.user.username})`);
-
-    startGameLoop(io, room);
+    await createRoomAndStartGame(io, socket, opponent);
   });
 
   socket.on("movePaddle", ({ roomId, direction }: { roomId: string; direction: "up" | "down" }) => {

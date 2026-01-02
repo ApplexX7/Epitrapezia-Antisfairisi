@@ -1,23 +1,13 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import { useSocketStore } from "@/components/hooks/SocketIOproviders";
+import { MatchedPayload, useSocketStore } from "@/components/hooks/SocketIOproviders";
 import { useAuth } from "@/components/hooks/authProvider";
 import RemoteBoard from "../LocalPong/RemoteBoard";
 import GameCostum from "./GameCostum";
 import RemoteScoreBoard from "./RemoteScoreBoard"
 import { Button } from "@/components/ui/button";
 import Link from 'next/link'
-
-type MatchedPayload = {
-  opponent: {
-    id: number;
-    username: string;
-    avatar: string;
-  };
-  roomId: string;
-  role: "left" | "right";
-};
 
 type WaitingPayload = {
   message: string;
@@ -44,7 +34,7 @@ export default function Page() {
     let [ballColor, setBallColor] = useState("default");
     let [paddleColor, setPaddleColor] = useState("default");
     let [gameDiff, setGameDiff] = useState("easy");
-  const { socket, isConnected } = useSocketStore();
+  const { socket, isConnected, lastMatched, clearLastMatched } = useSocketStore();
   const [playerName, setPlayerName] = useState<string | null>(null);
 const [opponentName, setOpponentName] = useState<string | null>(null);
 const [opponentAvatar, setOpponentAvatar] = useState<string | null>(null);
@@ -106,6 +96,17 @@ const [opponentAvatar, setOpponentAvatar] = useState<string | null>(null);
       socket.off("countdown", handleCountdown);
     };
   }, [socket]);
+
+  // If we arrived here after being matched (invite flow), consume the cached payload
+  useEffect(() => {
+    if (roomId || !lastMatched) return;
+    setStatus(`Matched with ${lastMatched.opponent.username}`);
+    setOpponentName(lastMatched.opponent.username);
+    setOpponentAvatar(lastMatched.opponent.avatar);
+    setRoomId(lastMatched.roomId);
+    setRole(lastMatched.role);
+    clearLastMatched();
+  }, [lastMatched, roomId, clearLastMatched]);
   let handleStopMatchMacking = () =>
     {
       setMatchupText("Join Matchup");
