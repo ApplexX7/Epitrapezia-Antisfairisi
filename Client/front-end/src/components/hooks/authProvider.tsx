@@ -5,18 +5,19 @@ import { useSocketStore } from "./SocketIOproviders";
 
 export type User = {
   id: number;
-  firstName: string;
-  lastName: string;
+  firstName?: string;
+  lastName?: string;
   username: string;
-  email: string;
+  email?: string;
   avatar: string;
-  des : string,
-  dateJoined: string,
-  exp: number,
-  level: number;
-  progression: number;
-  isFriend ?: boolean,
-  friendstatus ? : string,
+  des?: string,
+  dateJoined?: string,
+  exp?: number,
+  level?: number;
+  progression?: number;
+  isFriend?: boolean,
+  friendstatus?: string,
+  isOnline?: boolean,
 };
 
 type AuthState = {

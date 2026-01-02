@@ -34,7 +34,7 @@ export default function Home() {
   const [gameOver, setGameOver] = useState(false);
 
   useEffect(() => {
-    if (winner) {
+    if(winner) {
       if (winner.player === 'X') {
         const newScore = player1Score + 1;
         setPlayer1Score(newScore);

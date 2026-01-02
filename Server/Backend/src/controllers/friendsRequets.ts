@@ -35,10 +35,17 @@ export async function FriendRequest(req : FastifyRequest<{Body:{friendId : numbe
             db.get(`SELECT username FROM players WHERE id = ?`, [id], (err, row) => err ? reject(err) : resolve(row));
           });
         const io = Server.socket();
-        io.to(String(friendId)).emit("friend:request", {
-            from: { id, username: sender.username },
-            message: `${sender.username} sent you a friend request`
-          });
+                const payload = {
+                        from: { id, username: sender.username },
+                        message: `${sender.username} sent you a friend request`
+                    };
+                io.to(String(friendId)).emit("friend:request", payload);
+                io.to(String(friendId)).emit("notification", {
+                        type: "friend-request",
+                        message: payload.message,
+                        from: payload.from,
+                        time: new Date().toISOString(),
+                    });
         return reply.send({ success: true, message: "Friend request sent" });
     } catch(err){
         console.log(err);
@@ -67,6 +74,19 @@ export async function  AccepteFriendRequest(req : FastifyRequest<{Body: {friendI
                 (err) => (err ? reject(err) : resolve())
             );
         })
+
+        // Notify requester that their invite was accepted
+        const io = Server.socket();
+        const accepter = await new Promise<any>((resolve, reject) => {
+            db.get(`SELECT username FROM players WHERE id = ?`, [id], (err, row) => err ? reject(err) : resolve(row));
+          });
+
+        io.to(String(friendId)).emit("notification", {
+            type: "friend-accepted",
+            message: `${accepter?.username || "A friend"} accepted your request`,
+            from: { id, username: accepter?.username },
+            time: new Date().toISOString(),
+        });
         return reply.send({message : "Friend Request accepted succefully "})
     } catch(err){
         console.log(err)

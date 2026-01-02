@@ -9,6 +9,7 @@ interface ChatHeaderProps {
   onBackToChats: () => void;
   onBlock: () => void;
   onUnblock: () => void,
+  onInvite?: () => void;
   showBackButton?: boolean;
 }
 
@@ -20,6 +21,7 @@ export const ChatHeader = ({
   onBackToChats,
   onBlock = () => console.warn("onBlock not provided"),
   onUnblock,
+  onInvite = () => {},
   showBackButton = true
 }: ChatHeaderProps) => {
   return (
@@ -74,7 +76,10 @@ export const ChatHeader = ({
 
             <button 
               className="rounded-lg w-[150px] px-4 py-3 hover:bg-[#D1DAE9]/20 transition-colors border-white/10 mb-2 font-medium"
-              onClick={() => setShowMenu(false)}
+              onClick={() => {
+                onInvite();
+                setShowMenu(false);
+              }}
             >
               invite friends to game
             </button>
