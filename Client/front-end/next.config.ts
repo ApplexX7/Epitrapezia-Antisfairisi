@@ -9,6 +9,12 @@ const nextConfig = {
         pathname: "/uploads/**",
       },
       {
+        protocol: "http",
+        hostname: "server",
+        port: "8080",
+        pathname: "/uploads/**",
+      },
+      {
         protocol: "https",
         hostname: "lh3.googleusercontent.com",
         pathname: "/**",
