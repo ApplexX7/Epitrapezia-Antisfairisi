@@ -80,7 +80,16 @@ export default function Profile() {
         bg-gradient-to-r from-white-smoke to-white-smoke/60
         text-transparent bg-clip-text z-10" >{isOwnProfile ? 'My Account' : `${profileUser?.username}'s Profile`}</h1>
       <div className="-mt-4 grid grid-cols-4 
-        gap-5 w-full h-[calc(100vh-1rem)] p-5  auto-rows-min overflow-y-auto">
+        gap-5 w-full h-[calc(100vh-2rem)] p-5  auto-rows-min overflow-y-auto scrollbar-hide"
+        style={{
+          scrollbarWidth: 'none',
+          msOverflowStyle: 'none'
+        }}>
+        <style>{`
+          div::-webkit-scrollbar {
+            display: none;
+          }
+        `}</style>
           <BoxLayout className="w-full h-ful   card col-span-3 row-span-2">
             <Playerinfo user={profileUser}/>
           </BoxLayout>
