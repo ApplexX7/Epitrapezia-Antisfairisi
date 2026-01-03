@@ -75,7 +75,7 @@ export default function Profile() {
     fetchProfile();
   }, [profileUsername, currentUser]);
     return (
-      <div className="flex h-full w-full flex-col py-10">
+      <div className="flex h-full w-full flex-col py-10 scale-90 origin-top">
       <h1 className="pl-20 text-shadow-md text-4xl -mb-6 font-semibold
         bg-gradient-to-r from-white-smoke to-white-smoke/60
         text-transparent bg-clip-text z-10" >{isOwnProfile ? 'My Account' : `${profileUser?.username}'s Profile`}</h1>
