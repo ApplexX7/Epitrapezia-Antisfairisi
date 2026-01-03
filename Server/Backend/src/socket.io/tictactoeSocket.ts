@@ -11,6 +11,7 @@ interface TicTacToeRoom {
   scores: { [userId: number]: number };
   playerSymbols: { [userId: number]: "X" | "O" };
   recorded?: boolean;
+  recording?: boolean; // Lock to prevent concurrent DB writes
   roundWinner?: number | null;
   gameOver?: boolean;
 }
@@ -97,10 +98,18 @@ function isBoardFull(board: (string | null)[]): boolean {
   return board.every((cell) => cell !== null);
 }
 
-async function recordTicTacToeMatchResult(room: TicTacToeRoom, winnerId: number, loserId: number) {
-  if (room.recorded) return;
-  room.recorded = true;
+async function recordTicTacToeMatchResult(room: TicTacToeRoom, winnerId: number, loserId: number): Promise<boolean> {
+  // Race condition guards: check both flags atomically
+  if (room.recorded || room.recording) return false;
+  room.recording = true;
+  
   try {
+    // Validate player IDs
+    if (!winnerId || !loserId || winnerId === loserId) {
+      console.error('Invalid player IDs for TicTacToe match result:', { winnerId, loserId, roomId: room.id });
+      return false;
+    }
+
     await ensureGameStatsForPlayer(winnerId);
     await ensureGameStatsForPlayer(loserId);
 
@@ -144,24 +153,37 @@ async function recordTicTacToeMatchResult(room: TicTacToeRoom, winnerId: number,
     updateLevel(loserId);
 
     // Insert to game history
-    try {
-      const p1Id = room.players[0]?.user?.id;
-      const p2Id = room.players[1]?.user?.id;
+    const p1Id = room.players[0]?.user?.id;
+    const p2Id = room.players[1]?.user?.id;
+    
+    if (!p1Id || !p2Id) {
+      console.error('Missing player IDs for game history:', { p1Id, p2Id, roomId: room.id });
+    } else {
       const p1Score = room.scores[p1Id] ?? 0;
       const p2Score = room.scores[p2Id] ?? 0;
+
+      // Ensure winner_id is correct based on scores
+      let resolvedWinner = winnerId;
+      if (p1Score > p2Score) resolvedWinner = p1Id;
+      else if (p2Score > p1Score) resolvedWinner = p2Id;
 
       await new Promise<void>((resolve, reject) => {
         db.run(
           `INSERT INTO game_history (player1_id, player2_id, player1_score, player2_score, winner_id) VALUES (?, ?, ?, ?, ?)`,
-          [p1Id, p2Id, p1Score, p2Score, winnerId],
+          [p1Id, p2Id, p1Score, p2Score, resolvedWinner],
           (err: any) => (err ? reject(err) : resolve())
         );
       });
-    } catch (e) {
-      console.error('Failed to insert into game_history for tictactoe room', room.id, e);
     }
+
+    // Mark as successfully recorded
+    room.recorded = true;
+    return true;
   } catch (e) {
     console.error('Failed to record tictactoe match result for room', room.id, e);
+    return false;
+  } finally {
+    room.recording = false;
   }
 }
 
@@ -275,14 +297,30 @@ export function registerTicTacToeSocket(io: Server, socket: UserSocket) {
   });
 
   // Handle a move
-  socket.on("ttt:makeMove", ({ roomId, index }: { roomId: string; index: number }) => {
+  socket.on("ttt:makeMove", async ({ roomId, index }: { roomId: string; index: number }) => {
     const room = activeTicTacToeRooms[roomId];
-    if (!room) return;
+    if (!room) {
+      socket.emit("ttt:error", { message: "Room not found" });
+      return;
+    }
 
     // Verify the sender is a participant
     const playerIndex = room.players.findIndex((p) => p.id === socket.id);
     if (playerIndex === -1) {
       console.warn(`Unauthorized ttt:makeMove from ${socket.user?.username} for room ${roomId}`);
+      socket.emit("ttt:error", { message: "Not a participant in this game" });
+      return;
+    }
+
+    // Check if game is already over or being recorded
+    if (room.gameOver || room.recorded || room.recording) {
+      socket.emit("ttt:error", { message: "Game is already over" });
+      return;
+    }
+
+    // Check if round is already decided (waiting for next round)
+    if (room.roundWinner !== null && room.roundWinner !== undefined) {
+      socket.emit("ttt:error", { message: "Round already ended, wait for next round" });
       return;
     }
 
@@ -292,17 +330,15 @@ export function registerTicTacToeSocket(io: Server, socket: UserSocket) {
       return;
     }
 
-    // Check if cell is empty
-    if (room.board[index] !== null) {
-      socket.emit("ttt:error", { message: "Cell already taken!" });
+    // Validate index
+    if (typeof index !== 'number' || index < 0 || index > 8) {
+      socket.emit("ttt:error", { message: "Invalid cell index" });
       return;
     }
 
-    // Check if round/game is over
-    if (room.roundWinner !== null && room.roundWinner !== undefined) {
-      return;
-    }
-    if (room.gameOver) {
+    // Check if cell is empty
+    if (room.board[index] !== null) {
+      socket.emit("ttt:error", { message: "Cell already taken!" });
       return;
     }
 
@@ -322,12 +358,18 @@ export function registerTicTacToeSocket(io: Server, socket: UserSocket) {
       // Check if match is over (first to 3)
       if (room.scores[socket.user.id] >= 3) {
         room.gameOver = true;
-        const loserId = room.players.find((p) => p.user.id !== socket.user.id)?.user.id;
+        const loser = room.players.find((p) => p.user.id !== socket.user.id);
+        const loserId = loser?.user.id;
         
         if (loserId) {
-          recordTicTacToeMatchResult(room, socket.user.id, loserId).catch((e) => {
+          // Record match result - only winner and loser stored
+          try {
+            await recordTicTacToeMatchResult(room, socket.user.id, loserId);
+          } catch (e) {
             console.error('Failed to record TicTacToe match result:', e);
-          });
+          }
+        } else {
+          console.error('Could not find loser for TicTacToe match:', roomId);
         }
 
         io.to(roomId).emit("ttt:gameState", {
@@ -350,20 +392,24 @@ export function registerTicTacToeSocket(io: Server, socket: UserSocket) {
 
         // Clean up room after a delay
         setTimeout(() => {
-          delete activeTicTacToeRooms[roomId];
+          if (activeTicTacToeRooms[roomId]) {
+            delete activeTicTacToeRooms[roomId];
+          }
         }, 5000);
 
         return;
       }
     }
 
-    // Switch turn
-    room.currentTurn = room.currentTurn === 0 ? 1 : 0;
+    // Switch turn (only if round not won - draw or continuing play)
+    if (!winResult) {
+      room.currentTurn = room.currentTurn === 0 ? 1 : 0;
+    }
     const nextPlayer = room.players[room.currentTurn];
 
     io.to(roomId).emit("ttt:gameState", {
       board: room.board,
-      currentTurn: nextPlayer?.user.id ?? null,
+      currentTurn: winResult ? null : (nextPlayer?.user.id ?? null),
       scores: room.scores,
       playerSymbols: room.playerSymbols,
       winner: winResult ? { 
@@ -406,14 +452,21 @@ export function registerTicTacToeSocket(io: Server, socket: UserSocket) {
   });
 
   // Handle explicit leave game (player navigates away, clicks leave, etc.)
-  socket.on("ttt:leaveGame", ({ roomId }: { roomId: string }) => {
+  socket.on("ttt:leaveGame", async ({ roomId }: { roomId: string }) => {
     const room = activeTicTacToeRooms[roomId];
     if (!room) return;
 
     const playerIndex = room.players.findIndex((p) => p.id === socket.id);
     if (playerIndex === -1) return;
 
+    // Prevent duplicate processing
+    if (room.gameOver || room.recorded || room.recording) {
+      socket.leave(roomId);
+      return;
+    }
+
     console.log(`🚪 ${socket.user.username} left TicTacToe game ${roomId}`);
+    room.gameOver = true;
 
     // Notify opponent and end game
     const other = room.players.find((p) => p.id !== socket.id);
@@ -424,29 +477,41 @@ export function registerTicTacToeSocket(io: Server, socket: UserSocket) {
       winner: other ? { id: other.user.id, username: other.user.username } : null
     });
 
-    // Record result: other player wins
-    if (other && !room.recorded) {
-      recordTicTacToeMatchResult(room, other.user.id, socket.user.id).catch((e) => {
+    // Record result: other player wins - only winner and loser stored
+    if (other?.user?.id && socket.user?.id) {
+      try {
+        await recordTicTacToeMatchResult(room, other.user.id, socket.user.id);
+      } catch (e) {
         console.error('Error recording TicTacToe leave result:', e);
-      });
+      }
     }
 
     // Leave socket room
-    socket.leave(roomId);
+    try {
+      socket.leave(roomId);
+    } catch (e) {
+      // Socket may already be disconnected
+    }
     
     // Clean up the room
     delete activeTicTacToeRooms[roomId];
   });
 
   // Handle forfeit/surrender
-  socket.on("ttt:forfeit", ({ roomId }: { roomId: string }) => {
+  socket.on("ttt:forfeit", async ({ roomId }: { roomId: string }) => {
     const room = activeTicTacToeRooms[roomId];
     if (!room) return;
 
     const playerIndex = room.players.findIndex((p) => p.id === socket.id);
     if (playerIndex === -1) return;
 
+    // Prevent duplicate processing
+    if (room.gameOver || room.recorded || room.recording) {
+      return;
+    }
+
     console.log(`🏳️ ${socket.user.username} forfeited TicTacToe game ${roomId}`);
+    room.gameOver = true;
 
     const other = room.players.find((p) => p.id !== socket.id);
 
@@ -457,18 +522,20 @@ export function registerTicTacToeSocket(io: Server, socket: UserSocket) {
       forfeit: true
     });
 
-    // Record result: other player wins
-    if (other && !room.recorded) {
-      recordTicTacToeMatchResult(room, other.user.id, socket.user.id).catch((e) => {
+    // Record result: other player wins - only winner and loser stored
+    if (other?.user?.id && socket.user?.id) {
+      try {
+        await recordTicTacToeMatchResult(room, other.user.id, socket.user.id);
+      } catch (e) {
         console.error('Error recording TicTacToe forfeit result:', e);
-      });
+      }
     }
 
     delete activeTicTacToeRooms[roomId];
   });
 
   // Handle disconnect
-  socket.on("disconnect", () => {
+  socket.on("disconnect", async () => {
     // Remove from matchmaking queue
     const idx = tictactoeMatchmakingQueue.indexOf(socket);
     if (idx !== -1) tictactoeMatchmakingQueue.splice(idx, 1);
@@ -477,21 +544,28 @@ export function registerTicTacToeSocket(io: Server, socket: UserSocket) {
     for (const [id, room] of Object.entries(activeTicTacToeRooms)) {
       const playerIndex = room.players.findIndex((p) => p.id === socket.id);
       if (playerIndex !== -1) {
+        // Prevent duplicate processing - check all race condition flags
+        if (room.gameOver || room.recorded || room.recording) {
+          // Room already being processed, just clean up
+          delete activeTicTacToeRooms[id];
+          continue;
+        }
+
+        room.gameOver = true;
+
         io.to(id).emit("ttt:gameOver", { 
           message: `${socket.user.username} disconnected`,
           disconnected: socket.user.id 
         });
 
-        // Record result: other player wins
-        try {
-          const other = room.players.find((p) => p.id !== socket.id);
-          if (other && !room.recorded) {
-            recordTicTacToeMatchResult(room, other.user.id, socket.user.id).catch((e) => {
-              console.error('Error recording TicTacToe disconnect result:', e);
-            });
+        // Record result: other player wins - only winner and loser stored
+        const other = room.players.find((p) => p.id !== socket.id);
+        if (other?.user?.id && socket.user?.id) {
+          try {
+            await recordTicTacToeMatchResult(room, other.user.id, socket.user.id);
+          } catch (e) {
+            console.error('Error recording TicTacToe disconnect result for room', id, e);
           }
-        } catch (e) {
-          console.error('Error handling TicTacToe disconnect for room', id, e);
         }
 
         delete activeTicTacToeRooms[id];
