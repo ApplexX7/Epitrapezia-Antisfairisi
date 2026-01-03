@@ -62,6 +62,22 @@ export async function  AccepteFriendRequest(req : FastifyRequest<{Body: {friendI
     if (!friendId)
         return reply.code(400).send({ message: "Missing friendId" });
     try {
+        // Check if the friend request exists
+        const existing = await new Promise<any>((resolve, reject) => {
+            db.get(
+                `SELECT * FROM friends
+                WHERE ((player_id = ? AND friend_id = ?) 
+                OR (player_id = ? AND friend_id = ?))
+                AND status = 'pending'`,
+                [id, friendId, friendId, id],
+                (err, row) => (err ? reject(err) : resolve(row))
+            );
+        });
+
+        if (!existing) {
+            return reply.code(404).send({message : "Friend request not found or already handled"});
+        }
+
         const update = await new Promise<void>((resolve, reject) => {
             db.run(
                 `
@@ -114,6 +130,20 @@ export async function RemoveFriendRequest(req : FastifyRequest<{Body:{friendId :
                 (err) => err ? reject(err) : resolve()
             );
         })
+        
+        // Notify the other user that the friend request was cancelled/removed
+        const io = Server.socket();
+        const remover = await new Promise<any>((resolve, reject) => {
+            db.get(`SELECT username FROM players WHERE id = ?`, [id], (err, row) => err ? reject(err) : resolve(row));
+        });
+        
+        io.to(String(friendId)).emit("notification", {
+            type: "friend-request-cancelled",
+            message: `Friend request was cancelled`,
+            from: { id, username: remover?.username },
+            time: new Date().toISOString(),
+        });
+        
         return reply.send({ message : "Friend Request rejected successfully"});
     }catch (err){
         return reply.code(500).send({mesage : `Database Error : ${err}`})

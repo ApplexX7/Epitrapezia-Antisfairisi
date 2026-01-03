@@ -26,6 +26,11 @@ export default function HomeNavBar (){
         const unreadCount = notifications.filter((n: any) => !n.read).length;
         const router = useRouter();
 
+        const handleDismiss = (notifId: string) => {
+            const updatedNotifications = notifications.filter((n: any) => n.id !== notifId);
+            useSocketStore.setState({ notifications: updatedNotifications });
+        };
+
         const handleFriendAction = async (notif: any, action: "accept" | "decline") => {
             if (!notif?.from?.id) return;
             try {
@@ -46,7 +51,15 @@ export default function HomeNavBar (){
                 useSocketStore.setState({ notifications: updatedNotifications });
             } catch (err: any) {
                 console.error("Failed to update friend request", err?.response?.data || err);
-                toast.error(err?.response?.data?.message || "Action failed");
+                // If the request no longer exists (404), remove the notification
+                if (err?.response?.status === 404) {
+                    const notifications = useSocketStore.getState().notifications;
+                    const updatedNotifications = notifications.filter((n: any) => n.id !== notif.id);
+                    useSocketStore.setState({ notifications: updatedNotifications });
+                    toast.error("This friend request no longer exists");
+                } else {
+                    toast.error(err?.response?.data?.message || "Action failed");
+                }
             }
         };
 
@@ -214,7 +227,7 @@ export default function HomeNavBar (){
                                                         {n.type === "friend-request-handled" && (
                                                             <button
                                                                 className="w-full bg-gray-200 rounded-md py-1 text-sm text-black hover:bg-gray-300"
-                                                                onClick={() => markAsRead(n.id)}
+                                                                onClick={() => handleDismiss(n.id)}
                                                             >
                                                                 Dismiss
                                                             </button>
@@ -239,8 +252,8 @@ export default function HomeNavBar (){
 
                                                         {n.type === "friend-accepted" && (
                                                             <button
-                                                                className="w-full bg-gray-200 rounded-md py-1 text-sm text-black"
-                                                                onClick={() => markAsRead(n.id)}
+                                                                className="w-full bg-gray-200 rounded-md py-1 text-sm text-black hover:bg-gray-300"
+                                                                onClick={() => handleDismiss(n.id)}
                                                             >
                                                                 Dismiss
                                                             </button>

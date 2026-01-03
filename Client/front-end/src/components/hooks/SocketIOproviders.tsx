@@ -21,6 +21,7 @@ interface SocketStore {
   initSocket: (user: User, token: string) => void;
   disconnectSocket: () => void;
   addNotification: (notif: Notification) => void;
+  removeNotification: (fromUserId: string) => void;
   markAsRead: (id: string) => void;
   markAllAsRead: () => void;
   clearNotifications: () => void;
@@ -64,6 +65,12 @@ export const useSocketStore = create<SocketStore>((set, get) => ({
 
     // Incoming notifications from server
     socket.on("notification", (notif: any) => {
+      // Handle friend request cancellation by removing the pending notification
+      if (notif.type === "friend-request-cancelled" && notif.from?.id) {
+        get().removeNotification(String(notif.from.id));
+        return;
+      }
+
       const newNotif: Notification = {
         id: notif.id || `${notif.type}-${Date.now()}`,
         type: notif.type,
@@ -85,21 +92,6 @@ export const useSocketStore = create<SocketStore>((set, get) => ({
       );
     });
 
-    // Legacy friend request event
-    socket.on("friend:request", (payload: any) => {
-      const newNotif: Notification = {
-        id: `friend-request-${payload?.from?.id}-${Date.now()}`,
-        type: "friend-request",
-        message: payload?.message || "You have a new friend request",
-        from: payload?.from,
-        time: new Date().toISOString(),
-        read: false,
-      };
-
-      get().addNotification(newNotif);
-      toast(`📨 New friend request from ${payload?.from?.username || "Unknown"}`);
-    });
-
     set({ socket });
   },
 
@@ -114,6 +106,13 @@ export const useSocketStore = create<SocketStore>((set, get) => ({
   addNotification: (notif: Notification) =>
     set((state) => ({
       notifications: [notif, ...state.notifications],
+    })),
+
+  removeNotification: (fromUserId: string) =>
+    set((state) => ({
+      notifications: state.notifications.filter(
+        (n) => n.type !== "friend-request" || n.from?.id !== fromUserId
+      ),
     })),
 
   markAsRead: (id: string) =>
