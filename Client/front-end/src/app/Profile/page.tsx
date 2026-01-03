@@ -80,7 +80,7 @@ export default function Profile() {
         bg-gradient-to-r from-white-smoke to-white-smoke/60
         text-transparent bg-clip-text z-10" >{isOwnProfile ? 'My Account' : `${profileUser?.username}'s Profile`}</h1>
       <div className="-mt-4 grid grid-cols-4 
-        gap-5 w-full h-[calc(100vh-2rem)] p-5  auto-rows-min overflow-y-auto scrollbar-hide"
+        gap-5 w-full h-[calc(100vh-0.5rem)] p-5  auto-rows-min overflow-y-auto scrollbar-hide"
         style={{
           scrollbarWidth: 'none',
           msOverflowStyle: 'none'
