@@ -81,7 +81,7 @@ export default function Home() {
             <h1 className="text-white-smoke text-shadow-md ml-10 text-2xl font-semibold">
               Recent Games
             </h1>
-            <div className="card w-full h-[22rem] flex flex-col overflow-y-auto">
+            <div className="card w-full h-56 flex flex-col overflow-y-auto">
               <GameHistory playerId={user?.id || 0} />
             </div>
           </div>
