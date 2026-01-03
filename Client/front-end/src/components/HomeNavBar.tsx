@@ -36,7 +36,14 @@ export default function HomeNavBar (){
                     await api.post("/friends/Remove", { friendId: notif.from.id });
                     toast("Friend request declined", { icon: "👋" });
                 }
+                // Update notification to show dismiss button instead of action buttons
                 markAsRead(notif.id);
+                // Update the notification type to indicate it's been handled
+                const notifications = useSocketStore.getState().notifications;
+                const updatedNotifications = notifications.map((n: any) =>
+                    n.id === notif.id ? { ...n, type: "friend-request-handled" } : n
+                );
+                useSocketStore.setState({ notifications: updatedNotifications });
             } catch (err: any) {
                 console.error("Failed to update friend request", err?.response?.data || err);
                 toast.error(err?.response?.data?.message || "Action failed");
@@ -202,6 +209,15 @@ export default function HomeNavBar (){
                                                                     Decline
                                                                 </button>
                                                             </div>
+                                                        )}
+
+                                                        {n.type === "friend-request-handled" && (
+                                                            <button
+                                                                className="w-full bg-gray-200 rounded-md py-1 text-sm text-black hover:bg-gray-300"
+                                                                onClick={() => markAsRead(n.id)}
+                                                            >
+                                                                Dismiss
+                                                            </button>
                                                         )}
 
                                                         {n.type === "game-invite" && (
