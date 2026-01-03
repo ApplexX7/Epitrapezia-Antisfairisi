@@ -76,21 +76,15 @@ export default function Profile() {
   }, [profileUsername, currentUser]);
     return (
       <div className="flex h-full w-full flex-col py-10 scale-90 origin-top">
-      <h1 className="pl-20 text-shadow-md text-4xl -mb-6 font-semibold
-        bg-gradient-to-r from-white-smoke to-white-smoke/60
-        text-transparent bg-clip-text z-10" >{isOwnProfile ? 'My Account' : `${profileUser?.username}'s Profile`}</h1>
       <div className="-mt-4 grid grid-cols-4 
-        gap-5 w-full h-[calc(100vh-3rem)] p-5  auto-rows-min overflow-y-auto">
+        gap-5 w-full h-[calc(100vh-3rem)] p-5  auto-rows-min overflow-y-auto scrollbar-hide"
+        style={{
+          scrollbarWidth: 'none',
+          msOverflowStyle: 'none'
+        }}>
         <style>{`
           div::-webkit-scrollbar {
-            width: 8px;
-          }
-          div::-webkit-scrollbar-track {
-            background: transparent;
-          }
-          div::-webkit-scrollbar-thumb {
-            background: #8b7f9a;
-            border-radius: 4px;
+            display: none;
           }
         `}</style>
           <BoxLayout className="w-full h-ful   card col-span-3 row-span-2">
