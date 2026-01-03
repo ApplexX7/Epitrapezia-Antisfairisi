@@ -13,6 +13,7 @@ import { useAuth } from "./hooks/authProvider"
 import api from "@/lib/axios"
 import toast from "react-hot-toast"
 import { useSocketStore } from "./hooks/SocketIOproviders"
+import { getAvatarUrl } from "@/lib/utils"
   
 export function NavigationMenuDemo() {
     const disconnectSocket = useSocketStore((state) => state.disconnectSocket);
@@ -41,13 +42,12 @@ export function NavigationMenuDemo() {
                 <div className="cursor-pointer w-[84px] h-full rounded-full 
                 overflow-hidden shadow-[2px_1px_2px_1px_rgba(0,0,0,0.2)] hover:opacity-85 ">
                     <Image
-                    src={user?.avatar ?? "/images/defaultAvatare.jpg"}
+                  src={getAvatarUrl(user?.avatar)}
                     width={84}
                     height={84}
                     alt="Avatar"
                     className="w-full h-full object-cover"
-                    priority
-                    />
+                    priority                    unoptimized                    />
                 </div>
             </NavigationMenuTrigger>
             <NavigationMenuContent className="bg-[#100C46] backdrop-blur-none

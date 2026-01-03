@@ -1,6 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   images: {
+    qualities: [50, 75, 100],
     remotePatterns: [
       {
         protocol: "http",
@@ -12,6 +13,11 @@ const nextConfig = {
         protocol: "http",
         hostname: "server",
         port: "8080",
+        pathname: "/uploads/**",
+      },
+      {
+        protocol: "https",
+        hostname: "**.app.github.dev",
         pathname: "/uploads/**",
       },
       {

@@ -5,6 +5,7 @@ import rateLimit from  '@fastify/rate-limit';
 import fastifyMultipart from '@fastify/multipart';
 import fastifyStatic from '@fastify/static';
 import path from 'path';
+import fs from 'fs';
 
 export class Server {
   private static readonly port = 8080;
@@ -21,11 +22,21 @@ export class Server {
         },
       });
 
-      // Serve static files from uploads directory
+      // Ensure uploads directory exists BEFORE registering fastifyStatic
+      const uploadsPath = path.join(process.cwd(), 'uploads');
+      if (!fs.existsSync(uploadsPath)) {
+        fs.mkdirSync(uploadsPath, { recursive: true });
+        console.log(`✅ Created uploads directory: ${uploadsPath}`);
+      } else {
+        console.log(`📁 Uploads directory exists: ${uploadsPath}`);
+      }
+
+      // Serve static files from uploads directory (use process.cwd() for reliable path)
       await this.serv.register(fastifyStatic, {
-        root: path.join(__dirname, 'uploads'),
+        root: uploadsPath,
         prefix: '/uploads/',
       });
+      console.log(`🖼️ FastifyStatic registered - serving /uploads from ${uploadsPath}`);
       
       await this.serv.register(rateLimit, {
         max: 100,

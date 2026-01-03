@@ -8,8 +8,33 @@ export function cn(...inputs: ClassValue[]) {
 
 export function getAvatarUrl(avatar?: string): string {
   if (!avatar) return "/images/defaultAvatare.jpg";
-  if (avatar.startsWith('http') || avatar.startsWith('/images/')) return avatar;
-  return `http://localhost:8080${avatar}`;
+  // Keep image paths as-is
+  if (avatar.startsWith("/images/")) return avatar;
+
+  // Strip localhost/server host and extract path for /uploads
+  let path = avatar;
+  if (avatar.startsWith("http://localhost") || avatar.startsWith("http://server")) {
+    const url = new URL(avatar, "http://localhost");
+    path = url.pathname + (url.search || "");
+  }
+
+  // For /uploads paths, use absolute URL with current host so it goes through reverse proxy
+  if (path.startsWith("/uploads")) {
+    if (typeof window !== "undefined") {
+      const { protocol, hostname, port } = window.location;
+      return `${protocol}//${hostname}${port ? ':' + port : ''}${path}`;
+    }
+    return path; // Server-side fallback
+  }
+
+  // Keep full http/https URLs as-is
+  if (avatar.startsWith("http")) return avatar;
+
+  // Use env base if configured, otherwise return relative path
+  const envBase = process.env.NEXT_PUBLIC_API_BASE?.replace(/\/$/, "");
+  if (envBase) return `${envBase}${avatar}`;
+
+  return avatar;
 }
 
 export type BoxLayoutProps = {

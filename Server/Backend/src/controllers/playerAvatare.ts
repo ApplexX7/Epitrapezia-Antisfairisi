@@ -20,7 +20,8 @@ export function playerAvatar() {
           .send({ message: "Only image files are allowed" });
       }
 
-      const uploadsDir = path.join(__dirname, "uploads");
+      // Use process.cwd() for reliable path in both ts-node and build
+      const uploadsDir = path.join(process.cwd(), "uploads");
       if (!fs.existsSync(uploadsDir)) {
         fs.mkdirSync(uploadsDir, { recursive: true });
       }
@@ -34,7 +35,7 @@ export function playerAvatar() {
       });
 
       if (oldAvatar) {
-        const oldPath = path.join(__dirname, oldAvatar);
+        const oldPath = path.join(uploadsDir, path.basename(oldAvatar));
         if (fs.existsSync(oldPath)) {
           fs.unlinkSync(oldPath);
         }

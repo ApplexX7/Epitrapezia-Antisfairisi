@@ -1,6 +1,7 @@
 "use client";
 import { BoxLayout } from '@/components/BoxLayout'
 import GameHistory from '@/components/GameHistory'
+import PendingFriendRequests from '@/components/PendingFriendRequests'
 import React from "react";
 import BarProgressionLevel  from '@/components/BarProgressionLevel'
 import {ChartLineDefault} from '@/components/LineChart'
@@ -39,6 +40,9 @@ export default function Home() {
       >
        {`Welcome ${user?.username}`}
       </h1>
+      <div className="p-5 w-full">
+        <PendingFriendRequests />
+      </div>
       <div className="-mt-4 grid grid-cols-4 
         gap-5 w-full h-[calc(100%-232px)] p-5  auto-rows-min">
         <BoxLayout className="grid grid-cols-1 xl:grid-cols-3 row-span-10 gap-5 col-span-4">

@@ -12,8 +12,8 @@ export function updatePassword() {
       if (!authUser?.id) return reply.code(401).send({ message: "Unauthorized" });
 
       const { currentPassword, newPassword } = req.body;
-      if (!currentPassword || !newPassword) {
-        return reply.code(400).send({ message: "currentPassword and newPassword are required" });
+      if (!newPassword) {
+        return reply.code(400).send({ message: "newPassword is required" });
       }
 
       if (newPassword.length < 8) {
@@ -28,14 +28,31 @@ export function updatePassword() {
 
       if (!user) return reply.code(404).send({ message: "User not found" });
 
-      const match = await bcrypt.compare(currentPassword, user.password);
-      if (!match) return reply.code(400).send({ message: "Current password is incorrect" });
+      // Check if user is purely Google-authenticated (no local password set yet)
+      const providers = (user.auth_Provider || "local").split(",").map((p: string) => p.trim());
+      const isGoogleOnly = providers.includes("google") && !providers.includes("local");
+
+      // For non-Google users or users with existing local password, verify current password
+      if (!isGoogleOnly) {
+        if (!currentPassword) {
+          return reply.code(400).send({ message: "currentPassword is required" });
+        }
+        const match = await bcrypt.compare(currentPassword, user.password);
+        if (!match) return reply.code(400).send({ message: "Current password is incorrect" });
+      }
 
       const hashed = await bcrypt.hash(newPassword, 10);
+      
+      // Update auth providers to include "local" if only Google before
+      let newAuthProvider = user.auth_Provider;
+      if (isGoogleOnly) {
+        newAuthProvider = "google,local";
+      }
+
       await new Promise<void>((resolve, reject) => {
         db.run(
-          "UPDATE players SET password = ? WHERE id = ?",
-          [hashed, authUser.id],
+          "UPDATE players SET password = ?, auth_Provider = ? WHERE id = ?",
+          [hashed, newAuthProvider, authUser.id],
           (err) => (err ? reject(err) : resolve())
         );
       });

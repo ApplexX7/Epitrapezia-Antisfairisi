@@ -24,11 +24,15 @@ export default function Home() {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [twoFactorEnabled, setTwoFactorEnabled] = useState(user?.twoFactorEnabled || false);
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const originalAvatar = getAvatarUrl(user?.avatar);
 
   const isFormValid = firstName.trim() !== '' && lastName.trim() !== '' && bio.trim() !== '';
-  const isPasswordFormValid = currentPassword.trim() !== '' && newPassword.trim() !== '' && confirmPassword.trim() !== '' && newPassword === confirmPassword && newPassword.length >= 8;
+  // User is Google-only if they have Google but no local password yet
+  const isGoogleOnly = user?.authProvider?.includes('google') && !user?.authProvider?.includes('local');
+  // For Google-only users, only need new password fields. For others, need current password too.
+  const isPasswordFormValid = newPassword.trim() !== '' && confirmPassword.trim() !== '' && newPassword === confirmPassword && newPassword.length >= 8 && (!isGoogleOnly || !currentPassword.trim() === '') && (isGoogleOnly || currentPassword.trim() !== '');
 
   const handleUploadClick = () => {
     fileInputRef.current?.click();
@@ -60,34 +64,50 @@ export default function Home() {
     setBioLength(value.length);
   };
 
+  const handleSaveAvatar = async () => {
+    if (!uploadedFile) return;
+
+    setIsUploadingAvatar(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', uploadedFile);
+      
+      const avatarRes = await api.post('/settings/avatar', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      
+      // Update avatar in user state with cache-busting timestamp
+      if (avatarRes.data?.avatar || avatarRes.data?.avatarUrl) {
+        const raw = avatarRes.data.avatarUrl || avatarRes.data.avatar;
+        const baseUrl = getAvatarUrl(raw);
+        const timestamp = new Date().getTime();
+        const newAvatarUrl = `${baseUrl}?t=${timestamp}`;
+
+        useAuth.getState().updateUser({ avatar: newAvatarUrl });
+
+        // Keep showing the newly uploaded image in the UI immediately
+        setDisplayedImage(newAvatarUrl);
+      }
+      
+      toast.success('Avatar uploaded successfully!');
+      setUploadedFile(null);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || 'Failed to upload avatar');
+    } finally {
+      setIsUploadingAvatar(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
     try {
-      // Upload avatar if file was selected
-      if (uploadedFile) {
-        const formData = new FormData();
-        formData.append('file', uploadedFile);
-        
-        const avatarRes = await api.post('/settings/avatar', formData, {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-          },
-        });
-        
-        // Update avatar in user state with cache-busting timestamp
-        if (avatarRes.data?.avatar) {
-          const timestamp = new Date().getTime();
-          useAuth.getState().updateUser({
-            avatar: `${avatarRes.data.avatar}?t=${timestamp}`
-          });
-        }
-        
-        setUploadedFile(null);
-        setDisplayedImage(null);
-      }
-      
-      // Update profile info
+      // Update profile info only (avatar is now handled separately)
       const res = await api.put('/settings/profile', {
         firstName: firstName.trim(),
         lastName: lastName.trim(),
@@ -168,6 +188,7 @@ export default function Home() {
            width={500} 
            height={500}
            priority
+           unoptimized
            key={user?.avatar}/>
            <div className="w-full flex h-fit items-center justify-between self-start">
             <p className="text-lg ml-5 font-semibold self-center ">Profile picture</p>
@@ -180,28 +201,49 @@ export default function Home() {
                       accept="image/*"
                       className="hidden"
                     />
-                    <button 
-                      type="button" 
-                      onClick={handleUploadClick}
-                      className="py-2 px-3 inline-flex items-center 
-                      gap-x-2 text-xs font-medium rounded-lg border border-transparent 
-                      bg-purple-nave text-white hover:bg-blue-700 focus:outline-hidden 
-                      focus:bg-blue-700 disabled:opacity-50 disabled:pointer-events-none">
-                      <svg className="shrink-0 size-4" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                        <polyline points="17 8 12 3 7 8"></polyline>
-                        <line x1="12" x2="12" y1="3" y2="15"></line>
-                      </svg>
-                      Upload photo
-                    </button>
-                    <button 
-                      type="button" 
-                      onClick={handleDelete}
-                      className="py-2 px-3 inline-flex items-center 
-                      gap-x-2 text-xs font-semibold rounded-lg border border-gray-200 bg-white text-gray-500 shadow-2xs hover:bg-gray-50 focus:outline-hidden focus:bg-gray-50 disabled:opacity-50 disabled:pointer-events-none dark:bg-neutral-900 dark:border-neutral-700 dark:text-neutral-400 
-                      dark:hover:bg-neutral-800 dark:focus:bg-neutral-800">
-                        Delete
-                      </button>
+                    {!uploadedFile ? (
+                      <>
+                        <button 
+                          type="button" 
+                          onClick={handleUploadClick}
+                          className="py-2 px-3 inline-flex items-center 
+                          gap-x-2 text-xs font-medium rounded-lg border border-transparent 
+                          bg-purple-nave text-white hover:bg-blue-700 focus:outline-hidden 
+                          focus:bg-blue-700 disabled:opacity-50 disabled:pointer-events-none">
+                          <svg className="shrink-0 size-4" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                            <polyline points="17 8 12 3 7 8"></polyline>
+                            <line x1="12" x2="12" y1="3" y2="15"></line>
+                          </svg>
+                          Upload photo
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <button 
+                          type="button" 
+                          onClick={handleSaveAvatar}
+                          disabled={isUploadingAvatar}
+                          className="py-2 px-3 inline-flex items-center 
+                          gap-x-2 text-xs font-medium rounded-lg border border-transparent 
+                          bg-green-600 text-white hover:bg-green-700 focus:outline-hidden 
+                          focus:bg-green-700 disabled:opacity-50 disabled:pointer-events-none">
+                          <svg className="shrink-0 size-4" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <polyline points="20 6 9 17 4 12"></polyline>
+                          </svg>
+                          {isUploadingAvatar ? 'Saving...' : 'Save Avatar'}
+                        </button>
+                        <button 
+                          type="button" 
+                          onClick={handleDelete}
+                          disabled={isUploadingAvatar}
+                          className="py-2 px-3 inline-flex items-center 
+                          gap-x-2 text-xs font-semibold rounded-lg border border-gray-200 bg-white text-gray-500 shadow-2xs hover:bg-gray-50 focus:outline-hidden focus:bg-gray-50 disabled:opacity-50 disabled:pointer-events-none dark:bg-neutral-900 dark:border-neutral-700 dark:text-neutral-400 
+                          dark:hover:bg-neutral-800 dark:focus:bg-neutral-800">
+                            Cancel
+                          </button>
+                      </>
+                    )}
                   </div>
                 </div>
            </div>
@@ -351,18 +393,25 @@ export default function Home() {
             className="w-full" 
             onSubmit={handlePasswordSubmit}>
             <div className="w-full flex flex-col gap-4">
-              <div className="flex flex-col gap-2">
-                <label className="font-semibold" htmlFor="currentPassword">Current Password</label>
-                <input 
-                  type="password" 
-                  id="currentPassword" 
-                  name="currentPassword" 
-                  value={currentPassword}
-                  onChange={(e) => setCurrentPassword(e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-nave"
-                  placeholder="Enter your current password"
-                />
-              </div>
+              {!isGoogleOnly && (
+                <div className="flex flex-col gap-2">
+                  <label className="font-semibold" htmlFor="currentPassword">Current Password</label>
+                  <input 
+                    type="password" 
+                    id="currentPassword" 
+                    name="currentPassword" 
+                    value={currentPassword}
+                    onChange={(e) => setCurrentPassword(e.target.value)}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-nave"
+                    placeholder="Enter your current password"
+                  />
+                </div>
+              )}
+              {isGoogleOnly && (
+                <div className="text-sm text-blue-600 bg-blue-50 p-3 rounded-lg">
+                  💡 Since you registered with Google, you can create a password to enable local login. You'll be able to use both Google and password to login.
+                </div>
+              )}
               
               <div className="flex flex-col md:flex-row gap-4">
                 <div className="flex-1 flex flex-col gap-2">

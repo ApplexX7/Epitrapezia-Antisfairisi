@@ -23,6 +23,7 @@ export default function Playerinfo({ user }: { user?: User }){
           className="rounded-full object-cover"
           quality={100}
           priority
+          unoptimized
           key={user?.avatar}
         />
         <p className="text-black font-medium text-wrap text-center ">
