@@ -1,6 +1,6 @@
 import { Server, Socket } from "socket.io";
 import { v4 as uuidv4 } from "uuid";
-import { db, ensureGameStatsForPlayer } from "../databases/db";
+import { db, ensureTicTacToeStatsForPlayer } from "../databases/db";
 import { UserSocket } from "./gameSocket";
 
 interface TicTacToeRoom {
@@ -110,22 +110,22 @@ async function recordTicTacToeMatchResult(room: TicTacToeRoom, winnerId: number,
       return false;
     }
 
-    await ensureGameStatsForPlayer(winnerId);
-    await ensureGameStatsForPlayer(loserId);
+    await ensureTicTacToeStatsForPlayer(winnerId);
+    await ensureTicTacToeStatsForPlayer(loserId);
 
-    // Update winner stats
+    // Update winner stats in tictactoe_stats table
     await new Promise<void>((resolve, reject) => {
       db.run(
-        `UPDATE game_stats SET total_games = total_games + 1, wins = wins + 1, updated_at = CURRENT_TIMESTAMP WHERE player_id = ?`,
+        `UPDATE tictactoe_stats SET total_games = total_games + 1, wins = wins + 1, updated_at = CURRENT_TIMESTAMP WHERE player_id = ?`,
         [winnerId],
         (err: any) => (err ? reject(err) : resolve())
       );
     });
 
-    // Update loser stats
+    // Update loser stats in tictactoe_stats table
     await new Promise<void>((resolve, reject) => {
       db.run(
-        `UPDATE game_stats SET total_games = total_games + 1, losses = losses + 1, updated_at = CURRENT_TIMESTAMP WHERE player_id = ?`,
+        `UPDATE tictactoe_stats SET total_games = total_games + 1, losses = losses + 1, updated_at = CURRENT_TIMESTAMP WHERE player_id = ?`,
         [loserId],
         (err: any) => (err ? reject(err) : resolve())
       );
@@ -152,12 +152,12 @@ async function recordTicTacToeMatchResult(room: TicTacToeRoom, winnerId: number,
     updateLevel(winnerId);
     updateLevel(loserId);
 
-    // Insert to game history
+    // Insert to tictactoe_history table
     const p1Id = room.players[0]?.user?.id;
     const p2Id = room.players[1]?.user?.id;
     
     if (!p1Id || !p2Id) {
-      console.error('Missing player IDs for game history:', { p1Id, p2Id, roomId: room.id });
+      console.error('Missing player IDs for TicTacToe game history:', { p1Id, p2Id, roomId: room.id });
     } else {
       const p1Score = room.scores[p1Id] ?? 0;
       const p2Score = room.scores[p2Id] ?? 0;
@@ -169,7 +169,7 @@ async function recordTicTacToeMatchResult(room: TicTacToeRoom, winnerId: number,
 
       await new Promise<void>((resolve, reject) => {
         db.run(
-          `INSERT INTO game_history (player1_id, player2_id, player1_score, player2_score, winner_id) VALUES (?, ?, ?, ?, ?)`,
+          `INSERT INTO tictactoe_history (player1_id, player2_id, player1_score, player2_score, winner_id) VALUES (?, ?, ?, ?, ?)`,
           [p1Id, p2Id, p1Score, p2Score, resolvedWinner],
           (err: any) => (err ? reject(err) : resolve())
         );

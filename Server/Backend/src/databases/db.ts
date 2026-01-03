@@ -373,6 +373,70 @@ export function createTournamentResultsTable() {
     );
 }
 
+// TicTacToe specific tables
+export function createTicTacToeStats() {
+    db.run(
+        `CREATE TABLE IF NOT EXISTS tictactoe_stats (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            player_id INTEGER NOT NULL UNIQUE,
+            total_games INTEGER DEFAULT 0,
+            wins INTEGER DEFAULT 0,
+            losses INTEGER DEFAULT 0,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (player_id) REFERENCES players(id) ON DELETE CASCADE
+        )`,
+        (err : any) => {
+            if (err) {
+                console.error("Error creating tictactoe_stats table:", err.message);
+            } else {
+                console.log('Table "tictactoe_stats" created or already exists.');
+            }
+        }
+    );
+}
+
+export function createTicTacToeHistory() {
+    db.run(
+        `CREATE TABLE IF NOT EXISTS tictactoe_history (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            player1_id INTEGER NOT NULL,
+            player2_id INTEGER NOT NULL,
+            player1_score INTEGER NOT NULL DEFAULT 0,
+            player2_score INTEGER NOT NULL DEFAULT 0,
+            winner_id INTEGER NOT NULL,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (player1_id) REFERENCES players(id) ON DELETE CASCADE,
+            FOREIGN KEY (player2_id) REFERENCES players(id) ON DELETE CASCADE,
+            FOREIGN KEY (winner_id) REFERENCES players(id) ON DELETE CASCADE
+        )`,
+        (err : any) => {
+            if (err) {
+                console.error("Error creating tictactoe_history table:", err.message);
+            } else {
+                console.log('Table "tictactoe_history" created or already exists.');
+            }
+        }
+    );
+}
+
+export function ensureTicTacToeStatsForPlayer(playerId: number): Promise<void> {
+    return new Promise((resolve, reject) => {
+        db.run(
+            `INSERT OR IGNORE INTO tictactoe_stats (player_id, total_games, wins, losses) VALUES (?, 0, 0, 0)`,
+            [playerId],
+            (err : any) => {
+                if (err) {
+                    console.error(`Error ensuring tictactoe_stats for player ${playerId}:`, err.message);
+                    reject(err);
+                } else {
+                    resolve();
+                }
+            }
+        );
+    });
+}
+
 export function createsDbTabes(){
     createTable();
     createOTPTable();
@@ -386,4 +450,7 @@ export function createsDbTabes(){
     createTournamentPlayersTable();
     createTournamentMatchesTable();
     createTournamentResultsTable();
+    createTicTacToeStats();
+    createTicTacToeHistory();
+    createAttendanceTable();
 }
