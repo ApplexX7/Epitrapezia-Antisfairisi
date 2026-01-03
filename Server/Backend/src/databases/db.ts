@@ -8,8 +8,6 @@ const dbPath = path.resolve(__dirname, "./mydatabase.sqlite");
 export const db = new Database(dbPath, (err : any) => {
     if (err) {
         console.error("Error opening database:", err.message);
-    } else {
-        console.log("Connected to the SQLite database");
     }
 });
 
@@ -28,8 +26,6 @@ export function createFriendsTable (){
         (error : any) => {
             if (error)
                 console.error("Error creating friends table : ", error.message);
-            else
-                console.log("Friends table created or already exists.");
         }
     );
 }
@@ -47,8 +43,6 @@ export function createUserInfo() {
         (err : any) => {
             if (err) {
                 console.error("Error creating player_infos table:", err.message);
-            } else {
-                console.log('Table "player_infos" created or already exists.');
             }
         }
     );
@@ -70,8 +64,6 @@ export function createOTPTable() {
         (err : any) => {
             if (err) {
                 console.error("Error creating OTP table:", err.message);
-            } else {
-                console.log('Table "player_otps" created or already exists.');
             }
         }
     );
@@ -92,8 +84,6 @@ export function createGameStats() {
         (err : any) => {
             if (err) {
                 console.error("Error creating game_stats table:", err.message);
-            } else {
-                console.log('Table "game_stats" created or already exists.');
             }
         }
     );
@@ -121,8 +111,6 @@ export function createGameHistory() {
         (err : any) => {
             if (err) {
                 console.error("Error creating game_history table:", err.message);
-            } else {
-                console.log('Table "game_history" created or already exists.');
             }
         }
     );
@@ -168,8 +156,6 @@ export function createTable(){
         (err : any) => {
             if (err) {
                 console.error("Error creating table:", err.message);
-            } else {
-                console.log('Table "players" created or already exists.');
             }
         }
     );
@@ -193,8 +179,6 @@ export function createTableMessage() {
     db.run(createTableQuery, (err : any) => {
         if (err) {
             console.error("Error creating message table:", err.message);
-        } else {
-            console.log('Table "message" created or already exists.');
         }
     });
 }
@@ -213,7 +197,6 @@ export function createBlockTable() {
     `;
     db.run(createTableBlock, (err : any) => {
         if (err) console.error("Error creating block table:", err.message);
-        else console.log('Table "block" created or already exists.');
     });
 }
 export function createAttendanceTable() {
@@ -230,8 +213,6 @@ export function createAttendanceTable() {
         (err : any) => {
             if (err) {
                 console.error("Error creating attendance table:", err.message);
-            } else {
-                console.log('Table "attendance" created or already exists.');
             }
         }
     );
@@ -254,8 +235,6 @@ export function createTournamentTable() {
         (err : any) => {
             if (err) {
                 console.error("Error creating tournaments table:", err.message);
-            } else {
-                console.log('Table "tournaments" created or already exists.');
             }
         }
     );
@@ -276,8 +255,6 @@ export function createTournamentPlayersTable() {
         (err : any) => {
             if (err) {
                 console.error("Error creating tournament_players table:", err.message);
-            } else {
-                console.log('Table "tournament_players" created or already exists.');
             }
         }
     );
@@ -305,8 +282,6 @@ export function createTournamentMatchesTable() {
         (err : any) => {
             if (err) {
                 console.error("Error creating tournament_matches table:", err.message);
-            } else {
-                console.log('Table "tournament_matches" created or already exists.');
             }
         }
     );
@@ -339,8 +314,6 @@ export function createTournamentResultsTable() {
         (err : any) => {
             if (err) {
                 console.error("Error creating tournament_results table:", err.message);
-            } else {
-                console.log('Table "tournament_results" created or already exists.');
             }
         }
     );
@@ -361,8 +334,6 @@ export function createXpHistoryTable() {
         (err : any) => {
             if (err) {
                 console.error("Error creating xp_history table:", err.message);
-            } else {
-                console.log('Table "xp_history" created or already exists.');
             }
         }
     );
