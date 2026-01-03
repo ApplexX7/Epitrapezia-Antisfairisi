@@ -1,10 +1,11 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useSocketStore } from "@/components/hooks/SocketIOproviders";
 import { useAuth } from "@/components/hooks/authProvider";
+import { useRouter } from 'next/navigation';
 import OnlineVSBanner from '../companents/OnlineVSBanner';
 import OnlineGameBoard from '../companents/OnlineGameBoard';
-import { RotateCcw } from 'lucide-react';
+import { RotateCcw, LogOut } from 'lucide-react';
 
 type TttMatchedPayload = {
   opponent: {
@@ -27,9 +28,17 @@ type TttGameState = {
   matchWinner?: { id: number; username: string };
 };
 
+type TttGameOverPayload = {
+  message: string;
+  disconnected?: number;
+  winner?: { id: number; username: string } | null;
+  forfeit?: boolean;
+};
+
 export default function OnlineTicTacToe() {
   const { socket, isConnected } = useSocketStore();
   const { user } = useAuth();
+  const router = useRouter();
   
   const [status, setStatus] = useState<string>("");
   const [roomId, setRoomId] = useState<string | null>(null);
@@ -38,6 +47,23 @@ export default function OnlineTicTacToe() {
   const [gameState, setGameState] = useState<TttGameState | null>(null);
   const [matchupText, setMatchupText] = useState("Join Matchup");
   const [showNextRound, setShowNextRound] = useState(false);
+  const [gameEnded, setGameEnded] = useState(false);
+  const [endMessage, setEndMessage] = useState<string | null>(null);
+  
+  // Ref to track roomId for cleanup functions
+  const roomIdRef = useRef<string | null>(null);
+  
+  // Keep roomIdRef in sync
+  useEffect(() => {
+    roomIdRef.current = roomId;
+  }, [roomId]);
+
+  // Function to leave the game
+  const leaveGame = useCallback(() => {
+    if (socket && roomIdRef.current) {
+      socket.emit("ttt:leaveGame", { roomId: roomIdRef.current });
+    }
+  }, [socket]);
 
   // Register socket listeners
   useEffect(() => {
@@ -57,6 +83,8 @@ export default function OnlineTicTacToe() {
       setOpponentInfo(payload.opponent);
       setRoomId(payload.roomId);
       setSymbol(payload.symbol);
+      setGameEnded(false);
+      setEndMessage(null);
     };
 
     const handleGameState = (state: TttGameState) => {
@@ -70,8 +98,17 @@ export default function OnlineTicTacToe() {
       }
     };
 
-    const handleGameOver = (payload: { message: string; disconnected?: number }) => {
+    const handleGameOver = (payload: TttGameOverPayload) => {
+      setGameEnded(true);
+      setEndMessage(payload.message);
       setStatus(`🎮 ${payload.message}`);
+      
+      // If opponent disconnected/left, we won
+      if (payload.winner && payload.winner.id === user?.id) {
+        setStatus(`🏆 You won! ${payload.message}`);
+      } else if (payload.disconnected === user?.id) {
+        setStatus(`😔 You lost. ${payload.message}`);
+      }
     };
 
     const handleError = (payload: { message: string }) => {
@@ -93,22 +130,51 @@ export default function OnlineTicTacToe() {
       socket.off("ttt:gameOver", handleGameOver);
       socket.off("ttt:error", handleError);
     };
-  }, [socket]);
+  }, [socket, user?.id]);
 
-  // Handle page unload
+  // Handle page unload (browser close, refresh, etc.)
   useEffect(() => {
     if (!socket) return;
 
-    const handleBeforeUnload = () => {
-      if (roomId) socket.disconnect();
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (roomIdRef.current && !gameEnded) {
+        // Emit leave game before page unloads
+        socket.emit("ttt:leaveGame", { roomId: roomIdRef.current });
+      }
     };
 
     window.addEventListener("beforeunload", handleBeforeUnload);
     return () => {
-      if (roomId) socket.disconnect();
       window.removeEventListener("beforeunload", handleBeforeUnload);
     };
-  }, [socket, roomId]);
+  }, [socket, gameEnded]);
+
+  // Handle visibility change (tab switch - optional warning)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.hidden && roomIdRef.current && !gameEnded) {
+        // Player switched tabs during active game - could add warning here
+        console.log("Player switched tabs during TicTacToe game");
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [gameEnded]);
+
+  // Cleanup on component unmount (route change)
+  useEffect(() => {
+    return () => {
+      // Component is unmounting - if game is active, leave it
+      if (roomIdRef.current && !gameEnded) {
+        if (socket) {
+          socket.emit("ttt:leaveGame", { roomId: roomIdRef.current });
+        }
+      }
+    };
+  }, [socket, gameEnded]);
 
   const handleJoinMatchup = () => {
     if (!socket || !isConnected) {
@@ -150,6 +216,29 @@ export default function OnlineTicTacToe() {
     window.location.reload();
   };
 
+  const handleLeaveGame = () => {
+    if (socket && roomId) {
+      socket.emit("ttt:leaveGame", { roomId });
+      // Reset state
+      setRoomId(null);
+      setGameState(null);
+      setOpponentInfo(null);
+      setSymbol(null);
+      setGameEnded(false);
+      setEndMessage(null);
+      setStatus("");
+      setMatchupText("Join Matchup");
+    }
+  };
+
+  const handleBackToGames = () => {
+    if (roomId && !gameEnded) {
+      // Leave the game first
+      leaveGame();
+    }
+    router.push('/Home/Games');
+  };
+
   // Determine player names and avatars for the banner
   const player1Name = symbol === "X" ? (user?.username ?? "You") : (opponentInfo?.username ?? "Opponent");
   const player2Name = symbol === "O" ? (user?.username ?? "You") : (opponentInfo?.username ?? "Opponent");
@@ -168,7 +257,15 @@ export default function OnlineTicTacToe() {
 
   return (
     <main className="flex flex-col items-center justify-center h-screen bg-[#F5F5F5]/10 rounded-xl border-none 
-      shadow-[2px_2px_5px_3px_rgba(0,0,0,0.3)] m-2 md:m-10">
+      shadow-[2px_2px_5px_3px_rgba(0,0,0,0.3)] m-2 md:m-10 relative">
+      
+      {/* Back button - always visible */}
+      <button
+        onClick={handleBackToGames}
+        className="absolute top-4 left-4 px-4 py-2 bg-gray-600 hover:bg-gray-700 rounded-lg text-white font-semibold transition flex items-center gap-2"
+      >
+        ← Back
+      </button>
       
       {!roomId ? (
         // Matchmaking screen
@@ -182,9 +279,40 @@ export default function OnlineTicTacToe() {
           </button>
           <p className="text-lg text-white/80">{status}</p>
         </div>
+      ) : gameEnded ? (
+        // Game ended screen (opponent left/disconnected)
+        <div className="flex flex-col items-center gap-6">
+          <h1 className="text-3xl font-bold text-white mb-4">Game Over</h1>
+          <div className="bg-white/10 backdrop-blur-sm rounded-2xl px-8 py-6 text-center">
+            <p className="text-2xl text-white mb-4">{endMessage}</p>
+            <p className="text-lg text-white/80">{status}</p>
+          </div>
+          <div className="flex gap-4">
+            <button
+              onClick={handleReplay}
+              className="px-6 py-3 bg-purple-600 rounded-xl hover:bg-purple-800 cursor-pointer transition text-white font-semibold flex items-center gap-2"
+            >
+              <RotateCcw size={20} /> Play Again
+            </button>
+            <button
+              onClick={handleBackToGames}
+              className="px-6 py-3 bg-gray-600 rounded-xl hover:bg-gray-700 cursor-pointer transition text-white font-semibold"
+            >
+              Back to Games
+            </button>
+          </div>
+        </div>
       ) : (
         // Game screen
         <>
+          {/* Leave game button */}
+          <button
+            onClick={handleLeaveGame}
+            className="absolute top-4 right-4 px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg text-white font-semibold transition flex items-center gap-2"
+          >
+            <LogOut size={18} /> Leave Game
+          </button>
+          
           <OnlineVSBanner
             player1Name={player1Name}
             player2Name={player2Name}

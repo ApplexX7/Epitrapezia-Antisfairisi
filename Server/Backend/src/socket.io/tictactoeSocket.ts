@@ -405,6 +405,68 @@ export function registerTicTacToeSocket(io: Server, socket: UserSocket) {
     });
   });
 
+  // Handle explicit leave game (player navigates away, clicks leave, etc.)
+  socket.on("ttt:leaveGame", ({ roomId }: { roomId: string }) => {
+    const room = activeTicTacToeRooms[roomId];
+    if (!room) return;
+
+    const playerIndex = room.players.findIndex((p) => p.id === socket.id);
+    if (playerIndex === -1) return;
+
+    console.log(`🚪 ${socket.user.username} left TicTacToe game ${roomId}`);
+
+    // Notify opponent and end game
+    const other = room.players.find((p) => p.id !== socket.id);
+    
+    io.to(roomId).emit("ttt:gameOver", {
+      message: `${socket.user.username} left the game`,
+      disconnected: socket.user.id,
+      winner: other ? { id: other.user.id, username: other.user.username } : null
+    });
+
+    // Record result: other player wins
+    if (other && !room.recorded) {
+      recordTicTacToeMatchResult(room, other.user.id, socket.user.id).catch((e) => {
+        console.error('Error recording TicTacToe leave result:', e);
+      });
+    }
+
+    // Leave socket room
+    socket.leave(roomId);
+    
+    // Clean up the room
+    delete activeTicTacToeRooms[roomId];
+  });
+
+  // Handle forfeit/surrender
+  socket.on("ttt:forfeit", ({ roomId }: { roomId: string }) => {
+    const room = activeTicTacToeRooms[roomId];
+    if (!room) return;
+
+    const playerIndex = room.players.findIndex((p) => p.id === socket.id);
+    if (playerIndex === -1) return;
+
+    console.log(`🏳️ ${socket.user.username} forfeited TicTacToe game ${roomId}`);
+
+    const other = room.players.find((p) => p.id !== socket.id);
+
+    io.to(roomId).emit("ttt:gameOver", {
+      message: `${socket.user.username} forfeited the match`,
+      disconnected: socket.user.id,
+      winner: other ? { id: other.user.id, username: other.user.username } : null,
+      forfeit: true
+    });
+
+    // Record result: other player wins
+    if (other && !room.recorded) {
+      recordTicTacToeMatchResult(room, other.user.id, socket.user.id).catch((e) => {
+        console.error('Error recording TicTacToe forfeit result:', e);
+      });
+    }
+
+    delete activeTicTacToeRooms[roomId];
+  });
+
   // Handle disconnect
   socket.on("disconnect", () => {
     // Remove from matchmaking queue
