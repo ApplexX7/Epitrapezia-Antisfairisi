@@ -126,6 +126,14 @@ export function ChartLineDefault() {
                     stroke="#0D0C22"
                     interval={0}
                 />
+                <YAxis
+                    stroke="#0D0C22"
+                    tickLine={false}
+                    axisLine={true}
+                    tickMargin={6}
+                    domain={[0, "dataMax + 2"]}
+                    type="number"
+                />
                 <ReferenceLine
                     x="Monday"
                     stroke="#0D0C22"
