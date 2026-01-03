@@ -67,6 +67,18 @@ export function MarkAttendance() {
                 );
             });
 
+            // Log XP gain in xp_history table
+            await new Promise((resolve, reject) => {
+                db.run(
+                    `INSERT OR REPLACE INTO xp_history (player_id, date, xp_gained, source) VALUES (?, ?, ?, 'attendance')`,
+                    [playerId, today, xpToAward],
+                    function(err) {
+                        if (err) reject(err);
+                        else resolve(this.lastID);
+                    }
+                );
+            });
+
             // Emit socket event to notify about XP update
             const io = Server.socket();
             io.to(String(playerId)).emit("xp:gained", {

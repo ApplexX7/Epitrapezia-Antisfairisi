@@ -28,29 +28,14 @@ export function GetWeeklyXpProgress() {
       endOfWeek.setDate(startOfWeek.getDate() + 6);
       endOfWeek.setHours(23, 59, 59, 999);
 
-      // Get all attendance records for the week
-      const attendanceRecords: any[] = await new Promise((resolve, reject) => {
+      // Get XP history for the week from xp_history table
+      const xpHistoryRecords: any[] = await new Promise((resolve, reject) => {
         db.all(
-          `SELECT date FROM attendance WHERE player_id = ? AND date BETWEEN ? AND ? ORDER BY date ASC`,
+          `SELECT date, xp_gained FROM xp_history WHERE player_id = ? AND date BETWEEN ? AND ? ORDER BY date ASC`,
           [playerId, startOfWeek.toISOString().split('T')[0], endOfWeek.toISOString().split('T')[0]],
           (err, rows) => (err ? reject(err) : resolve(rows || []))
         );
       });
-
-      // Get player's level for XP calculation
-      const player: any = await new Promise((resolve, reject) => {
-        db.get(
-          `SELECT level FROM players WHERE id = ?`,
-          [playerId],
-          (err, row) => (err ? reject(err) : resolve(row))
-        );
-      });
-
-      if (!player) {
-        return reply.status(404).send({ message: "Player not found" });
-      }
-
-      const playerLevel = player.level || 1;
 
       // Create daily data structure
       const weekData = [];
@@ -62,17 +47,14 @@ export function GetWeeklyXpProgress() {
         const dateStr = currentDate.toISOString().split('T')[0];
         const dayName = dayNames[i];
 
-        // Check if there's attendance on this day
-        const hasAttendance = attendanceRecords.some(record => record.date === dateStr);
-
-        // Calculate XP for this day
-        // If attendance marked: floor(0.25 * level), otherwise 0
-        const dayXp = hasAttendance ? Math.floor(playerLevel * 0.25) : 0;
+        // Get XP from xp_history table for this day
+        const historyRecord = xpHistoryRecords.find(record => record.date === dateStr);
+        const dayXp = historyRecord ? historyRecord.xp_gained : 0;
 
         weekData.push({
           day: dayName,
           xp: dayXp,
-          attendance: hasAttendance ? 1 : 0
+          date: dateStr
         });
       }
 
@@ -83,8 +65,7 @@ export function GetWeeklyXpProgress() {
         weekData,
         totalWeeklyXp,
         weekStart: startOfWeek.toISOString().split('T')[0],
-        weekEnd: endOfWeek.toISOString().split('T')[0],
-        playerLevel
+        weekEnd: endOfWeek.toISOString().split('T')[0]
       });
     } catch (err) {
       console.error("Error fetching weekly XP progress:", err);

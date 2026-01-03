@@ -346,6 +346,28 @@ export function createTournamentResultsTable() {
     );
 }
 
+export function createXpHistoryTable() {
+    db.run(
+        `CREATE TABLE IF NOT EXISTS xp_history (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            player_id INTEGER NOT NULL,
+            date DATE NOT NULL,
+            xp_gained INTEGER NOT NULL DEFAULT 0,
+            source TEXT DEFAULT 'attendance',
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (player_id) REFERENCES players(id) ON DELETE CASCADE,
+            UNIQUE(player_id, date, source)
+        )`,
+        (err : any) => {
+            if (err) {
+                console.error("Error creating xp_history table:", err.message);
+            } else {
+                console.log('Table "xp_history" created or already exists.');
+            }
+        }
+    );
+}
+
 export function createsDbTabes(){
     createTable();
     createOTPTable();
@@ -356,6 +378,7 @@ export function createsDbTabes(){
     createGameHistory();
     createBlockTable();
     createAttendanceTable();
+    createXpHistoryTable();
     createTournamentTable();
     createTournamentPlayersTable();
     createTournamentMatchesTable();
