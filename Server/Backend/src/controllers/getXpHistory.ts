@@ -28,10 +28,10 @@ export function GetXpHistory() {
         return reply.status(404).send({ message: "Player not found" });
       }
 
-      // Get all attendance records for the player
-      const attendanceRecords: any[] = await new Promise((resolve, reject) => {
+      // Get XP history from xp_history table
+      const xpHistoryRecords: any[] = await new Promise((resolve, reject) => {
         db.all(
-          "SELECT date FROM attendance WHERE player_id = ? ORDER BY date ASC",
+          "SELECT date, SUM(xp_gained) as daily_xp FROM xp_history WHERE player_id = ? GROUP BY date ORDER BY date ASC",
           [targetPlayerId],
           (err, rows) => (err ? reject(err) : resolve(rows || []))
         );
@@ -41,14 +41,14 @@ export function GetXpHistory() {
       const today = new Date();
       const xpData: any[] = [];
       
-      // Start from 12 weeks ago or from earliest attendance
+      // Start from 12 weeks ago or from earliest XP record
       let startDate = new Date(today);
       startDate.setDate(startDate.getDate() - 84); // 12 weeks ago
       
-      if (attendanceRecords.length > 0) {
-        const earliestAttendance = new Date(attendanceRecords[0].date);
-        if (earliestAttendance > startDate) {
-          startDate = new Date(earliestAttendance);
+      if (xpHistoryRecords.length > 0) {
+        const earliestRecord = new Date(xpHistoryRecords[0].date);
+        if (earliestRecord > startDate) {
+          startDate = new Date(earliestRecord);
         }
       }
 
@@ -56,7 +56,6 @@ export function GetXpHistory() {
       currentWeekStart.setDate(currentWeekStart.getDate() - currentWeekStart.getDay()); // Start of week (Sunday)
       
       let cumulativeXp = 0;
-      let currentLevel = 1;
       let weekCount = 0;
 
       // Create entries for each week
@@ -64,19 +63,15 @@ export function GetXpHistory() {
         const weekEnd = new Date(currentWeekStart);
         weekEnd.setDate(weekEnd.getDate() + 6);
 
-        // Count attendance in this week
-        const weekAttendance = attendanceRecords.filter((record) => {
-          const recordDate = new Date(record.date);
-          return recordDate >= currentWeekStart && recordDate <= weekEnd;
-        }).length;
+        // Calculate XP gained in this week from xp_history
+        const weekXpGain = xpHistoryRecords
+          .filter((record) => {
+            const recordDate = new Date(record.date);
+            return recordDate >= currentWeekStart && recordDate <= weekEnd;
+          })
+          .reduce((sum, record) => sum + (record.daily_xp || 0), 0);
 
-        // Calculate XP gained in this week
-        // Each attendance = 0.25 * level
-        const weekXpGain = Math.floor(weekAttendance * currentLevel * 0.25);
         cumulativeXp += weekXpGain;
-
-        // Estimate level from cumulative XP (assuming 100 XP per level)
-        currentLevel = Math.floor(1 + cumulativeXp / 100);
 
         const weekLabel = `Week ${weekCount + 1}`;
 
@@ -96,7 +91,7 @@ export function GetXpHistory() {
         xpData.push({
           week: "Week 1",
           date: new Date().toISOString().split('T')[0],
-          xp: player.experience,
+          xp: player.experience || 0,
           weekGain: 0
         });
       }
