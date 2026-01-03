@@ -145,6 +145,18 @@ export function registerSocketHandlers(io: Server) {
               else updateLevel(user.id);
             }
           );
+          
+          // Log XP to history table
+          db.run(
+            `INSERT INTO xp_history (player_id, date, xp_gained, source) 
+             VALUES (?, ?, ?, 'session_time')
+             ON CONFLICT(player_id, date, source) 
+             DO UPDATE SET xp_gained = xp_gained + ?`,
+            [user.id, today, xpGained, xpGained],
+            (err) => {
+              if (err) console.error("Error logging XP history:", err);
+            }
+          );
         }
       }
     }, 300000);
@@ -215,6 +227,18 @@ export function registerSocketHandlers(io: Server) {
             (err) => {
               if (err) console.error("Error updating experience:", err);
               else updateLevel(user.id);
+            }
+          );
+          
+          // Log XP to history table
+          db.run(
+            `INSERT INTO xp_history (player_id, date, xp_gained, source) 
+             VALUES (?, ?, ?, 'session_disconnect')
+             ON CONFLICT(player_id, date, source) 
+             DO UPDATE SET xp_gained = xp_gained + ?`,
+            [user.id, today, xpGained, xpGained],
+            (err) => {
+              if (err) console.error("Error logging XP history:", err);
             }
           );
         }

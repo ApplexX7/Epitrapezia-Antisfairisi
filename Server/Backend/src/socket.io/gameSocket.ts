@@ -51,7 +51,7 @@ function updateLevel(playerId: number) {
   );
 }
 // avoid race 
-async function recordMatchResult(room: GameRoom, winnerId: number, loserId: number) {
+async function recordMatchResult(io: Server, room: GameRoom, winnerId: number, loserId: number) {
   if (room.recorded) return;
   room.recorded = true;
   try {
@@ -120,9 +120,42 @@ async function recordMatchResult(room: GameRoom, winnerId: number, loserId: numb
       );
     });
 
+    // Log XP gains to xp_history table
+    const today = new Date().toISOString().split('T')[0];
+    
+    // Log winner XP
+    await new Promise<void>((resolve, reject) => {
+      db.run(
+        `INSERT INTO xp_history (player_id, date, xp_gained, source) 
+         VALUES (?, ?, ?, 'game_win')
+         ON CONFLICT(player_id, date, source) 
+         DO UPDATE SET xp_gained = xp_gained + ?`,
+        [winnerId, today, winnerXp, winnerXp],
+        (err: any) => (err ? reject(err) : resolve())
+      );
+    });
+    
+    // Log loser XP
+    await new Promise<void>((resolve, reject) => {
+      db.run(
+        `INSERT INTO xp_history (player_id, date, xp_gained, source) 
+         VALUES (?, ?, ?, 'game_loss')
+         ON CONFLICT(player_id, date, source) 
+         DO UPDATE SET xp_gained = xp_gained + ?`,
+        [loserId, today, loserXp, loserXp],
+        (err: any) => (err ? reject(err) : resolve())
+      );
+    });
+
     // Update levels for both players
     updateLevel(winnerId);
     updateLevel(loserId);
+
+    // Emit XP update events to both players
+    io.to(String(winnerId)).emit("xp:gained", { xpAwarded: winnerXp, type: "game_win" });
+    io.to(String(winnerId)).emit("xp:updated", { xpAwarded: winnerXp });
+    io.to(String(loserId)).emit("xp:gained", { xpAwarded: loserXp, type: "game_loss" });
+    io.to(String(loserId)).emit("xp:updated", { xpAwarded: loserXp });
 
     // insert to game historiy
     try {
@@ -278,7 +311,7 @@ export function registerGameSocket(io: Server, socket: UserSocket) {
           const other = room.players.find((p) => p.id !== socket.id);
           if (other && !room.recorded) {
             // record winner=other, loser=socket (best-effort)
-            recordMatchResult(room, other.user.id, socket.user.id).catch((e) => {
+            recordMatchResult(io, room, other.user.id, socket.user.id).catch((e) => {
               console.error('Error recording disconnect result (top-level) for room', id, e || e);
             });
           }
@@ -484,7 +517,7 @@ function startGameLoop(io: Server, room: GameRoom) {
         const loserId = leftScore > rightScore ? rightPlayer.user.id : leftPlayer.user.id;
 
         // record match result in DB (best-effort)
-        recordMatchResult(room, winnerId, loserId).catch((e) => {
+        recordMatchResult(io, room, winnerId, loserId).catch((e) => {
           console.error('Failed to record match result for room', room.id, e || e);
         });
 
@@ -519,7 +552,7 @@ function startGameLoop(io: Server, room: GameRoom) {
         const other = room.players.find(p => p.id !== disconnected.id);
         if (other && !room.recorded) {
           // record other as winner, disconnected as loser
-          recordMatchResult(room, other.user.id, disconnected.user.id).catch((e) => {
+          recordMatchResult(io, room, other.user.id, disconnected.user.id).catch((e) => {
             console.error('Error recording disconnect result for room', room.id, e || e);
           });
         }
