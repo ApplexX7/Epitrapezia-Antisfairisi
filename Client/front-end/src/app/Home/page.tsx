@@ -1,5 +1,6 @@
 "use client";
 import { BoxLayout } from '@/components/BoxLayout'
+import GameHistory from '@/components/GameHistory'
 import React from "react";
 import BarProgressionLevel  from '@/components/BarProgressionLevel'
 import {ChartLineDefault} from '@/components/LineChart'
@@ -71,29 +72,14 @@ export default function Home() {
             <ChartLineDefault/>
           </BoxLayout>
         </BoxLayout>
-        <BoxLayout className="col-span-4  w-full h-50 xl:-mt-60 xl:col-span-3">
+        <BoxLayout className="col-span-4  w-full h-50 xl:-mt-60 xl:col-span-3 overflow-hidden">
           <div className="flex flex-col w-full h-full p-0">
             <h1 className="text-white-smoke text-shadow-md 
             ml-10 text-2xl font-semibold">
               Recent Games
             </h1>
             <div className="card w-full h-full flex">
-              {/* Recent games content goes here */}
-              {gamesHistory.length === 0 ? (
-                <div className="flex items-center justify-center w-full h-full">
-                  <p className="text-gray-500">No recent games found.</p>
-                </div>
-              ) : (
-                gamesHistory.map((game, index) => (
-                <div key={index} className="p-4 border-b border-gray-200 w-full">
-                <p className="text-white-smoke">Game ID: {game.id}</p>
-                <p className="text-white-smoke">Player 1 ID: {game.player1_id}</p>
-                <p className="text-white-smoke">Player 2 ID: {game.player2_id}</p>
-                <p className="text-white-smoke">Score: {game.player1_score} - {game.player2_score}</p>
-                <p className="text-white-smoke">Winner: {game.winner_id}</p>
-                <p className="text-white-smoke">Date: {new Date(game.created_at).toLocaleString()}</p>
-                </div>
-              )))}
+              <GameHistory playerId={user?.id || 0} />
             </div>
           </div>
         </BoxLayout>

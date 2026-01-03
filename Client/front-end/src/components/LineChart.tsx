@@ -2,7 +2,8 @@
 
 import { TrendingUp } from "lucide-react"
 import { CartesianGrid, Line, LineChart, ReferenceLine, XAxis, YAxis } from "recharts"
-
+import { useEffect, useState } from "react"
+import api from "@/lib/axios"
 
 import {
   Card,
@@ -16,32 +17,69 @@ import {
   ChartTooltipContent,
 } from "@/components/ui/chart"
 
-export const description = "A line chart"
-
-const chartData = [
-  { day: "Monday", Level: 186 },
-  { day: "Tuesday", Level: 305 },
-  { day: "Wednesday", Level: 237 },
-  { day: "Thursday", Level: 73 },
-  { day: "Friday", Level: 209 },
-  { day: "Saturday", Level: 214 },
-  { day: "Sunday", Level: 214 },
-]
-
 const chartConfig = {
-  Level: {
-    label: "Level",
+  xp: {
+    label: "XP",
     color: "0D0C22",
   },
 } satisfies ChartConfig
 
 export function ChartLineDefault() {
+  const [chartData, setChartData] = useState([
+    { day: "Monday", xp: 0 },
+    { day: "Tuesday", xp: 0 },
+    { day: "Wednesday", xp: 0 },
+    { day: "Thursday", xp: 0 },
+    { day: "Friday", xp: 0 },
+    { day: "Saturday", xp: 0 },
+    { day: "Sunday", xp: 0 },
+  ])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchWeeklyXp = async () => {
+      try {
+        const response = await api.get('/attendance/weekly-xp')
+        const weekData = response.data.weekData
+        
+        const transformedData = weekData.map((day: any) => ({
+          day: day.day,
+          xp: day.xp,
+        }))
+        
+        setChartData(transformedData)
+        setLoading(false)
+      } catch (error) {
+        console.error("Error fetching weekly XP:", error)
+        setLoading(false)
+      }
+    }
+
+    fetchWeeklyXp()
+  }, [])
+
+  if (loading) {
+    return (
+      <Card className="bg-transparent text-black w-full border-none shadow-none">
+        <CardFooter className="flex-col items-start gap-2 text-sm">
+          <div className="flex gap-2 leading-none text-shadow-xs ml-3 font-semibold 
+          self-start text-2xl">
+            Week Progress <TrendingUp className="h-4 w-4" />
+          </div>
+        </CardFooter>
+        <CardContent className="flex items-center justify-center h-32">
+          <p className="text-gray-500">Loading...</p>
+        </CardContent>
+      </Card>
+    )
+  }
+
   return (
     <Card className="bg-transparent text-black w-full border-none shadow-none">
       <CardFooter className="flex-col items-start gap-2 text-sm">
         <div className="flex gap-2 leading-none text-shadow-xs ml-3 font-semibold 
         self-start text-2xl">
-          Week Progress <TrendingUp className="h-4 w-4" />
+          XP Progress <TrendingUp className="h-4 w-4" />
         </div>
       </CardFooter>
       <CardContent>
@@ -65,14 +103,14 @@ export function ChartLineDefault() {
                     x="Monday"
                     stroke="#0D0C22"
                     strokeWidth={2}
-                    label={{ value: "Status", position: "top", fill: "#0D0C22",fontWeight: "bolder" }}
+                    label={{ value: "Week", position: "top", fill: "#0D0C22",fontWeight: "bolder" }}
                 />
                 <ChartTooltip
                     cursor={false}
                     content={<ChartTooltipContent hideLabel />}
                 />
                 <Line
-                    dataKey="Level"
+                    dataKey="xp"
                     type="natural"
                     stroke="#0D0C22"
                     strokeWidth={2}

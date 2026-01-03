@@ -22,18 +22,21 @@ export function playerAvatare (){
             if (!data){
                 return reply.code(400).send({message : "Not file to uplaod"});
             }
-            const filename = data.filename;
-            const filePath = path.join(__dirname, 'uplaods', filename);
-            if (!fs.existsSync(path.dirname(filePath)))
-                    fs.mkdirSync(path.dirname(filePath), {recursive : true});
+            const filename = `${Date.now()}_${data.filename}`;
+            const uploadsDir = path.join(__dirname, 'uploads');
+            const filePath = path.join(uploadsDir, filename);
+            const urlPath = `/uploads/${filename}`;
+            
+            if (!fs.existsSync(uploadsDir))
+                    fs.mkdirSync(uploadsDir, {recursive : true});
             const writeStream = fs.createWriteStream(filePath);
             data.file.pipe(writeStream);
             writeStream.on('finish', async () =>{
                 try{
                     const updateAvatar : any = await new Promise<void>((resolve, reject) => {
                         db.run(
-                            "UPDATE player_infos SET avatar = ? WHERE id = ?",
-                            [filePath, user.player_id],
+                            "UPDATE players SET avatar = ? WHERE id = ?",
+                            [urlPath, user.id],
                             function(err){
                                 if (err) reject(err);
                                 else resolve();
@@ -41,8 +44,8 @@ export function playerAvatare (){
                         )
                     });
                     reply.code(201).send({
-                        message : "avatare Uplaoded Succefully",
-                        user,
+                        message : "Avatar uploaded successfully",
+                        avatar: urlPath,
                     });
                 }catch(err){
                     return reply.code(500).send({message : "Internal Server Error"});

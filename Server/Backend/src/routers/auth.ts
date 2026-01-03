@@ -5,6 +5,8 @@ import { RefreshToken } from "../controllers/authRefresh"
 import { Logout } from "../controllers/logout";
 import {VerifyOtp} from "../controllers/verifyOtp"
 import { ResendOtp } from "../controllers/resendOtp";
+import { VerifyLoginOtp } from "../controllers/verifyLoginOtp";
+import { ResendLoginOtp } from "../controllers/resendLoginOtp";
 import { GoogleAuthRedirection, GoogleAuthCallback } from "../controllers/googleAuth";
 import { LoginBody, SignUpBody } from "../interfaces/types";
 // import rateLimit from  '@fastify/rate-limit'
@@ -50,6 +52,8 @@ export async function authRouters() {
   Server.instance().post("/auth/logout", Logout())
   Server.instance().post("/auth/verify-otp", VerifyOtp());
   Server.instance().post("/auth/resend-otp", ResendOtp());
+  Server.instance().post("/auth/verify-login-otp", VerifyLoginOtp());
+  Server.instance().post("/auth/resend-login-otp", ResendLoginOtp());
   Server.instance().get("/auth/google", GoogleAuthRedirection);
   Server.instance().get("/auth/google/callback", GoogleAuthCallback);
 

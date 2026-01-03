@@ -22,8 +22,11 @@ export function SignUp() {
       return reply.status(400).send({ message: "All fields should be filled" });
     }
 
+    const normalizedUsername = username.toLowerCase();
+    const normalizedEmail = email.toLowerCase();
+
     try {
-      const exist = await playerExist(email, username );
+      const exist = await playerExist(normalizedEmail, normalizedUsername);
       if (exist)
         return reply.code(409).send({ message: "Username or email already registered" });
 
@@ -32,11 +35,20 @@ export function SignUp() {
       const userId = await new Promise<number>((resolve, reject) => {
         db.run(
           "INSERT INTO players (firstName, lastName, username, email, password, avatar, is_verified) VALUES (?, ?, ?, ?, ?, ?, 0)",
-          [firstName, lastName, username, email.toLowerCase(), hashedPassword, "/images/defaultAvatare.jpg"],
+          [firstName, lastName, normalizedUsername, normalizedEmail, hashedPassword, "/images/defaultAvatare.jpg"],
           function (err) {
             if (err) reject(err);
             else resolve(this.lastID);
           }
+        );
+      });
+
+      // Ensure player_infos row exists for bio/desp
+      await new Promise<void>((resolve, reject) => {
+        db.run(
+          "INSERT INTO player_infos (player_id, desp, socials) VALUES (?, '', NULL)",
+          [userId],
+          (err) => (err ? reject(err) : resolve())
         );
       });
 
@@ -57,8 +69,8 @@ export function SignUp() {
 
       const user = { 
         id: userId, 
-        username, 
-        email, 
+        username: normalizedUsername, 
+        email: normalizedEmail, 
         firstName, 
         lastName, 
         avatar: "/images/defaultAvatare.jpg", 

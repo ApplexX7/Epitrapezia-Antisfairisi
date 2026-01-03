@@ -11,10 +11,14 @@ export type User = {
   email?: string;
   avatar: string;
   des?: string,
+  bio?: string,
+  github?: string,
+  instagram?: string,
   dateJoined?: string,
   exp?: number,
   level?: number;
   progression?: number;
+  twoFactorEnabled?: boolean;
   isFriend?: boolean,
   friendstatus?: string,
   isOnline?: boolean,
@@ -25,6 +29,7 @@ type AuthState = {
   accessToken: string | null;
   checkingAuth: boolean;
   setAuth: (user: User, token: string) => void;
+  updateUser: (updates: Partial<User>) => void;
   clearAuth: () => void;
   refreshAuth: () => Promise<void>;
 };
@@ -37,6 +42,9 @@ export const useAuth = create<AuthState>((set) => {
     accessToken: null,
     checkingAuth: true, 
     setAuth: (user, token) => set({ user, accessToken: token, checkingAuth: false }),
+    updateUser: (updates) => set((state) => ({
+      user: state.user ? { ...state.user, ...updates } : null
+    })),
     clearAuth: () =>{ 
       set({ user: null, accessToken: null, checkingAuth: false })
     },

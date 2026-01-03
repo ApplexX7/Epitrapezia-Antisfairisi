@@ -2,6 +2,9 @@ import fastify, { FastifyInstance, RouteHandlerMethod } from "fastify";
 import { Server as IOServer, Socket } from "socket.io";
 import { registerSocketHandlers } from "./socket.io";
 import rateLimit from  '@fastify/rate-limit';
+import fastifyMultipart from '@fastify/multipart';
+import fastifyStatic from '@fastify/static';
+import path from 'path';
 
 export class Server {
   private static readonly port = 8080;
@@ -12,6 +15,18 @@ export class Server {
 
   public static async start() {
     try {
+      await this.serv.register(fastifyMultipart, {
+        limits: {
+          fileSize: 5 * 1024 * 1024, // 5MB limit
+        },
+      });
+
+      // Serve static files from uploads directory
+      await this.serv.register(fastifyStatic, {
+        root: path.join(__dirname, 'uploads'),
+        prefix: '/uploads/',
+      });
+      
       await this.serv.register(rateLimit, {
         max: 100,
         timeWindow : "1 minute",

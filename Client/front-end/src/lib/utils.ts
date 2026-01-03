@@ -5,6 +5,13 @@ import React, { ReactNode, MouseEventHandler } from 'react';
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
+
+export function getAvatarUrl(avatar?: string): string {
+  if (!avatar) return "/images/defaultAvatare.jpg";
+  if (avatar.startsWith('http') || avatar.startsWith('/images/')) return avatar;
+  return `http://localhost:8080${avatar}`;
+}
+
 export type BoxLayoutProps = {
   className?: string;
   children?: React.ReactNode;

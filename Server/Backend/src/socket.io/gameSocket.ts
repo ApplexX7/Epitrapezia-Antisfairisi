@@ -57,6 +57,32 @@ async function recordMatchResult(room: GameRoom, winnerId: number, loserId: numb
   try {
     await ensureGameStatsForPlayer(winnerId);
     await ensureGameStatsForPlayer(loserId);
+    
+    // Get player levels for XP calculation
+    const winnerLevel: any = await new Promise((resolve, reject) => {
+      db.get(
+        `SELECT level FROM players WHERE id = ?`,
+        [winnerId],
+        (err, row) => (err ? reject(err) : resolve(row))
+      );
+    });
+    
+    const loserLevel: any = await new Promise((resolve, reject) => {
+      db.get(
+        `SELECT level FROM players WHERE id = ?`,
+        [loserId],
+        (err, row) => (err ? reject(err) : resolve(row))
+      );
+    });
+    
+    const winnerLvl = winnerLevel?.level || 1;
+    const loserLvl = loserLevel?.level || 1;
+    
+    // Calculate XP based on level
+    // Base XP: 10 for losing, 20 for winning, multiplied by level factor
+    const loserXp = Math.floor(10 * (loserLvl / 10));
+    const winnerXp = Math.floor(20 * (winnerLvl / 10));
+    
     // update winner stats
     await new Promise<void>((resolve, reject) => {
       db.run(
@@ -75,20 +101,21 @@ async function recordMatchResult(room: GameRoom, winnerId: number, loserId: numb
       );
     });
 
-    // Add XP for games played and wins
-    // Both players get 5 XP for playing, winner gets additional 10 XP bonus
+    // Add XP for games played
+    // Loser gets base XP for playing
     await new Promise<void>((resolve, reject) => {
       db.run(
-        `UPDATE players SET experience = experience + 5 WHERE id = ?`,
-        [loserId],
+        `UPDATE players SET experience = experience + ? WHERE id = ?`,
+        [loserXp, loserId],
         (err: any) => (err ? reject(err) : resolve())
       );
     });
     
+    // Winner gets higher XP bonus
     await new Promise<void>((resolve, reject) => {
       db.run(
-        `UPDATE players SET experience = experience + 15 WHERE id = ?`,
-        [winnerId],
+        `UPDATE players SET experience = experience + ? WHERE id = ?`,
+        [winnerXp, winnerId],
         (err: any) => (err ? reject(err) : resolve())
       );
     });

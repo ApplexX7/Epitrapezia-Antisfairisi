@@ -32,6 +32,8 @@ app.addHook("onRequest", async (req: FastifyRequest, reply: FastifyReply) => {
     "/auth/google/callback",
     "/auth/verify-otp",
     "/auth/resend-otp",
+    "/auth/verify-login-otp",
+    "/auth/resend-login-otp",
     "/tournaments", // Tournament routes are public with password protection
   ];
 

@@ -29,7 +29,7 @@ export function createFriendsTable (){
             if (error)
                 console.error("Error creating friends table : ", error.message);
             else
-                console.log("Friends table created or already exists. ");
+                console.log("Friends table created or already exists.");
         }
     );
 }
@@ -161,24 +161,15 @@ export function createTable(){
             is_online INTEGER DEFAULT 0,
             auth_Provider TEXT DEFAULT 'local',
             level INTEGER DEFAULT 1,
-            experience INTEGER DEFAULT 0
+            experience INTEGER DEFAULT 0,
+            two_factor_enabled INTEGER DEFAULT 0,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
         )`,
         (err : any) => {
             if (err) {
                 console.error("Error creating table:", err.message);
             } else {
                 console.log('Table "players" created or already exists.');
-                // Add level and experience columns if they don't exist
-                db.run(`ALTER TABLE players ADD COLUMN level INTEGER DEFAULT 1`, (alterErr : any) => {
-                    if (alterErr && !alterErr.message.includes('duplicate column name')) {
-                        console.error("Error adding level column:", alterErr.message);
-                    }
-                });
-                db.run(`ALTER TABLE players ADD COLUMN experience INTEGER DEFAULT 0`, (alterErr : any) => {
-                    if (alterErr && !alterErr.message.includes('duplicate column name')) {
-                        console.error("Error adding experience column:", alterErr.message);
-                    }
-                });
             }
         }
     );
@@ -222,7 +213,7 @@ export function createBlockTable() {
     `;
     db.run(createTableBlock, (err : any) => {
         if (err) console.error("Error creating block table:", err.message);
-        else console.log('Table "block" created.');
+        else console.log('Table "block" created or already exists.');
     });
 }
 export function createAttendanceTable() {
@@ -241,11 +232,6 @@ export function createAttendanceTable() {
                 console.error("Error creating attendance table:", err.message);
             } else {
                 console.log('Table "attendance" created or already exists.');
-                db.run(`ALTER TABLE attendance ADD COLUMN hours REAL DEFAULT 0`, (alterErr : any) => {
-                    if (alterErr && !alterErr.message.includes('duplicate column name')) {
-                        console.error("Error adding hours column:", alterErr.message);
-                    }
-                });
             }
         }
     );
@@ -321,14 +307,15 @@ export function createTournamentMatchesTable() {
                 console.error("Error creating tournament_matches table:", err.message);
             } else {
                 console.log('Table "tournament_matches" created or already exists.');
-                // Ensure one match per stage/match_number per tournament to avoid duplicate finals
-                db.run(
-                    `CREATE UNIQUE INDEX IF NOT EXISTS idx_tournament_match_unique ON tournament_matches(tournament_id, stage, match_number)`,
-                    (indexErr : any) => {
-                        if (indexErr) console.error('Error creating tournament_matches unique index:', indexErr.message);
-                    }
-                );
             }
+        }
+    );
+
+    // Ensure one match per stage/match_number per tournament to avoid duplicate finals
+    db.run(
+        `CREATE UNIQUE INDEX IF NOT EXISTS idx_tournament_match_unique ON tournament_matches(tournament_id, stage, match_number)`,
+        (indexErr : any) => {
+            if (indexErr) console.error('Error creating tournament_matches unique index:', indexErr.message);
         }
     );
 }
@@ -368,6 +355,7 @@ export function createsDbTabes(){
     createGameStats();
     createGameHistory();
     createBlockTable();
+    createAttendanceTable();
     createTournamentTable();
     createTournamentPlayersTable();
     createTournamentMatchesTable();

@@ -10,11 +10,14 @@ import {LoginButton} from "@/components/loginButton"
 import { useAuth } from "@/components/hooks/authProvider";
 import LoginPageWrapper from "@/components/LoginWrapComp";
 import { useSocketStore } from "@/components/hooks/SocketIOproviders";
+import { InputLoginOTP } from "@/components/InputLoginOtp";
 
 export default function Login() {
   const router = useRouter();
   const [failedLog, setFailedLog] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [showOtp, setShowOtp] = useState(false);
+  const [playerId, setPlayerId] = useState<number>(0);
   const initSocket = useSocketStore((state) => state.initSocket)
   const checkAuth = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -22,6 +25,12 @@ export default function Login() {
     const data = Object.fromEntries(formData.entries());
     try {
       const res = await api.post("/auth/Login", data);
+      if (res.data?.requiresOTP) {
+        setPlayerId(res.data.player_id);
+        setShowOtp(true);
+        toast.success("Check your email for the login code! 🔐");
+        return;
+      }
       if (res.data?.token?.accessToken && res.data.user) {
         const { accessToken } = res.data.token;
         const user = res.data.user;
@@ -50,6 +59,8 @@ export default function Login() {
       <div className="relative h-full w-300 w-max-350 md:h-[900px] md:w-350 md:ml-10 md:mr-10 bg-white/5 border-white backdrop-blur-lg ring-1
         ring-amber-50/20 backdrop-brightness-[150%] rounded-[35px] shadow-[10px_10px_10px_10px_rgba(0,0,0,0.3)] flex flex-row  gap-10">
         <div className=" bg-whitebg/50 w-full  sm:w-[650px] sm:pt-35 h-full rounded-l-[35px] rounded-tr-[80px] px-20 shadow-[10px_0px_10px_0px_rgba(0,0,0,0.2)]  flex flex-col justify-center items-center">
+          {!showOtp ? (
+            <>
             <h1 className=" text-center text-2xl md:-mt-20 sm:text-[36px] font-bold text-shadow-lg/10 mb-0"> Welcome Back! </h1>
             <p className=" text-center text-sm md:-mt-3 font-light">sign-in to acces your account </p>
             <form onSubmit={checkAuth} className="mt-10 w-full flex flex-col items-center justify-between gap-8">
@@ -108,6 +119,10 @@ export default function Login() {
                 </LoginButton>
               <p className="text-md sm:text-[18px] text-center mt-4 sm:mt-8"> Dont Have an account? <Link className="ml-1 font-bold text-blue-murder hover:underline underline-offset-2 
               cursor-pointer" href="./sign-up">Sign Up!</Link></p>
+            </>
+          ) : (
+            <InputLoginOTP player_id={playerId} />
+          )}
         </div>
   <Image className="hidden md:-z-50 md:w-[700px] right-10 h-full  md:block absolute"  alt="Logo for  a ping pong" src="/images/Logo-S.png" width={500} height={500} priority/>
       </div>

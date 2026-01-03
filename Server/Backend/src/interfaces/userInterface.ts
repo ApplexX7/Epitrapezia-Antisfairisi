@@ -4,6 +4,7 @@ export interface User {
     username: string;
     email: string;
     firstname?: string,
+    firstName?: string,
     lastName?: string,
     avatar?: string,
     authProvider?: string
@@ -11,6 +12,12 @@ export interface User {
     friendstatus ? : string,
     level?: number;
     experience?: number;
+    bio?: string;
+    socials?: string;
+    dateJoined?: string;
+    created_at?: string;
+    two_factor_enabled?: number | boolean;
+    twoFactorEnabled?: boolean;
     settings ?: {
       dateJoined : string,
       social : string,

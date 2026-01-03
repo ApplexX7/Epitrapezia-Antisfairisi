@@ -100,7 +100,19 @@ export function registerSocketHandlers(io: Server) {
     socket.join(user.id.toString());
 
     if (!onlineUsers[user.id]) onlineUsers[user.id] = [];
+    const isFirstConnection = onlineUsers[user.id].length === 0;
     onlineUsers[user.id].push(socket);
+
+    // Update is_online status when first connection
+    if (isFirstConnection) {
+      db.run(
+        `UPDATE players SET is_online = 1 WHERE id = ?`,
+        [user.id],
+        (err) => {
+          if (err) console.error("Error updating is_online status:", err);
+        }
+      );
+    }
 
     // Track connection start time for attendance
     socket.connectStartTime = Date.now();
@@ -211,6 +223,15 @@ export function registerSocketHandlers(io: Server) {
       onlineUsers[user.id] = onlineUsers[user.id].filter(s => s.id !== socket.id);
       if (onlineUsers[user.id].length === 0) {
         delete onlineUsers[user.id];
+
+        // Update is_online status when last connection closes
+        db.run(
+          `UPDATE players SET is_online = 0 WHERE id = ?`,
+          [user.id],
+          (err) => {
+            if (err) console.error("Error updating is_online status:", err);
+          }
+        );
 
         // Notify friends that this user is offline
         const friendIds = await getFriendIds(user.id);

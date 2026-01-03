@@ -19,9 +19,12 @@ export async function refreshTokenDate(token:string) {
 export async function verifyRefreshToken(refreshToken : string | any) : Promise<any>{
     return new Promise((resolve, reject) => {
         db.get(
-            "SELECT * FROM players WHERE  refreshToken = ?",
-            [refreshToken],
-            (err, exist) => {
+      `SELECT p.*, COALESCE(pi.desp, '') AS bio, COALESCE(pi.socials, '') AS socials
+       FROM players p
+       LEFT JOIN player_infos pi ON pi.player_id = p.id
+       WHERE p.refreshToken = ?`,
+      [refreshToken],
+      (err, exist) => {
                 if (err) {
                     reject(err);
                 } else {
@@ -53,12 +56,26 @@ export function RefreshToken() {
           firstname : user.firstName,
           lastName : user.lastName,
         });
-  
+
+        const sanitizedUser = {
+          id: user.id,
+          username: user.username,
+          email: user.email,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          avatar: user.avatar,
+          level: user.level || 1,
+          experience: user.experience || 0,
+          progression: (user.experience || 0) % 100,
+          bio: user.bio ?? "",
+          github: user.socials ? (() => { try { return JSON.parse(user.socials).github ?? ""; } catch { return ""; } })() : "",
+          instagram: user.socials ? (() => { try { return JSON.parse(user.socials).instagram ?? ""; } catch { return ""; } })() : "",
+          dateJoined: user.created_at ? new Date(user.created_at).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" }) : "Joined recently",
+          twoFactorEnabled: Boolean(user.two_factor_enabled),
+        };
+
         return reply.send({
-          user: {
-            ...user,
-            progression: (user.experience || 0) % 100,
-          },
+          user: sanitizedUser,
           token: { accessToken },
         });
       } catch (err) {

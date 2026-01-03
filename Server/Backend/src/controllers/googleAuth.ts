@@ -63,13 +63,14 @@ export async function GoogleAuthCallback(req: FastifyRequest, reply: FastifyRepl
 
     const { email, given_name, family_name, name, picture, sub: googleId } = payload;
     if (!email || !name) return reply.code(400).send({ message: "Missing user data" });
-    let user = await playerExist(email, name);
+    const normalizedEmail = email.toLowerCase();
+    let user = await playerExist(normalizedEmail, name);
     if (user){
       if (user.auth_Provider === 'local')
         return reply.code(403).send({message: "Please log with your google account"})
     }
     else {
-      const username = "@" + email.split("@")[0];
+      const username = ("@" + email.split("@")[0]).toLowerCase();
       const password = generateRandomPassword(8);
       const hashPassword = await bcrypt.hash(password, 10);
 
@@ -81,7 +82,7 @@ export async function GoogleAuthCallback(req: FastifyRequest, reply: FastifyRepl
             given_name || "",
             family_name || "",
             username,
-            email,
+            normalizedEmail,
             hashPassword,
             picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(given_name + " " + family_name)}&background=random&color=fff&size=128`,
             "google",
@@ -97,7 +98,7 @@ export async function GoogleAuthCallback(req: FastifyRequest, reply: FastifyRepl
         firstName: given_name,
         lastName: family_name,
         username: username,
-        email,
+        email: normalizedEmail,
         avatar: picture,
         auth_Provider: "google",
       };

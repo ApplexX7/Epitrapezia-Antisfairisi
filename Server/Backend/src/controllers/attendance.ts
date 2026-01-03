@@ -22,6 +22,26 @@ export function MarkAttendance() {
                 return reply.status(200).send({ message: "Attendance already marked for today" });
             }
 
+            // Get player's current level
+            const player: any = await new Promise((resolve, reject) => {
+                db.get(
+                    `SELECT level, experience FROM players WHERE id = ?`,
+                    [playerId],
+                    (err, row) => {
+                        if (err) reject(err);
+                        else resolve(row);
+                    }
+                );
+            });
+
+            if (!player) {
+                return reply.status(404).send({ message: "Player not found" });
+            }
+
+            // Calculate XP to award: 0.25 * level
+            const xpToAward = Math.floor(player.level * 0.25);
+            const newExperience = player.experience + xpToAward;
+
             // Insert new attendance
             await new Promise((resolve, reject) => {
                 db.run(
@@ -34,7 +54,23 @@ export function MarkAttendance() {
                 );
             });
 
-            return reply.status(201).send({ message: "Attendance marked successfully" });
+            // Update player's experience
+            await new Promise((resolve, reject) => {
+                db.run(
+                    `UPDATE players SET experience = ? WHERE id = ?`,
+                    [newExperience, playerId],
+                    function(err) {
+                        if (err) reject(err);
+                        else resolve(this.changes);
+                    }
+                );
+            });
+
+            return reply.status(201).send({ 
+                message: "Attendance marked successfully",
+                xpAwarded: xpToAward,
+                totalExperience: newExperience
+            });
         } catch (err) {
             console.error("Error marking attendance:", err);
             return reply.status(500).send({ message: 'Internal server error' });
