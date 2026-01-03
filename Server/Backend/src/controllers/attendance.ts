@@ -1,5 +1,6 @@
 import { FastifyReply, FastifyRequest } from "fastify";
 import { db } from "../databases/db";
+import { Server } from "../server";
 
 export function MarkAttendance() {
     return async (req: FastifyRequest, reply: FastifyReply) => {
@@ -38,8 +39,8 @@ export function MarkAttendance() {
                 return reply.status(404).send({ message: "Player not found" });
             }
 
-            // Calculate XP to award: 0.25 * level
-            const xpToAward = Math.floor(player.level * 0.25);
+            // Calculate XP to award: minimum 1 XP, or 0.25 * level (whichever is higher)
+            const xpToAward = Math.max(1, Math.floor(player.level * 0.25));
             const newExperience = player.experience + xpToAward;
 
             // Insert new attendance
@@ -64,6 +65,18 @@ export function MarkAttendance() {
                         else resolve(this.changes);
                     }
                 );
+            });
+
+            // Emit socket event to notify about XP update
+            const io = Server.socket();
+            io.to(String(playerId)).emit("xp:gained", {
+                xpAwarded: xpToAward,
+                totalExperience: newExperience,
+                type: "daily-attendance"
+            });
+            io.to(String(playerId)).emit("xp:updated", {
+                xpAwarded: xpToAward,
+                totalExperience: newExperience
             });
 
             return reply.status(201).send({ 
