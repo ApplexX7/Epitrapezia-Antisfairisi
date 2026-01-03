@@ -33,12 +33,13 @@ export default function Home() {
       if (res.data?.requests && res.data.requests.length > 0) {
         // Add pending requests as notifications if they're not already there
         res.data.requests.forEach((request: any) => {
-          const notifId = `friend-request-${request.senderId}`;
-          // Check if this notification already exists
-          const exists = notifications.some((n: any) => n.id === notifId);
+          // Check if there's already a friend-request notification from this sender
+          const exists = notifications.some((n: any) => 
+            n.type === "friend-request" && n.from?.id === request.senderId
+          );
           if (!exists) {
             addNotification({
-              id: notifId,
+              id: `friend-request-${request.senderId}-${Date.now()}`,
               type: "friend-request",
               message: `${request.senderUsername} sent you a friend request`,
               from: { id: request.senderId, username: request.senderUsername },
