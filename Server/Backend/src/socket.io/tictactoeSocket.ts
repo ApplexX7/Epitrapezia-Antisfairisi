@@ -1,0 +1,495 @@
+import { Server, Socket } from "socket.io";
+import { v4 as uuidv4 } from "uuid";
+import { db, ensureGameStatsForPlayer } from "../databases/db";
+import { UserSocket } from "./gameSocket";
+
+interface TicTacToeRoom {
+  id: string;
+  players: UserSocket[];
+  board: (string | null)[];
+  currentTurn: number; // player index (0 or 1)
+  scores: { [userId: number]: number };
+  playerSymbols: { [userId: number]: "X" | "O" };
+  recorded?: boolean;
+  roundWinner?: number | null;
+  gameOver?: boolean;
+}
+
+let tictactoeMatchmakingQueue: UserSocket[] = [];
+const activeTicTacToeRooms: Record<string, TicTacToeRoom> = {};
+
+function leaveAllTicTacToeRooms(player: UserSocket, keepRoomId?: string) {
+  try {
+    for (const r of player.rooms) {
+      if (r === player.id) continue;
+      if (keepRoomId && r === keepRoomId) continue;
+      if (typeof r === "string" && r.startsWith("ttt-room-")) {
+        try {
+          player.leave(r);
+        } catch {}
+      }
+    }
+  } catch {}
+}
+
+async function getAvatar(userId: number): Promise<string> {
+  return new Promise((resolve) => {
+    db.get(
+      "SELECT avatar FROM players WHERE id = ?",
+      [userId],
+      (err: any, row: any) => {
+        if (err) {
+          console.error("Error fetching avatar for user", userId, err?.message || err);
+          return resolve("/images/player2.png");
+        }
+        resolve(row?.avatar ? row.avatar : "/images/player2.png");
+      }
+    );
+  });
+}
+
+// Function to update player level based on experience
+function updateLevel(playerId: number) {
+  db.get(
+    `SELECT experience FROM players WHERE id = ?`,
+    [playerId],
+    (err, row: { experience: number }) => {
+      if (err) {
+        console.error("Error getting experience:", err);
+        return;
+      }
+      const experience = row.experience;
+      const newLevel = Math.floor(experience / 100) + 1;
+      
+      db.run(
+        `UPDATE players SET level = ? WHERE id = ?`,
+        [newLevel, playerId],
+        (updateErr) => {
+          if (updateErr) console.error("Error updating level:", updateErr);
+        }
+      );
+    }
+  );
+}
+
+function checkWinner(board: (string | null)[]): { player: string; line: number[] } | null {
+  const lines = [
+    [0, 1, 2],
+    [3, 4, 5],
+    [6, 7, 8],
+    [0, 3, 6],
+    [1, 4, 7],
+    [2, 5, 8],
+    [0, 4, 8],
+    [2, 4, 6],
+  ];
+
+  for (const line of lines) {
+    const [a, b, c] = line;
+    if (board[a] && board[a] === board[b] && board[b] === board[c]) {
+      return { player: board[a]!, line };
+    }
+  }
+  return null;
+}
+
+function isBoardFull(board: (string | null)[]): boolean {
+  return board.every((cell) => cell !== null);
+}
+
+async function recordTicTacToeMatchResult(room: TicTacToeRoom, winnerId: number, loserId: number) {
+  if (room.recorded) return;
+  room.recorded = true;
+  try {
+    await ensureGameStatsForPlayer(winnerId);
+    await ensureGameStatsForPlayer(loserId);
+
+    // Update winner stats
+    await new Promise<void>((resolve, reject) => {
+      db.run(
+        `UPDATE game_stats SET total_games = total_games + 1, wins = wins + 1, updated_at = CURRENT_TIMESTAMP WHERE player_id = ?`,
+        [winnerId],
+        (err: any) => (err ? reject(err) : resolve())
+      );
+    });
+
+    // Update loser stats
+    await new Promise<void>((resolve, reject) => {
+      db.run(
+        `UPDATE game_stats SET total_games = total_games + 1, losses = losses + 1, updated_at = CURRENT_TIMESTAMP WHERE player_id = ?`,
+        [loserId],
+        (err: any) => (err ? reject(err) : resolve())
+      );
+    });
+
+    // Add XP for games played and wins
+    await new Promise<void>((resolve, reject) => {
+      db.run(
+        `UPDATE players SET experience = experience + 5 WHERE id = ?`,
+        [loserId],
+        (err: any) => (err ? reject(err) : resolve())
+      );
+    });
+    
+    await new Promise<void>((resolve, reject) => {
+      db.run(
+        `UPDATE players SET experience = experience + 15 WHERE id = ?`,
+        [winnerId],
+        (err: any) => (err ? reject(err) : resolve())
+      );
+    });
+
+    // Update levels for both players
+    updateLevel(winnerId);
+    updateLevel(loserId);
+
+    // Insert to game history
+    try {
+      const p1Id = room.players[0]?.user?.id;
+      const p2Id = room.players[1]?.user?.id;
+      const p1Score = room.scores[p1Id] ?? 0;
+      const p2Score = room.scores[p2Id] ?? 0;
+
+      await new Promise<void>((resolve, reject) => {
+        db.run(
+          `INSERT INTO game_history (player1_id, player2_id, player1_score, player2_score, winner_id) VALUES (?, ?, ?, ?, ?)`,
+          [p1Id, p2Id, p1Score, p2Score, winnerId],
+          (err: any) => (err ? reject(err) : resolve())
+        );
+      });
+    } catch (e) {
+      console.error('Failed to insert into game_history for tictactoe room', room.id, e);
+    }
+  } catch (e) {
+    console.error('Failed to record tictactoe match result for room', room.id, e);
+  }
+}
+
+export async function createTicTacToeRoom(
+  io: Server,
+  playerX: UserSocket,
+  playerO: UserSocket
+): Promise<{ roomId: string } | null> {
+  if (!playerX?.user?.id || !playerO?.user?.id) return null;
+  if (playerX.user.id === playerO.user.id) return null;
+
+  const roomId = `ttt-room-${uuidv4()}`;
+  const room: TicTacToeRoom = {
+    id: roomId,
+    players: [playerX, playerO],
+    board: Array(9).fill(null),
+    currentTurn: 0, // playerX starts
+    scores: {
+      [playerX.user.id]: 0,
+      [playerO.user.id]: 0,
+    },
+    playerSymbols: {
+      [playerX.user.id]: "X",
+      [playerO.user.id]: "O",
+    },
+    recorded: false,
+    roundWinner: null,
+    gameOver: false,
+  };
+
+  activeTicTacToeRooms[roomId] = room;
+
+  // Remove both from matchmaking queue
+  tictactoeMatchmakingQueue = tictactoeMatchmakingQueue.filter(
+    (s) => s.id !== playerX.id && s.id !== playerO.id
+  );
+
+  // Clean up old room memberships
+  leaveAllTicTacToeRooms(playerX, roomId);
+  leaveAllTicTacToeRooms(playerO, roomId);
+
+  playerX.join(roomId);
+  playerO.join(roomId);
+
+  const [xAvatar, oAvatar] = await Promise.all([
+    getAvatar(playerX.user.id),
+    getAvatar(playerO.user.id),
+  ]);
+
+  playerX.emit("ttt:matched", {
+    opponent: {
+      id: playerO.user.id,
+      username: playerO.user.username,
+      avatar: oAvatar,
+    },
+    symbol: "X",
+    roomId,
+  });
+
+  playerO.emit("ttt:matched", {
+    opponent: {
+      id: playerX.user.id,
+      username: playerX.user.username,
+      avatar: xAvatar,
+    },
+    symbol: "O",
+    roomId,
+  });
+
+  console.log(
+    `🎮 TicTacToe Room created: ${roomId} (${playerX.user.username} [X] vs ${playerO.user.username} [O])`
+  );
+
+  // Send initial game state
+  io.to(roomId).emit("ttt:gameState", {
+    board: room.board,
+    currentTurn: playerX.user.id,
+    scores: room.scores,
+    playerSymbols: room.playerSymbols,
+    winner: null,
+    isDraw: false,
+  });
+
+  return { roomId };
+}
+
+export function registerTicTacToeSocket(io: Server, socket: UserSocket) {
+  // Join TicTacToe matchmaking
+  socket.on("ttt:joinMatchup", async () => {
+    console.log(`🎮 ${socket.user.username} joined TicTacToe matchmaking`);
+
+    const alreadyInQueue = tictactoeMatchmakingQueue.some(
+      (s) => s.id === socket.id
+    );
+
+    if (alreadyInQueue) {
+      console.log(`⚠️ ${socket.user.username} already in TicTacToe matchmaking, stopping...`);
+      socket.emit("ttt:stopMatchmaking", { message: "Matchmaking cancelled" });
+      tictactoeMatchmakingQueue = tictactoeMatchmakingQueue.filter((s) => s.id !== socket.id);
+      return;
+    }
+
+    tictactoeMatchmakingQueue.push(socket);
+    socket.emit("ttt:waiting", { message: "Searching for opponent..." });
+
+    // Try to match with another player
+    const opponent = tictactoeMatchmakingQueue.find((s) => s.user.id !== socket.user.id);
+    if (!opponent) return;
+
+    await createTicTacToeRoom(io, socket, opponent);
+  });
+
+  // Handle a move
+  socket.on("ttt:makeMove", ({ roomId, index }: { roomId: string; index: number }) => {
+    const room = activeTicTacToeRooms[roomId];
+    if (!room) return;
+
+    // Verify the sender is a participant
+    const playerIndex = room.players.findIndex((p) => p.id === socket.id);
+    if (playerIndex === -1) {
+      console.warn(`Unauthorized ttt:makeMove from ${socket.user?.username} for room ${roomId}`);
+      return;
+    }
+
+    // Check if it's this player's turn
+    if (room.currentTurn !== playerIndex) {
+      socket.emit("ttt:error", { message: "Not your turn!" });
+      return;
+    }
+
+    // Check if cell is empty
+    if (room.board[index] !== null) {
+      socket.emit("ttt:error", { message: "Cell already taken!" });
+      return;
+    }
+
+    // Check if round/game is over
+    if (room.roundWinner !== null && room.roundWinner !== undefined) {
+      return;
+    }
+    if (room.gameOver) {
+      return;
+    }
+
+    // Make the move
+    const symbol = room.playerSymbols[socket.user.id];
+    room.board[index] = symbol;
+
+    // Check for winner
+    const winResult = checkWinner(room.board);
+    const isDraw = !winResult && isBoardFull(room.board);
+
+    if (winResult) {
+      // Update score
+      room.scores[socket.user.id] = (room.scores[socket.user.id] ?? 0) + 1;
+      room.roundWinner = socket.user.id;
+
+      // Check if match is over (first to 3)
+      if (room.scores[socket.user.id] >= 3) {
+        room.gameOver = true;
+        const loserId = room.players.find((p) => p.user.id !== socket.user.id)?.user.id;
+        
+        if (loserId) {
+          recordTicTacToeMatchResult(room, socket.user.id, loserId).catch((e) => {
+            console.error('Failed to record TicTacToe match result:', e);
+          });
+        }
+
+        io.to(roomId).emit("ttt:gameState", {
+          board: room.board,
+          currentTurn: null,
+          scores: room.scores,
+          playerSymbols: room.playerSymbols,
+          winner: { 
+            oderId: socket.user.id, 
+            line: winResult.line,
+            username: socket.user.username 
+          },
+          isDraw: false,
+          matchOver: true,
+          matchWinner: {
+            id: socket.user.id,
+            username: socket.user.username,
+          },
+        });
+
+        // Clean up room after a delay
+        setTimeout(() => {
+          delete activeTicTacToeRooms[roomId];
+        }, 5000);
+
+        return;
+      }
+    }
+
+    // Switch turn
+    room.currentTurn = room.currentTurn === 0 ? 1 : 0;
+    const nextPlayer = room.players[room.currentTurn];
+
+    io.to(roomId).emit("ttt:gameState", {
+      board: room.board,
+      currentTurn: nextPlayer?.user.id ?? null,
+      scores: room.scores,
+      playerSymbols: room.playerSymbols,
+      winner: winResult ? { 
+        oderId: socket.user.id, 
+        line: winResult.line,
+        username: socket.user.username 
+      } : null,
+      isDraw,
+      matchOver: false,
+    });
+  });
+
+  // Handle next round request
+  socket.on("ttt:nextRound", ({ roomId }: { roomId: string }) => {
+    const room = activeTicTacToeRooms[roomId];
+    if (!room) return;
+
+    const playerIndex = room.players.findIndex((p) => p.id === socket.id);
+    if (playerIndex === -1) return;
+
+    if (room.gameOver) return;
+
+    // Reset board for next round
+    room.board = Array(9).fill(null);
+    room.roundWinner = null;
+    
+    // Alternate who starts
+    room.currentTurn = room.currentTurn === 0 ? 1 : 0;
+    const nextPlayer = room.players[room.currentTurn];
+
+    io.to(roomId).emit("ttt:gameState", {
+      board: room.board,
+      currentTurn: nextPlayer?.user.id ?? null,
+      scores: room.scores,
+      playerSymbols: room.playerSymbols,
+      winner: null,
+      isDraw: false,
+      matchOver: false,
+    });
+  });
+
+  // Handle disconnect
+  socket.on("disconnect", () => {
+    // Remove from matchmaking queue
+    const idx = tictactoeMatchmakingQueue.indexOf(socket);
+    if (idx !== -1) tictactoeMatchmakingQueue.splice(idx, 1);
+
+    // Handle active room disconnect
+    for (const [id, room] of Object.entries(activeTicTacToeRooms)) {
+      const playerIndex = room.players.findIndex((p) => p.id === socket.id);
+      if (playerIndex !== -1) {
+        io.to(id).emit("ttt:gameOver", { 
+          message: `${socket.user.username} disconnected`,
+          disconnected: socket.user.id 
+        });
+
+        // Record result: other player wins
+        try {
+          const other = room.players.find((p) => p.id !== socket.id);
+          if (other && !room.recorded) {
+            recordTicTacToeMatchResult(room, other.user.id, socket.user.id).catch((e) => {
+              console.error('Error recording TicTacToe disconnect result:', e);
+            });
+          }
+        } catch (e) {
+          console.error('Error handling TicTacToe disconnect for room', id, e);
+        }
+
+        delete activeTicTacToeRooms[id];
+      }
+    }
+  });
+
+  // Allow rejoining a room
+  socket.on("ttt:joinRoom", async (data: any, callback?: Function) => {
+    const { roomId } = data || {};
+    if (!roomId || typeof roomId !== "string") {
+      if (callback) callback({ ok: false, error: "Missing roomId" });
+      return;
+    }
+
+    const room = activeTicTacToeRooms[roomId];
+    if (!room) {
+      if (callback) callback({ ok: false, error: "Room not found" });
+      return;
+    }
+
+    const idx = room.players.findIndex((p) => p.user.id === socket.user.id);
+    if (idx === -1) {
+      if (callback) callback({ ok: false, error: "Not a participant" });
+      return;
+    }
+
+    const oldSocket = room.players[idx];
+    if (oldSocket && oldSocket.id !== socket.id) {
+      try {
+        oldSocket.leave(roomId);
+      } catch {}
+    }
+    room.players[idx] = socket;
+    leaveAllTicTacToeRooms(socket, roomId);
+    socket.join(roomId);
+
+    const opponent = room.players[idx === 0 ? 1 : 0];
+    const opponentAvatar = opponent ? await getAvatar(opponent.user.id) : "/images/player2.png";
+
+    socket.emit("ttt:matched", {
+      opponent: opponent
+        ? { id: opponent.user.id, username: opponent.user.username, avatar: opponentAvatar }
+        : { id: -1, username: "Opponent", avatar: opponentAvatar },
+      symbol: room.playerSymbols[socket.user.id],
+      roomId,
+    });
+
+    // Send current game state
+    const currentPlayer = room.players[room.currentTurn];
+    socket.emit("ttt:gameState", {
+      board: room.board,
+      currentTurn: currentPlayer?.user.id ?? null,
+      scores: room.scores,
+      playerSymbols: room.playerSymbols,
+      winner: null,
+      isDraw: false,
+      matchOver: room.gameOver ?? false,
+    });
+
+    if (callback) callback({ ok: true, roomId });
+  });
+}

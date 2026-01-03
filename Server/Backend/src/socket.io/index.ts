@@ -2,6 +2,7 @@ import { Server } from "socket.io";
 import { registerChatSocket } from "./chatSocket";
 import { registerNotifSocket } from "./notifSocket";
 import { registerGameSocket } from "./gameSocket";
+import { registerTicTacToeSocket } from "./tictactoeSocket";
 import jwt from "jsonwebtoken";
 import { db } from "../databases/db";
 
@@ -173,6 +174,7 @@ export function registerSocketHandlers(io: Server) {
     registerChatSocket(io, socket, onlineUsers);
     registerNotifSocket(io, socket, onlineUsers);
     registerGameSocket(io, socket);
+    registerTicTacToeSocket(io, socket);
 
     socket.on("disconnect", async () => {
       // Clear the update interval
