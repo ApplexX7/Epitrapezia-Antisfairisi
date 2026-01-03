@@ -1,61 +1,74 @@
 import { FastifyRequest, FastifyReply } from "fastify";
 import { db } from "../databases/db";
-import { refreshTokenDate , verifyRefreshToken} from "./authRefresh";
+import { refreshTokenDate, verifyRefreshToken } from "./authRefresh";
 import path from "path";
-import fs, { write } from 'fs'
-import fastifyMultipart from "@fastify/multipart";
+import fs from "fs";
+import { pipeline } from "stream/promises";
+import sharp from "sharp";
 
-export function playerAvatare (){
-    return  async(req : FastifyRequest, reply : FastifyReply) => {
-        try{
-            const refreshToken = req.cookies.refreshToken;
-            if (!refreshToken)
-              return reply.status(401).send({ message: "No refresh token" });
-            const expiredDate = await refreshTokenDate(refreshToken);
-            if (!expiredDate)
-                return reply.status(403).send( {message: "RefreshToken Expired"})
-            const user = await verifyRefreshToken(refreshToken);
-            if (!user) {
-                return reply.status(403).send({ message: "Invalid refresh token" });
-            }
-            const data = await req.file()
-            if (!data){
-                return reply.code(400).send({message : "Not file to uplaod"});
-            }
-            const filename = `${Date.now()}_${data.filename}`;
-            const uploadsDir = path.join(__dirname, 'uploads');
-            const filePath = path.join(uploadsDir, filename);
-            const urlPath = `/uploads/${filename}`;
-            
-            if (!fs.existsSync(uploadsDir))
-                    fs.mkdirSync(uploadsDir, {recursive : true});
-            const writeStream = fs.createWriteStream(filePath);
-            data.file.pipe(writeStream);
-            writeStream.on('finish', async () =>{
-                try{
-                    const updateAvatar : any = await new Promise<void>((resolve, reject) => {
-                        db.run(
-                            "UPDATE players SET avatar = ? WHERE id = ?",
-                            [urlPath, user.id],
-                            function(err){
-                                if (err) reject(err);
-                                else resolve();
-                            }
-                        )
-                    });
-                    reply.code(201).send({
-                        message : "Avatar uploaded successfully",
-                        avatar: urlPath,
-                    });
-                }catch(err){
-                    return reply.code(500).send({message : "Internal Server Error"});
-                }
-            })
-            writeStream.on('error', (err) => {
-                reply.status(500).send({ message: 'Error uploading file', error: err.message });
-            });
-        }catch(err){
-            return reply.code(500).send({message : "Internal Server Error"});
+export function playerAvatar() {
+  return async (req: FastifyRequest, reply: FastifyReply) => {
+    try {
+    const user = (req as any).user;
+      const data = await req.file();
+      if (!data)
+        return reply.code(400).send({ message: "No file to upload" });
+
+      if (!data.mimetype.startsWith("image/")) {
+        return reply
+          .code(400)
+          .send({ message: "Only image files are allowed" });
+      }
+
+      const uploadsDir = path.join(__dirname, "uploads");
+      if (!fs.existsSync(uploadsDir)) {
+        fs.mkdirSync(uploadsDir, { recursive: true });
+      }
+
+      const oldAvatar: string | undefined = await new Promise((resolve) => {
+        db.get(
+          "SELECT avatar FROM players WHERE id = ?",
+          [user.id],
+          (err, row: any) => resolve(row?.avatar)
+        );
+      });
+
+      if (oldAvatar) {
+        const oldPath = path.join(__dirname, oldAvatar);
+        if (fs.existsSync(oldPath)) {
+          fs.unlinkSync(oldPath);
         }
+      }
+
+      const filename = `avatar_${user.id}.webp`;
+      const filePath = path.join(uploadsDir, filename);
+      const urlPath = `/uploads/${filename}`;
+
+      await pipeline(
+        data.file,
+        sharp()
+          .resize(256, 256, {
+            fit: "cover",
+          })
+          .toFormat("webp")
+          .webp({ quality: 80 }),
+        fs.createWriteStream(filePath)
+      );
+
+      await new Promise<void>((resolve, reject) => {
+        db.run(
+          "UPDATE players SET avatar = ? WHERE id = ?",
+          [urlPath, user.id],
+          (err) => (err ? reject(err) : resolve())
+        );
+      });
+
+      return reply.code(201).send({
+        message: "Avatar uploaded successfully",
+        avatar: urlPath,
+      });
+    } catch (err) {
+      return reply.code(500).send({ message: "Internal Server Error" });
     }
+  };
 }

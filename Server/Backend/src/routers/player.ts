@@ -1,5 +1,5 @@
 import { Server } from "../server";
-import { playerAvatare } from "../controllers/playerAvatare";
+import { playerAvatar } from "../controllers/playerAvatare";
 import { UserSearch } from "../controllers/UserSearch";
 import { getUserInfo } from "../controllers/getUserInfo";
 import { updateProfile } from "../controllers/updateProfile";
@@ -11,7 +11,7 @@ import { GetXpHistory } from "../controllers/getXpHistory";
 
 
 export function playerSettings(){
-    Server.instance().post("/settings/avatar", playerAvatare());
+    Server.instance().post("/settings/avatar", playerAvatar());
     Server.instance().put("/settings/profile", updateProfile());
     Server.instance().put("/settings/password", updatePassword());
     Server.instance().put("/settings/2fa", toggleTwoFactor());
