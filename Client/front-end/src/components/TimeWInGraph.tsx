@@ -4,6 +4,7 @@ import { TrendingUp } from "lucide-react"
 import { Area, AreaChart, CartesianGrid, XAxis ,YAxis } from "recharts"
 import { useEffect, useState } from "react"
 import api from "@/lib/axios"
+import { useSocketStore } from "./hooks/SocketIOproviders"
 
 import {
   Card,
@@ -36,31 +37,57 @@ export function ChartAreaDefault({ playerId }: XpGraphProps) {
     { week: "Week 1", xp: 0 },
   ])
   const [loading, setLoading] = useState(true)
+  const socket = useSocketStore((state: any) => state.socket)
+
+  const fetchXpHistory = async () => {
+    try {
+      const response = await api.get(`/stats/xp-history/${playerId}`)
+      const { xpHistory } = response.data
+
+      // Format data for chart
+      const formattedData = xpHistory.map((entry: any) => ({
+        week: entry.week,
+        xp: entry.xp
+      }))
+
+      setChartData(formattedData)
+      setLoading(false)
+    } catch (err) {
+      console.error("Failed to fetch XP history:", err)
+      setLoading(false)
+    }
+  }
 
   useEffect(() => {
-    const fetchXpHistory = async () => {
-      try {
-        const response = await api.get(`/stats/xp-history/${playerId}`)
-        const { xpHistory } = response.data
-
-        // Format data for chart
-        const formattedData = xpHistory.map((entry: any) => ({
-          week: entry.week,
-          xp: entry.xp
-        }))
-
-        setChartData(formattedData)
-        setLoading(false)
-      } catch (err) {
-        console.error("Failed to fetch XP history:", err)
-        setLoading(false)
-      }
-    }
-
     if (playerId) {
       fetchXpHistory()
     }
   }, [playerId])
+
+  // Listen for XP updates via socket
+  useEffect(() => {
+    if (!socket) return
+
+    const handleXpUpdate = () => {
+      fetchXpHistory()
+    }
+
+    const handleGameEnd = () => {
+      // Refetch XP history when a game ends
+      fetchXpHistory()
+    }
+
+    // Listen for XP gain events
+    socket.on("xp:gained", handleXpUpdate)
+    socket.on("game:ended", handleGameEnd)
+    socket.on("xp:updated", handleXpUpdate)
+
+    return () => {
+      socket.off("xp:gained", handleXpUpdate)
+      socket.off("game:ended", handleGameEnd)
+      socket.off("xp:updated", handleXpUpdate)
+    }
+  }, [socket])
 
   if (loading) {
     return (
