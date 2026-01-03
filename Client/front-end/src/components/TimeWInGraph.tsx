@@ -42,13 +42,23 @@ export function ChartAreaDefault({ playerId }: XpGraphProps) {
   const fetchXpHistory = async () => {
     try {
       const response = await api.get(`/stats/xp-history/${playerId}`)
-      const { xpHistory } = response.data
+      const { xpHistory, currentExperience } = response.data
 
       // Format data for chart
       const formattedData = xpHistory.map((entry: any) => ({
         week: entry.week,
-        xp: entry.xp
+        xp: entry.xp || 0,
+        weekGain: entry.weekGain || 0
       }))
+
+      // If no data, show current experience
+      if (formattedData.length === 0) {
+        formattedData.push({
+          week: "Week 1",
+          xp: currentExperience || 0,
+          weekGain: 0
+        })
+      }
 
       setChartData(formattedData)
       setLoading(false)
@@ -126,6 +136,8 @@ export function ChartAreaDefault({ playerId }: XpGraphProps) {
                   tickLine={false}
                   axisLine={true}
                   tickMargin={6}
+                  domain={[0, "dataMax + 10"]}
+                  type="number"
               />
             <ChartTooltip
               cursor={false}
