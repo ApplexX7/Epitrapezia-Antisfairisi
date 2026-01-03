@@ -8,6 +8,8 @@ export function MarkAttendance() {
             const playerId = (req as any).user.id;
             const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
 
+            console.log(`[Attendance] Player ${playerId} marking attendance for ${today}`);
+
             const existing = await new Promise((resolve, reject) => {
                 db.get(
                     `SELECT id FROM attendance WHERE player_id = ? AND date = ?`,
@@ -20,6 +22,7 @@ export function MarkAttendance() {
             });
 
             if (existing) {
+                console.log(`[Attendance] Player ${playerId} already marked attendance today`);
                 return reply.status(200).send({ message: "Attendance already marked for today" });
             }
 
@@ -73,8 +76,13 @@ export function MarkAttendance() {
                     `INSERT OR REPLACE INTO xp_history (player_id, date, xp_gained, source) VALUES (?, ?, ?, 'attendance')`,
                     [playerId, today, xpToAward],
                     function(err) {
-                        if (err) reject(err);
-                        else resolve(this.lastID);
+                        if (err) {
+                            console.error(`[Attendance] Error logging XP history for player ${playerId}:`, err);
+                            reject(err);
+                        } else {
+                            console.log(`[Attendance] Logged ${xpToAward} XP for player ${playerId} in xp_history`);
+                            resolve(this.lastID);
+                        }
                     }
                 );
             });
@@ -91,6 +99,8 @@ export function MarkAttendance() {
                 totalExperience: newExperience
             });
 
+            console.log(`[Attendance] Successfully marked attendance for player ${playerId}, awarded ${xpToAward} XP, total: ${newExperience}`);
+
             return reply.status(201).send({ 
                 message: "Attendance marked successfully",
                 xpAwarded: xpToAward,
@@ -98,7 +108,7 @@ export function MarkAttendance() {
             });
         } catch (err) {
             console.error("Error marking attendance:", err);
-            return reply.status(500).send({ message: 'Internal server error' });
+            return reply.status(500).send({ message: 'Internal server error', error: String(err) });
         }
     };
 }

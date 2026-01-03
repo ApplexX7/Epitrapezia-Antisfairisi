@@ -1,18 +1,21 @@
 "use client";
 import { BoxLayout } from '@/components/BoxLayout'
 import GameHistory from '@/components/GameHistory'
-import PendingFriendRequests from '@/components/PendingFriendRequests'
 import React from "react";
 import BarProgressionLevel  from '@/components/BarProgressionLevel'
 import {ChartLineDefault} from '@/components/LineChart'
 import { ChartBarDefault } from '@/components/TimeLineLogin'
 import { useAuth } from '@/components/hooks/authProvider';
+import { useSocketStore } from '@/components/hooks/SocketIOproviders';
 import api from '@/lib/axios';
 
 
 export default function Home() {
   const user = useAuth.getState().user
   const [gamesHistory, setGamesHistory] = React.useState<any[]>([]);
+  const addNotification = useSocketStore((state: any) => state.addNotification);
+  const notifications = useSocketStore((state: any) => state.notifications);
+
   const historyGames = async () => {
     try {
       const response = await api.get('/historygames');
@@ -24,8 +27,36 @@ export default function Home() {
     }
   };
 
+  const fetchPendingRequests = async () => {
+    try {
+      const res = await api.get("/friends/requests/pending");
+      if (res.data?.requests && res.data.requests.length > 0) {
+        // Add pending requests as notifications if they're not already there
+        res.data.requests.forEach((request: any) => {
+          const notifId = `friend-request-${request.senderId}`;
+          // Check if this notification already exists
+          const exists = notifications.some((n: any) => n.id === notifId);
+          if (!exists) {
+            addNotification({
+              id: notifId,
+              type: "friend-request",
+              message: `${request.senderUsername} sent you a friend request`,
+              from: { id: request.senderId, username: request.senderUsername },
+              time: new Date().toISOString(),
+              read: false
+            });
+          }
+        });
+      }
+    } catch (err) {
+      console.error("Error fetching pending requests:", err);
+    }
+  };
+
   React.useEffect(() => {
     historyGames();
+    // Fetch pending friend requests on page load
+    fetchPendingRequests();
     // Mark attendance on page load
     api.post('/attendance/mark').catch(error => {
       console.error("Error marking attendance:", error);
@@ -40,9 +71,6 @@ export default function Home() {
       >
        {`Welcome ${user?.username}`}
       </h1>
-      <div className="p-5 w-full">
-        <PendingFriendRequests />
-      </div>
       <div className="-mt-4 grid grid-cols-4 
         gap-5 w-full h-[calc(100%-232px)] p-5  auto-rows-min">
         <BoxLayout className="grid grid-cols-1 xl:grid-cols-3 row-span-10 gap-5 col-span-4">
