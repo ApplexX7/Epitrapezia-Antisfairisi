@@ -17,6 +17,7 @@ interface FriendRequest {
 export default function PendingFriendRequests() {
   const [requests, setRequests] = useState<FriendRequest[]>([]);
   const [loading, setLoading] = useState(false);
+  const [busyIds, setBusyIds] = useState<Set<number>>(new Set());
 
   useEffect(() => {
     fetchPendingRequests();
@@ -37,22 +38,38 @@ export default function PendingFriendRequests() {
   };
 
   const handleAccept = async (senderId: number) => {
+    if (busyIds.has(senderId)) return;
+
+    setBusyIds((prev) => new Set(prev).add(senderId));
     try {
       await api.post("/friends/Accept", { friendId: senderId });
       toast.success("Friend request accepted!");
-      setRequests(requests.filter((r) => r.senderId !== senderId));
+      setRequests((prev) => prev.filter((r) => r.senderId !== senderId));
     } catch (err: any) {
       toast.error(err.response?.data?.message || "Failed to accept request");
+      setBusyIds((prev) => {
+        const next = new Set(prev);
+        next.delete(senderId);
+        return next;
+      });
     }
   };
 
   const handleDecline = async (senderId: number) => {
+    if (busyIds.has(senderId)) return;
+
+    setBusyIds((prev) => new Set(prev).add(senderId));
     try {
       await api.post("/friends/Remove", { friendId: senderId });
       toast.success("Friend request declined");
-      setRequests(requests.filter((r) => r.senderId !== senderId));
+      setRequests((prev) => prev.filter((r) => r.senderId !== senderId));
     } catch (err: any) {
       toast.error(err.response?.data?.message || "Failed to decline request");
+      setBusyIds((prev) => {
+        const next = new Set(prev);
+        next.delete(senderId);
+        return next;
+      });
     }
   };
 
@@ -96,15 +113,17 @@ export default function PendingFriendRequests() {
             <div className="flex gap-2">
               <button
                 onClick={() => handleAccept(request.senderId)}
-                className="p-2 rounded-full bg-green-100 text-green-600 hover:bg-green-200 transition-colors"
+                className="p-2 rounded-full bg-green-100 text-green-600 hover:bg-green-200 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
                 title="Accept"
+                disabled={busyIds.has(request.senderId)}
               >
                 <Check size={20} weight="bold" />
               </button>
               <button
                 onClick={() => handleDecline(request.senderId)}
-                className="p-2 rounded-full bg-red-100 text-red-600 hover:bg-red-200 transition-colors"
+                className="p-2 rounded-full bg-red-100 text-red-600 hover:bg-red-200 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
                 title="Decline"
+                disabled={busyIds.has(request.senderId)}
               >
                 <X size={20} weight="bold" />
               </button>
