@@ -80,14 +80,17 @@ export default function Profile() {
         bg-gradient-to-r from-white-smoke to-white-smoke/60
         text-transparent bg-clip-text z-10" >{isOwnProfile ? 'My Account' : `${profileUser?.username}'s Profile`}</h1>
       <div className="-mt-4 grid grid-cols-4 
-        gap-5 w-full h-[calc(100vh-0.5rem)] p-5  auto-rows-min overflow-y-auto scrollbar-hide"
-        style={{
-          scrollbarWidth: 'none',
-          msOverflowStyle: 'none'
-        }}>
+        gap-5 w-full h-[calc(100vh-3rem)] p-5  auto-rows-min overflow-y-auto">
         <style>{`
           div::-webkit-scrollbar {
-            display: none;
+            width: 8px;
+          }
+          div::-webkit-scrollbar-track {
+            background: transparent;
+          }
+          div::-webkit-scrollbar-thumb {
+            background: #8b7f9a;
+            border-radius: 4px;
           }
         `}</style>
           <BoxLayout className="w-full h-ful   card col-span-3 row-span-2">
