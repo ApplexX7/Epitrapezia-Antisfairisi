@@ -48,6 +48,24 @@ export function toggleTwoFactor() {
         return reply.code(400).send({ message: "enabled boolean is required" });
       }
 
+      // Fetch user to check auth provider
+      const user = await new Promise<any>((resolve, reject) => {
+        db.get("SELECT auth_Provider FROM players WHERE id = ?", [authUser.id], (err, row) =>
+          err ? reject(err) : resolve(row)
+        );
+      });
+
+      if (!user) return reply.code(404).send({ message: "User not found" });
+
+      // Check if user is purely Google-authenticated
+      const providers = (user.auth_Provider || "local").split(",").map((p: string) => p.trim());
+      const isGoogleOnly = providers.includes("google") && !providers.includes("local");
+
+      // Block Google-only accounts from enabling 2FA
+      if (isGoogleOnly) {
+        return reply.code(403).send({ message: "Two-Factor Authentication is disabled for Google-only sign-in accounts" });
+      }
+
       await new Promise<void>((resolve, reject) => {
         db.run(
           "UPDATE players SET two_factor_enabled = ? WHERE id = ?",

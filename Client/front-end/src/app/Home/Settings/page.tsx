@@ -31,8 +31,14 @@ export default function Home() {
   const isFormValid = firstName.trim() !== '' && lastName.trim() !== '' && bio.trim() !== '';
   // User is Google-only if they have Google but no local password yet
   const isGoogleOnly = user?.authProvider?.includes('google') && !user?.authProvider?.includes('local');
-  // For Google-only users, only need new password fields. For others, need current password too.
-  const isPasswordFormValid = newPassword.trim() !== '' && confirmPassword.trim() !== '' && newPassword === confirmPassword && newPassword.length >= 8 && (!isGoogleOnly || !currentPassword.trim() === '') && (isGoogleOnly || currentPassword.trim() !== '');
+  const canChangePassword = !isGoogleOnly;
+  const isPasswordFormValid = canChangePassword
+    && newPassword.trim() !== ''
+    && confirmPassword.trim() !== ''
+    && newPassword === confirmPassword
+    && newPassword.length >= 8
+    && currentPassword.trim() !== '';
+  const isTwoFactorBlocked = isGoogleOnly;
 
   const handleUploadClick = () => {
     fileInputRef.current?.click();
@@ -128,6 +134,11 @@ export default function Home() {
   const handlePasswordSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
+    if (!canChangePassword) {
+      toast.error('Password login is disabled for Google-only accounts.');
+      return;
+    }
+
     if (newPassword !== confirmPassword) {
       toast.error('New passwords do not match!');
       return;
@@ -156,6 +167,11 @@ export default function Home() {
   };
 
   const handleToggle2FA = async () => {
+    if (isTwoFactorBlocked) {
+      toast.error('Two-Factor Authentication is unavailable for Google-only sign-in.');
+      return;
+    }
+
     try {
       const res = await api.put('/settings/2fa', {
         enabled: !twoFactorEnabled,
@@ -393,7 +409,7 @@ export default function Home() {
             className="w-full" 
             onSubmit={handlePasswordSubmit}>
             <div className="w-full flex flex-col gap-4">
-              {!isGoogleOnly && (
+              {canChangePassword && (
                 <div className="flex flex-col gap-2">
                   <label className="font-semibold" htmlFor="currentPassword">Current Password</label>
                   <input 
@@ -407,9 +423,9 @@ export default function Home() {
                   />
                 </div>
               )}
-              {isGoogleOnly && (
+              {!canChangePassword && (
                 <div className="text-sm text-blue-600 bg-blue-50 p-3 rounded-lg">
-                  💡 Since you registered with Google, you can create a password to enable local login. You'll be able to use both Google and password to login.
+                  Google sign-in only: password login is disabled and your password remains unset.
                 </div>
               )}
               
@@ -422,6 +438,7 @@ export default function Home() {
                     name="newPassword" 
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
+                    disabled={!canChangePassword}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-nave"
                     placeholder="At least 8 characters"
                   />
@@ -434,6 +451,7 @@ export default function Home() {
                     name="confirmPassword" 
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
+                    disabled={!canChangePassword}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-nave"
                     placeholder="Re-enter new password"
                   />
@@ -482,16 +500,22 @@ export default function Home() {
                 <button
                   type="button"
                   onClick={handleToggle2FA}
-                  className={`ml-4 py-2 px-6 inline-flex items-center gap-x-2 text-sm font-medium rounded-lg border transition-all ${
-                    twoFactorEnabled
+                  disabled={isTwoFactorBlocked}
+                  className={`ml-4 py-2 px-6 inline-flex items-center gap-x-2 text-sm font-medium rounded-lg border transition-all disabled:opacity-50 disabled:cursor-not-allowed ${
+                    twoFactorEnabled && !isTwoFactorBlocked
                       ? 'bg-red-500 text-white border-transparent hover:bg-red-600'
                       : 'bg-purple-nave text-white border-transparent hover:bg-blue-purple'
                   }`}
                 >
-                  {twoFactorEnabled ? 'Disable 2FA' : 'Enable 2FA'}
+                  {isTwoFactorBlocked ? 'Unavailable for Google sign-in' : twoFactorEnabled ? 'Disable 2FA' : 'Enable 2FA'}
                 </button>
               </div>
-              {twoFactorEnabled && (
+              {isTwoFactorBlocked && (
+                <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-sm text-yellow-800">
+                  Two-Factor Authentication is disabled for Google-only accounts. Sign in with Google to stay secure.
+                </div>
+              )}
+              {!isTwoFactorBlocked && twoFactorEnabled && (
                 <div className="mt-4 p-3 bg-green-100 dark:bg-green-900/30 border border-green-300 dark:border-green-700 rounded-lg">
                   <p className="text-sm text-green-800 dark:text-green-300">
                     ✓ Two-Factor Authentication is currently enabled for your account

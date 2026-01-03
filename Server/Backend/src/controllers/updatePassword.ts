@@ -32,6 +32,11 @@ export function updatePassword() {
       const providers = (user.auth_Provider || "local").split(",").map((p: string) => p.trim());
       const isGoogleOnly = providers.includes("google") && !providers.includes("local");
 
+      // Block Google-only accounts from setting password
+      if (isGoogleOnly) {
+        return reply.code(403).send({ message: "Password login is disabled for Google-only sign-in accounts" });
+      }
+
       // For non-Google users or users with existing local password, verify current password
       if (!isGoogleOnly) {
         if (!currentPassword) {
