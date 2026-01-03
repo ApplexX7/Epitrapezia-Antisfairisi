@@ -76,12 +76,12 @@ export default function Home() {
             <ChartLineDefault/>
           </BoxLayout>
         </BoxLayout>
-        <BoxLayout className="col-span-4 w-full xl:-mt-60 xl:col-span-3">
-          <div className="flex flex-col w-full h-full p-0">
+        <BoxLayout className="col-span-4 w-full  xl:-mt-60 xl:col-span-3">
+          <div className="xl:-mt-5 flex flex-col w-full h-full p-0">
             <h1 className="text-white-smoke text-shadow-md ml-10 text-2xl font-semibold">
               Recent Games
             </h1>
-            <div className="card w-full h-56 flex flex-col overflow-y-auto">
+            <div className="card w-full flex flex-col h-full overflow-y-auto">
               <GameHistory playerId={user?.id || 0} />
             </div>
           </div>
