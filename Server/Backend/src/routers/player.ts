@@ -8,6 +8,7 @@ import { toggleTwoFactor } from "../controllers/toggleTwoFactor";
 import { getGameStats } from "../controllers/getGameStats";
 import { GetPlayerMetrics } from "../controllers/getPlayerMetrics";
 import { GetXpHistory } from "../controllers/getXpHistory";
+import { GetLeaderboard } from "../controllers/leaderboard";
 
 
 export function playerSettings(){
@@ -20,4 +21,5 @@ export function playerSettings(){
     Server.instance().get('/stats/:id', getGameStats);
     Server.instance().get('/stats/metrics/:playerId', GetPlayerMetrics());
     Server.instance().get('/stats/xp-history/:playerId', GetXpHistory());
+    Server.instance().get('/stats/leaderboard', GetLeaderboard());
 }

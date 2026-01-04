@@ -78,10 +78,10 @@ async function recordMatchResult(io: Server, room: GameRoom, winnerId: number, l
     const winnerLvl = winnerLevel?.level || 1;
     const loserLvl = loserLevel?.level || 1;
     
-    // Calculate XP based on level
-    // Base XP: 10 for losing, 20 for winning, multiplied by level factor
-    const loserXp = Math.floor(10 * (loserLvl / 10));
-    const winnerXp = Math.floor(20 * (winnerLvl / 10));
+    // Calculate XP: fixed values per game
+    // Loser gets 10 XP, Winner gets 20 XP
+    const loserXp = 10;
+    const winnerXp = 20;
     
     // update winner stats
     await new Promise<void>((resolve, reject) => {

@@ -28,10 +28,10 @@ export function GetWeeklyXpProgress() {
       endOfWeek.setDate(startOfWeek.getDate() + 6);
       endOfWeek.setHours(23, 59, 59, 999);
 
-      // Get XP history for the week from xp_history table
+      // Get XP history for the week from xp_history table, summing all sources per day
       const xpHistoryRecords: any[] = await new Promise((resolve, reject) => {
         db.all(
-          `SELECT date, xp_gained FROM xp_history WHERE player_id = ? AND date BETWEEN ? AND ? ORDER BY date ASC`,
+          `SELECT date, SUM(xp_gained) as total_xp FROM xp_history WHERE player_id = ? AND date BETWEEN ? AND ? GROUP BY date ORDER BY date ASC`,
           [playerId, startOfWeek.toISOString().split('T')[0], endOfWeek.toISOString().split('T')[0]],
           (err, rows) => (err ? reject(err) : resolve(rows || []))
         );
@@ -47,9 +47,9 @@ export function GetWeeklyXpProgress() {
         const dateStr = currentDate.toISOString().split('T')[0];
         const dayName = dayNames[i];
 
-        // Get XP from xp_history table for this day
+        // Get total XP from xp_history table for this day (sum of all sources)
         const historyRecord = xpHistoryRecords.find(record => record.date === dateStr);
-        const dayXp = historyRecord ? historyRecord.xp_gained : 0;
+        const dayXp = historyRecord ? historyRecord.total_xp : 0;
 
         weekData.push({
           day: dayName,

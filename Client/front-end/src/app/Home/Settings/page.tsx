@@ -9,7 +9,7 @@ import { motion, AnimatePresence } from 'motion/react';
 
 
 
-export default function Home() {
+export default function Settings() {
   const {user} = useAuth();
   const [activeTab, setActiveTab] = useState<'profile' | 'security'>('profile');
   const [displayedImage, setDisplayedImage] = useState<string | null>(null);

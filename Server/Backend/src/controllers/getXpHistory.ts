@@ -37,62 +37,40 @@ export function GetXpHistory() {
         );
       });
 
-      // Calculate XP progression by weeks
+      // Calculate XP progression by months for the current year (Jan - Dec)
       const today = new Date();
+      const currentYear = today.getFullYear();
+      const currentMonthIndex = today.getMonth();
       const xpData: any[] = [];
       
-      // Start from 12 weeks ago or from earliest XP record
-      let startDate = new Date(today);
-      startDate.setDate(startDate.getDate() - 84); // 12 weeks ago
-      
-      if (xpHistoryRecords.length > 0) {
-        const earliestRecord = new Date(xpHistoryRecords[0].date);
-        if (earliestRecord > startDate) {
-          startDate = new Date(earliestRecord);
-        }
-      }
-
-      let currentWeekStart = new Date(startDate);
-      currentWeekStart.setDate(currentWeekStart.getDate() - currentWeekStart.getDay()); // Start of week (Sunday)
-      
       let cumulativeXp = 0;
-      let weekCount = 0;
+      const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
-      // Create entries for each week
-      while (currentWeekStart <= today && weekCount < 12) {
-        const weekEnd = new Date(currentWeekStart);
-        weekEnd.setDate(weekEnd.getDate() + 6);
+      // Create entries for all 12 months of the current year
+      for (let monthIndex = 0; monthIndex < 12; monthIndex++) {
+        const monthStart = new Date(currentYear, monthIndex, 1);
+        const monthEnd = new Date(currentYear, monthIndex + 1, 0);
 
-        // Calculate XP gained in this week from xp_history
-        const weekXpGain = xpHistoryRecords
-          .filter((record) => {
-            const recordDate = new Date(record.date);
-            return recordDate >= currentWeekStart && recordDate <= weekEnd;
-          })
-          .reduce((sum, record) => sum + (record.daily_xp || 0), 0);
-
-        cumulativeXp += weekXpGain;
-
-        const weekLabel = `Week ${weekCount + 1}`;
+        // Only calculate XP for past and current months
+        let monthXpGain = 0;
+        if (monthIndex <= currentMonthIndex) {
+          // Calculate XP gained in this month from xp_history
+          monthXpGain = xpHistoryRecords
+            .filter((record) => {
+              const recordDate = new Date(record.date);
+              return recordDate >= monthStart && recordDate <= monthEnd;
+            })
+            .reduce((sum, record) => sum + (record.daily_xp || 0), 0);
+          
+          cumulativeXp += monthXpGain;
+        }
 
         xpData.push({
-          week: weekLabel,
-          date: currentWeekStart.toISOString().split('T')[0],
-          xp: cumulativeXp,
-          weekGain: weekXpGain
-        });
-
-        currentWeekStart.setDate(currentWeekStart.getDate() + 7);
-        weekCount++;
-      }
-
-      // If no data, return single entry with current experience
-      if (xpData.length === 0) {
-        xpData.push({
-          week: "Week 1",
-          date: new Date().toISOString().split('T')[0],
-          xp: player.experience || 0,
-          weekGain: 0
+          week: monthNames[monthIndex], // Keep key as "week" for backwards compatibility
+          date: monthStart.toISOString().split('T')[0],
+          xp: monthIndex <= currentMonthIndex ? cumulativeXp : 0, // Future months show 0
+          weekGain: monthXpGain,
+          isCurrentMonth: monthIndex === currentMonthIndex
         });
       }
 

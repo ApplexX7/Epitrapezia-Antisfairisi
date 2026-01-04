@@ -1,6 +1,7 @@
 import React from "react";
 import { Progress } from '@/components/animate-ui/components/radix/progress';
 import { CustomButton } from './CostumButton'
+import { useRouter } from 'next/navigation';
 
 export type UserInfo = {
   level: number;
@@ -9,6 +10,8 @@ export type UserInfo = {
 
 
 export default function BarProgressionLevel({ level, progression }: UserInfo) {
+  const router = useRouter();
+
   return (
     <div className="flex flex-col gap-5 w-full pb-15 ">
         <h1 className="pt-15 text-shadow-xs ml-3 font-semibold 
@@ -22,10 +25,12 @@ export default function BarProgressionLevel({ level, progression }: UserInfo) {
                 </h2>
             <Progress className="h-15  w-full" value={progression} />
         </div>
-        <CustomButton className="self-center font-medium 
+        <CustomButton 
+            onClick={() => router.push('/Home/LeaderBoard')}
+            className="self-center font-medium 
         shadow-none text-xl bg-[#D9D9D9]/5 h-15 w-70 
         transition-transform duration-300 ease-in-out active:scale-110">
-            View Status
+            See more
         </CustomButton>
     </div>
   );

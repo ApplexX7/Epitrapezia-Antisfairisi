@@ -1,7 +1,6 @@
 "use client"
 
-import { TrendingUp } from "lucide-react"
-import { Area, AreaChart, CartesianGrid, XAxis ,YAxis } from "recharts"
+import { Area, AreaChart, CartesianGrid, XAxis ,YAxis, ReferenceLine } from "recharts"
 import { useEffect, useState } from "react"
 import api from "@/lib/axios"
 import { useSocketStore } from "./hooks/SocketIOproviders"
@@ -29,9 +28,8 @@ interface XpGraphProps {
 }
 
 export function ChartAreaDefault({ playerId }: XpGraphProps) {
-  const [chartData, setChartData] = useState<any[]>([
-    { week: "Week 1", xp: 0 },
-  ])
+  const [chartData, setChartData] = useState<any[]>([])
+  const [currentMonth, setCurrentMonth] = useState<string>("")
   const [loading, setLoading] = useState(true)
   const socket = useSocketStore((state: any) => state.socket)
 
@@ -44,16 +42,14 @@ export function ChartAreaDefault({ playerId }: XpGraphProps) {
       const formattedData = xpHistory.map((entry: any) => ({
         week: entry.week,
         xp: entry.xp || 0,
-        weekGain: entry.weekGain || 0
+        weekGain: entry.weekGain || 0,
+        isCurrentMonth: entry.isCurrentMonth || false
       }))
 
-      // If no data, show current experience
-      if (formattedData.length === 0) {
-        formattedData.push({
-          week: "Week 1",
-          xp: currentExperience || 0,
-          weekGain: 0
-        })
+      // Find current month
+      const currentMonthEntry = formattedData.find((entry: any) => entry.isCurrentMonth)
+      if (currentMonthEntry) {
+        setCurrentMonth(currentMonthEntry.week)
       }
 
       setChartData(formattedData)
@@ -135,6 +131,15 @@ export function ChartAreaDefault({ playerId }: XpGraphProps) {
                   domain={[0, "dataMax + 10"]}
                   type="number"
               />
+            {currentMonth && (
+              <ReferenceLine
+                x={currentMonth}
+                stroke="#FF6B6B"
+                strokeWidth={2}
+                strokeDasharray="3 3"
+                label={{ value: "Now", position: "top", fill: "#FF6B6B", fontWeight: "bold" }}
+              />
+            )}
             <ChartTooltip
               cursor={false}
               content={<ChartTooltipContent indicator="line" />}

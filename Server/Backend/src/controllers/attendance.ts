@@ -46,17 +46,25 @@ export function MarkAttendance() {
             const xpToAward = Math.max(1, Math.floor(player.level * 0.25));
             const newExperience = player.experience + xpToAward;
 
-            // Insert new attendance
-            await new Promise((resolve, reject) => {
+            // Insert new attendance atomically; ignore if another request already inserted today
+            const attendanceInserted = await new Promise<number>((resolve, reject) => {
                 db.run(
-                    `INSERT INTO attendance (player_id, date) VALUES (?, ?)`,
+                    `INSERT OR IGNORE INTO attendance (player_id, date) VALUES (?, ?)`,
                     [playerId, today],
                     function(err) {
-                        if (err) reject(err);
-                        else resolve(this.lastID);
+                        if (err) {
+                            reject(err);
+                        } else {
+                            resolve(this.changes); // 1 if inserted, 0 if already existed
+                        }
                     }
                 );
             });
+
+            if (attendanceInserted === 0) {
+                console.log(`[Attendance] Player ${playerId} already marked attendance today (race-safe check)`);
+                return reply.status(200).send({ message: "Attendance already marked for today" });
+            }
 
             // Update player's experience
             await new Promise((resolve, reject) => {
