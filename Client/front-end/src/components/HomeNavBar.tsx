@@ -6,7 +6,7 @@ import { NavBar } from '@/components/Navbar'
 import { MagnifyingGlass , Bell} from "@phosphor-icons/react/ssr";
 import { CustomButton } from "@/components/CostumButton"
 import { NavigationMenuDemo } from "@/components/profileBar"
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useSocketStore } from "./hooks/SocketIOproviders";
 import api from "@/lib/axios";
@@ -25,6 +25,27 @@ export default function HomeNavBar (){
         const socket = useSocketStore((state: any) => state.socket);
         const unreadCount = notifications.filter((n: any) => !n.read).length;
         const router = useRouter();
+
+        // Listen for friend request handled events from other tabs
+        useEffect(() => {
+            if (!socket) return;
+
+            const handleFriendRequestHandled = ({ friendId }: { friendId: number; action: string }) => {
+                // Update notifications to mark as handled
+                const updatedNotifications = notifications.map((n: any) =>
+                    n.from?.id === friendId && n.type === "friend-request" 
+                        ? { ...n, type: "friend-request-handled" } 
+                        : n
+                );
+                useSocketStore.setState({ notifications: updatedNotifications });
+            };
+
+            socket.on("friend-request-handled", handleFriendRequestHandled);
+
+            return () => {
+                socket.off("friend-request-handled", handleFriendRequestHandled);
+            };
+        }, [socket, notifications]);
 
         const handleDismiss = (notifId: string) => {
             const updatedNotifications = notifications.filter((n: any) => n.id !== notifId);
@@ -50,7 +71,7 @@ export default function HomeNavBar (){
                 );
                 useSocketStore.setState({ notifications: updatedNotifications });
             } catch (err: any) {
-                console.error("Failed to update friend request", err?.response?.data || err);
+                console.error("Failed to update friend request", err?.response?.data || err?.message || err);
                 // If the request no longer exists (404), remove the notification
                 if (err?.response?.status === 404) {
                     const notifications = useSocketStore.getState().notifications;
@@ -58,7 +79,8 @@ export default function HomeNavBar (){
                     useSocketStore.setState({ notifications: updatedNotifications });
                     toast.error("This friend request no longer exists");
                 } else {
-                    toast.error(err?.response?.data?.message || "Action failed");
+                    const errorMessage = err?.response?.data?.message || err?.message || "Action failed";
+                    toast.error(errorMessage);
                 }
             }
         };

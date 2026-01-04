@@ -103,10 +103,14 @@ export async function  AccepteFriendRequest(req : FastifyRequest<{Body: {friendI
             from: { id, username: accepter?.username },
             time: new Date().toISOString(),
         });
+        
+        // Notify the accepter's other sessions to update their notifications
+        io.to(String(id)).emit("friend-request-handled", { friendId, action: "accept" });
+        
         return reply.send({message : "Friend Request accepted succefully "})
     } catch(err){
-        console.log(err)
-        return reply.code(500).send({mesage : `Database Error : ${err}`})
+        console.error("Error accepting friend request:", err)
+        return reply.code(500).send({message : `Database Error`, error: String(err)})
     }
 
 }
@@ -143,6 +147,9 @@ export async function RemoveFriendRequest(req : FastifyRequest<{Body:{friendId :
             from: { id, username: remover?.username },
             time: new Date().toISOString(),
         });
+        
+        // Notify the remover's other sessions to update their notifications
+        io.to(String(id)).emit("friend-request-handled", { friendId, action: "decline" });
         
         return reply.send({ message : "Friend Request rejected successfully"});
     }catch (err){
