@@ -77,7 +77,7 @@ export default function Profile() {
     return (
       <div className="flex h-full w-full flex-col py-10 scale-90 origin-top">
       <div className="-mt-4 grid grid-cols-4 
-        gap-5 w-full h-[calc(100vh-3rem)] p-5  auto-rows-min overflow-y-auto scrollbar-hide"
+        gap-5 w-full h-[calc(100vh-3rem)] p-5  auto-rows-min"
         style={{
           scrollbarWidth: 'none',
           msOverflowStyle: 'none'
