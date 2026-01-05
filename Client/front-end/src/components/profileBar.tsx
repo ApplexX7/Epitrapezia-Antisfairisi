@@ -42,18 +42,18 @@ export function NavigationMenuDemo() {
         <NavigationMenuList>
           <NavigationMenuItem>
             <NavigationMenuTrigger>
-                <div clavatarError ? "/images/defaultAvatare.jpg" : getAvatarUrl(user?.avatar)}
-                    width={84}
-                    height={84}
-                    alt="Avatar"
-                    className="w-full h-full object-cover"
-                    priority
-                    unoptimized
-                    onError={() => setAvatarError(true)}
-
-                    alt="Avatar"
-                    className="w-full h-full object-cover"
-                    priority                    unoptimized                    />
+                <div className="cursor-pointer w-[84px] h-full rounded-full 
+                overflow-hidden shadow-[2px_1px_2px_1px_rgba(0,0,0,0.2)] hover:opacity-85 ">
+                    <Image
+                      src={avatarError ? "/images/defaultAvatare.jpg" : getAvatarUrl(user?.avatar)}
+                      width={84}
+                      height={84}
+                      alt="Avatar"
+                      className="w-full h-full object-cover"
+                      priority
+                      unoptimized
+                      onError={() => setAvatarError(true)}
+                    />
                 </div>
             </NavigationMenuTrigger>
             <NavigationMenuContent className="bg-[#100C46] backdrop-blur-none
