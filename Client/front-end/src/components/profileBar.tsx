@@ -14,11 +14,14 @@ import api from "@/lib/axios"
 import toast from "react-hot-toast"
 import { useSocketStore } from "./hooks/SocketIOproviders"
 import { getAvatarUrl } from "@/lib/utils"
+import { useState } from "react"
   
 export function NavigationMenuDemo() {
     const disconnectSocket = useSocketStore((state) => state.disconnectSocket);
     const router = useRouter()
     const {clearAuth, user} = useAuth()
+    const [avatarError, setAvatarError] = useState(false)
+    
     async function handleLogout() {
       try {
         await api.post("/auth/logout");
@@ -39,12 +42,15 @@ export function NavigationMenuDemo() {
         <NavigationMenuList>
           <NavigationMenuItem>
             <NavigationMenuTrigger>
-                <div className="cursor-pointer w-[84px] h-full rounded-full 
-                overflow-hidden shadow-[2px_1px_2px_1px_rgba(0,0,0,0.2)] hover:opacity-85 ">
-                    <Image
-                  src={getAvatarUrl(user?.avatar)}
+                <div clavatarError ? "/images/defaultAvatare.jpg" : getAvatarUrl(user?.avatar)}
                     width={84}
                     height={84}
+                    alt="Avatar"
+                    className="w-full h-full object-cover"
+                    priority
+                    unoptimized
+                    onError={() => setAvatarError(true)}
+
                     alt="Avatar"
                     className="w-full h-full object-cover"
                     priority                    unoptimized                    />
