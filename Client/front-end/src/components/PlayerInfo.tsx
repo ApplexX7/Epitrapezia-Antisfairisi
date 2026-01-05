@@ -16,7 +16,10 @@ export default function Playerinfo({ user }: { user?: User }){
   const [avatarError, setAvatarError] = useState(false);
   
   return (
-    <div classNavatarError ? "/images/defaultAvatare.jpg" : getAvatarUrl(user?.avatar)}
+    <div className="flex px-10 gap-1 items-center w-full h-full rouded-[35px]">
+      <div className="py-5 flex flex-col items-center justify-center h-full w-[250px]">
+        <Image
+          src={avatarError ? "/images/defaultAvatare.jpg" : getAvatarUrl(user?.avatar)}
           alt="Profile image player"
           width={180}
           height={180}
@@ -25,10 +28,7 @@ export default function Playerinfo({ user }: { user?: User }){
           priority
           unoptimized
           key={user?.avatar}
-          onError={() => setAvatarError(true)
-          priority
-          unoptimized
-          key={user?.avatar}
+          onError={() => setAvatarError(true)}
         />
         <p className="text-black font-medium text-wrap text-center ">
           {user?.bio || "The ball is always in your court, make every shot count."}
