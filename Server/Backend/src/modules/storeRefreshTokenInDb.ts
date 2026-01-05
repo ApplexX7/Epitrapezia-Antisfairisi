@@ -6,7 +6,7 @@ export async function storeRefrechTokenInDb(refreshToken : string, user : User):
         db.run(
           "UPDATE players SET refreshToken = ? WHERE id = ?",
           [refreshToken, user.id],
-          function (err) {
+          function (err : any) {
             if (err) reject(err);
             else resolve();
           }

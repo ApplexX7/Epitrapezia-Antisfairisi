@@ -24,7 +24,7 @@ export async function verifyRefreshToken(refreshToken : string | any) : Promise<
        LEFT JOIN player_infos pi ON pi.player_id = p.id
        WHERE p.refreshToken = ?`,
       [refreshToken],
-      (err, exist) => {
+      (err : any, exist : any) => {
                 if (err) {
                     reject(err);
                 } else {

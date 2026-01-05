@@ -1,0 +1,9 @@
+# Use the official Node Exporter base image
+FROM prom/node-exporter:latest
+
+# Expose the metrics port
+EXPOSE 9100
+
+
+# Default command (comes from the base image)
+ENTRYPOINT ["/bin/node_exporter", "--path.rootfs=/host"]

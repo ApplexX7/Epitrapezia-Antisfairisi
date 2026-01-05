@@ -23,7 +23,7 @@ export async function getPendingFriendRequests(req: FastifyRequest, reply: Fasti
         WHERE f.friend_id = ? AND f.status = 'pending'
         ORDER BY f.created_at DESC`,
         [id],
-        (err, rows) => (err ? reject(err) : resolve(rows || []))
+        (err : any, rows : any) => (err ? reject(err) : resolve(rows || []))
       );
     });
 

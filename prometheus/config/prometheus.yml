@@ -1,0 +1,29 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  scrape_timeout: 10s
+
+scrape_configs:
+  # Fastify App Metrics
+  - job_name: 'webpong-backend'
+    scrape_interval: 5s
+    static_configs:
+      - targets: ['server:8081']  # Match your Docker Compose service
+
+  # Node Exporter Metrics (Host)
+  - job_name: 'node-exporter'
+    scrape_interval: 5s
+    static_configs:
+      - targets: ['node-exporter:9100']
+
+  # cAdvisor Metrics (Docker Containers)
+  - job_name: 'cadvisor'
+    scrape_interval: 5s
+    static_configs:
+      - targets: ['cadvisor:8080']
+
+# Optional: Prometheus internal metrics
+  - job_name: 'prometheus'
+    scrape_interval: 5s
+    static_configs:
+      - targets: ['localhost:9090']

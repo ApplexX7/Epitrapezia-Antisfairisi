@@ -8,8 +8,8 @@ import path from 'path';
 import fs from 'fs';
 
 export class Server {
-  private static readonly port = 8080;
-  private static readonly host = "0.0.0.0";
+  private static readonly port = process.env.PORT ? parseInt(process.env.PORT) : 8081;
+  private static readonly host = process.env.HOST || "0.0.0.0";
   private static readonly serv: FastifyInstance = fastify({ logger: true });
   private static io: IOServer;
   private static connectedClients: Map<string, { socketId: string; username: string }> = new Map();
@@ -43,7 +43,7 @@ export class Server {
         timeWindow : "1 minute",
         ban : 2,
         allowList: ["127.0.0.1"],
-        errorResponseBuilder : (req, context) => ({
+        errorResponseBuilder : (req : any, context : any) => ({
           code : 429,
           error : "Too Many Requests",
           message : `Rate limit exceeeded, Try again in ${Math.ceil(context.ttl / 100)} seconds`,

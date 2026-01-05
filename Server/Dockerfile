@@ -8,6 +8,6 @@ RUN npm install
 RUN npm install -g nodemon ts-node
 
 COPY ./Backend ./
-EXPOSE 8080
+EXPOSE 8081
 
 CMD ["npm", "run", "dev"]

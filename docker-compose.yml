@@ -1,6 +1,6 @@
 services:
   nginx:
-    image : nginx:latest
+    image: nginx:latest
     container_name: nginx
     build: ./nginx
     restart: unless-stopped
@@ -13,19 +13,15 @@ services:
       - webpong
 
   client:
-    image : client:latest
-    container_name: front-end
+    image: client:latest
+    container_name: client
     build:
       context: ./Client
-      args:
-        MODE: ${MODE}
     volumes:
       - ./Client/front-end:/app
       - /app/node_modules
-    environment:
-      - NODE_ENV=${MODE}
-    command: >
-      sh -c "if [ \"$MODE\" = \"dev\" ]; then npm run dev; else npm run start; fi"
+    env_file:
+      - ./env/client.env
     restart: unless-stopped
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:3000/ || exit 1"]
@@ -37,22 +33,18 @@ services:
       - webpong
 
   server:
-    image : server:latest
+    image: server:latest
     container_name: server
     build:
       context: ./Server
-      args:
-        MODE: ${MODE}
     volumes:
       - ./Server/Backend:/app
       - /app/node_modules  
     env_file:
-      - ./env/.env_api
-    command: >
-      sh -c "if [ \"$MODE\" = \"dev\" ]; then nodemon --watch src --exec ts-node src/index.ts; else node dist/index.js; fi"
+      - ./env/api.env
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:8080/ || exit 1"]
+      test: ["CMD-SHELL", "curl -f http://localhost:8081/metrics || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 5
@@ -61,6 +53,62 @@ services:
       - webpong
     depends_on:
       - client
+
+  prometheus:
+    image: prom/prometheus:latest
+    build:
+      context: ./prometheus
+    restart: unless-stopped
+    container_name: prometheus
+    volumes:
+      - ./prometheus/config:/etc/prometheus
+    ports:
+      - "9090:9090"
+    networks:
+      - webpong
+
+  grafana:
+    image: grafana/grafana-oss:latest
+    build:
+      context: ./grafana 
+    container_name: grafana
+    env_file:
+      - ./env/grafana.env
+    restart: unless-stopped
+    ports:
+      - "8000:3000"
+    depends_on:
+      - prometheus
+    networks:
+      - webpong
+
+  node-exporter:
+    image: prom/node-exporter:latest
+    container_name: node-exporter
+    pid: "host"
+    ports:
+      - "9200:9100"
+    restart: unless-stopped
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro,rslave
+    networks:
+      - webpong
+
+  cadvisor:
+    image: google/cadvisor:latest
+    container_name: cadvisor
+    ports:
+      - "8081:8080"
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+    restart: unless-stopped
+    networks:
+      - webpong
 
 networks:
   webpong:

@@ -9,7 +9,7 @@ export async function acceptedFriends(user : any){
         WHERE f.status = 'accepted'
       `
         return  await new Promise((resolve, rejects) => {
-            db.all(sql, [user.id, user.id], (err, friendsList) =>{
+            db.all(sql, [user.id, user.id], (err : any, friendsList : any) =>{
                 if (err)
                     rejects(err);
                 else

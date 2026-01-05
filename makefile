@@ -1,17 +1,16 @@
 # 🐳 Docker Makefile
 COMPOSE = docker-compose -f docker-compose.yml
-MODE ?= dev
 
 .PHONY: dev build start stop clean logs rebuild clean-cache
 
 dev:
-	MODE=$(MODE) $(COMPOSE) up --build --remove-orphans
+	$(COMPOSE) up --build --remove-orphans
 
 build:
-	MODE=prod $(COMPOSE) build
+	$(COMPOSE) build
 
 start:
-	MODE=prod $(COMPOSE) up -d
+	$(COMPOSE) up -d
 
 stop:
 	$(COMPOSE) down -v
@@ -21,7 +20,7 @@ logs:
 
 rebuild:
 	$(COMPOSE) down --remove-orphans
-	MODE=$(MODE) $(COMPOSE) up --build
+	$(COMPOSE) up --build
 
 clean:
 	$(COMPOSE) down --rmi all --volumes --remove-orphans

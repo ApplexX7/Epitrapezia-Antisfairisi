@@ -14,7 +14,7 @@ export function MarkAttendance() {
                 db.get(
                     `SELECT id FROM attendance WHERE player_id = ? AND date = ?`,
                     [playerId, today],
-                    (err, row) => {
+                    (err : any, row : any) => {
                         if (err) reject(err);
                         else resolve(row);
                     }
@@ -31,7 +31,7 @@ export function MarkAttendance() {
                 db.get(
                     `SELECT level, experience FROM players WHERE id = ?`,
                     [playerId],
-                    (err, row) => {
+                    (err : any, row : any) => {
                         if (err) reject(err);
                         else resolve(row);
                     }
@@ -51,7 +51,7 @@ export function MarkAttendance() {
                 db.run(
                     `INSERT OR IGNORE INTO attendance (player_id, date) VALUES (?, ?)`,
                     [playerId, today],
-                    function(err) {
+                    function(err : any) {
                         if (err) {
                             reject(err);
                         } else {
@@ -71,7 +71,7 @@ export function MarkAttendance() {
                 db.run(
                     `UPDATE players SET experience = ? WHERE id = ?`,
                     [newExperience, playerId],
-                    function(err) {
+                    function(err : any) {
                         if (err) reject(err);
                         else resolve(this.changes);
                     }
@@ -83,7 +83,7 @@ export function MarkAttendance() {
                 db.run(
                     `INSERT OR REPLACE INTO xp_history (player_id, date, xp_gained, source) VALUES (?, ?, ?, 'attendance')`,
                     [playerId, today, xpToAward],
-                    function(err) {
+                    function(err : any) {
                         if (err) {
                             console.error(`[Attendance] Error logging XP history for player ${playerId}:`, err);
                             reject(err);
@@ -131,7 +131,7 @@ export function GetTodayAttendance() {
                 db.get(
                     `SELECT hours FROM attendance WHERE player_id = ? AND date = ?`,
                     [playerId, today],
-                    (err, row) => {
+                    (err : any, row : any) => {
                         if (err) reject(err);
                         else resolve(row);
                     }
@@ -168,7 +168,7 @@ export function GetWeeklyAttendance() {
                 db.all(
                     `SELECT date, hours FROM attendance WHERE player_id = ? AND date BETWEEN ? AND ? ORDER BY date`,
                     [playerId, startDate, endDate],
-                    (err, rows) => {
+                    (err : any, rows : any) => {
                         if (err) reject(err);
                         else resolve(rows);
                     }

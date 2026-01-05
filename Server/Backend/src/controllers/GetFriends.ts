@@ -6,15 +6,13 @@ export function Getfriends(){
     return async (req : FastifyRequest ,
         reply : FastifyReply
     ) => {
+        const { userid } = (req as any).user as any;
         try{
-            const refreshToken = req.cookies.refreshToken;
-            if (!refreshToken)
-                reply.code(401).send({message : "Messing RefreshToken"})
             const user = await new Promise((resolve, rejects) => {
                 db.get(
-                    "SELECT * FROM WHERE players refreshToken = ?",
-                    [refreshToken],
-                    (err, user) => {
+                    "SELECT * FROM WHERE players  id = ?",
+                    [userid.id],
+                    (err : any, user : any) => {
                         if (err)
                             rejects(err);
                         else{

@@ -12,17 +12,66 @@ import { seenMsg } from "./routers/seenMsg"
 import { gameStatesRouters } from "./routers/gameStates";
 import { attendanceRouters } from "./routers/attendance";
 import { registerTournamentRoutes } from "./routers/tournament";
+import client from "prom-client";
 
 createsDbTabes();
 
 const app = Server.instance();
+
+// Extend FastifyRequest to include metricsStart
+app.decorateRequest('metricsStart', null);
 
 
 app.register(fastifyCors, {
   origin: ["https://localhost", "https://localhost:8443", "https://WebPong.1337.ma"],
   credentials: true,
 });
-app.addHook("onRequest", async (req: FastifyRequest, reply: FastifyReply) => {
+
+
+const registery = new client.Registry();
+client.collectDefaultMetrics({ register: registery });
+
+const httpRequetsTotal = new client.Counter({
+  name: "http_requests_total",
+  help: "Total number of HTTP requests",
+  labelNames: ["method", "route", "status_code"],
+});
+
+const httpsRequestsDuration = new client.Histogram({
+  name: "http_request_duration_seconds",
+  help: "Duration of HTTP requests in seconds",
+  labelNames: ["method", "route", "status"],
+  buckets: [0.1, 0.5, 1, 1.5, 2, 5],
+});
+
+registery.registerMetric(httpRequetsTotal);
+registery.registerMetric(httpsRequestsDuration);
+
+app.addHook("onRequest", async (req: any) => {
+  req.metricsStart = process.hrtime();
+});
+
+app.addHook("onResponse", async (req: any, reply: FastifyReply) => {
+  if (!req.metricsStart) return;
+  
+  const diff = process.hrtime(req.metricsStart);
+  const duration = diff[0] + diff[1] / 1e9;
+
+  const route = req.routeOptions?.url || req.url || "unknown";
+
+  httpRequetsTotal.inc({
+    method: req.method,
+    route,
+    status_code: reply.statusCode
+  });
+
+  httpsRequestsDuration.observe(
+    { method: req.method, route, status_code: reply.statusCode },
+    duration
+  );
+});
+
+app.addHook("preHandler", async (req: FastifyRequest, reply: FastifyReply) => {
   const routeUrl = req.url;
 
   const publicRoutes = [
@@ -34,7 +83,8 @@ app.addHook("onRequest", async (req: FastifyRequest, reply: FastifyReply) => {
     "/auth/resend-otp",
     "/auth/verify-login-otp",
     "/auth/resend-login-otp",
-    "/tournaments", // Tournament routes are public with password protection
+    "/tournaments",
+     "/metrics",
   ];
 
   if (publicRoutes.some((r) => routeUrl.startsWith(r))) {
@@ -58,6 +108,12 @@ app.addHook("onRequest", async (req: FastifyRequest, reply: FastifyReply) => {
   }
 });
 
+app.get("/metrics", async (req : FastifyRequest, reply : FastifyReply) => {
+  reply.header("Content-Type", registery.contentType);
+  return registery.metrics();
+});
+
+
 async function bootstrap() {
   await authRouters();
   registerTournamentRoutes();
@@ -72,7 +128,7 @@ seenMsg();
 gameStatesRouters();
 attendanceRouters();
 
-app.ready((err) => {
+app.ready((err : Error | null) => {
   if (err) throw err;
   console.log(app.printRoutes());
 });

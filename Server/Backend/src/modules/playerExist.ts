@@ -5,7 +5,7 @@ export async function playerExist(email: string, username: string): Promise<any>
         db.get(
           "SELECT * FROM players WHERE username = ? OR email = ?",
           [username, email.toLowerCase()],
-            (err, user) => {
+            (err  : any, user : any) => {
                 if (err) {
                     reject(err);
                 } else {

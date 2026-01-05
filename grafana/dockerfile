@@ -1,0 +1,12 @@
+# Use the official Grafana image
+FROM grafana/grafana-oss:latest
+
+# Optional: install plugins
+# Example: Prometheus Alert List panel
+# RUN grafana-cli plugins install grafana-piechart-panel
+
+# Expose default Grafana port
+EXPOSE 3000
+
+# Default command already set in image, no need to override
+# ENTRYPOINT ["/run.sh"]  # optional

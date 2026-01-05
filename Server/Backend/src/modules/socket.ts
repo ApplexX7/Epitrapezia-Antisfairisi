@@ -9,10 +9,10 @@ export class SocketManager {
       cors: { origin: "*", methods: ["GET", "POST"] },
     });
 
-    this.io.on("connection", (socket) => {
+    this.io.on("connection", (socket : any) => {
       console.log("🟢 A user connected:", socket.id);
 
-      socket.on("message", (data) => {
+      socket.on("message", (data : any) => {
         console.log("📩 Message received:", data);
         this.io.emit("message", data);
       });
@@ -24,6 +24,6 @@ export class SocketManager {
   }
 
   disconnectAll() {
-    this.io.sockets.sockets.forEach((socket) => socket.disconnect(true));
+    this.io.sockets.sockets.forEach((socket : any) => socket.disconnect(true));
   }
 }

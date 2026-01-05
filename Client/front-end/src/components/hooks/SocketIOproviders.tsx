@@ -49,8 +49,8 @@ export const useSocketStore = create<SocketStore>((set, get) => ({
   initSocket: (user: User, token: string) => {
     if (get().socket) return;
 
-    const URL = process.env.NEXT_PUBLIC_BACKEND_URL || 
-      (typeof window !== 'undefined' ? window.location.origin : "http://server:8080");
+    const URL = process.env.NEXT_PUBLIC_SocketIO_URL || 
+      (typeof window !== 'undefined' ? window.location.origin : "http://server:8081");
     
     console.log("🔌 Initializing socket with URL:", URL);
     console.log("👤 User:", user.username);

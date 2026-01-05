@@ -2,6 +2,7 @@ import { Server } from "../server";
 import { saveMessage } from "../controllers/saveMessage";
 import { getMessages } from "../controllers/getMessages";
 import { Sendmessagebody, Historyquery } from "../interfaces/Messages";
+import { FastifyRequest, FastifyReply } from "fastify";
 import { db } from "../databases/db"; // Import your database connection
 
 export function Message() {
@@ -17,7 +18,7 @@ export function Message() {
                      WHERE (blocker_id = ? AND blocked_id = ?) 
                      OR (blocker_id = ? AND blocked_id = ?)`, 
                     [receiver_id, sender_id, sender_id, receiver_id], 
-                    (err, row) => resolve(!!row)
+                    (err : any, row : any) => resolve(!!row)
                 );
             });
             
@@ -38,7 +39,7 @@ export function Message() {
         }
     });
 
-    Server.instance().get("/message/history", async(req, reply) => {
+    Server.instance().get("/message/history", async(req : FastifyRequest, reply : FastifyReply) => {
         const { sender_id, receiver_id } = req.query as Historyquery;
         try {
             const messages = await getMessages(Number(sender_id), Number(receiver_id));

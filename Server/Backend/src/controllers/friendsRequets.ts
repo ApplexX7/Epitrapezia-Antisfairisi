@@ -18,7 +18,7 @@ export async function FriendRequest(req : FastifyRequest<{Body:{friendId : numbe
                WHERE (player_id = ? AND friend_id = ?)
                OR (player_id = ? AND friend_id = ?)`,
               [id, friendId, friendId, id],
-              (err, data) => (err ? reject(err) : resolve(data))
+              (err : any, data : any) => (err ? reject(err) : resolve(data))
             );
           });
         if (existing.length > 0)
@@ -32,7 +32,7 @@ export async function FriendRequest(req : FastifyRequest<{Body:{friendId : numbe
             )
         });
         const sender = await new Promise<any>((resolve, reject) => {
-            db.get(`SELECT username FROM players WHERE id = ?`, [id], (err, row) => err ? reject(err) : resolve(row));
+            db.get(`SELECT username FROM players WHERE id = ?`, [id], (err : any, row : any) => err ? reject(err) : resolve(row));
           });
         const io = Server.socket();
                 const payload = {
@@ -70,7 +70,7 @@ export async function  AccepteFriendRequest(req : FastifyRequest<{Body: {friendI
                 OR (player_id = ? AND friend_id = ?))
                 AND status = 'pending'`,
                 [id, friendId, friendId, id],
-                (err, row) => (err ? reject(err) : resolve(row))
+                (err : any, row : any) => (err ? reject(err) : resolve(row))
             );
         });
 
@@ -87,14 +87,14 @@ export async function  AccepteFriendRequest(req : FastifyRequest<{Body: {friendI
                 OR (player_id = ? AND friend_id = ?))
                 AND status = 'pending'
                 `,[id, friendId, friendId, id],
-                (err) => (err ? reject(err) : resolve())
+                (err : any) => (err ? reject(err) : resolve())
             );
         })
 
         // Notify requester that their invite was accepted
         const io = Server.socket();
         const accepter = await new Promise<any>((resolve, reject) => {
-            db.get(`SELECT username FROM players WHERE id = ?`, [id], (err, row) => err ? reject(err) : resolve(row));
+            db.get(`SELECT username FROM players WHERE id = ?`, [id], (err : any, row : any) => err ? reject(err) : resolve(row));
           });
 
         io.to(String(friendId)).emit("notification", {
@@ -131,14 +131,14 @@ export async function RemoveFriendRequest(req : FastifyRequest<{Body:{friendId :
                 OR (player_id = ? AND friend_id = ?))
                 AND status = 'pending'
                 `, [id, friendId, friendId, id],
-                (err) => err ? reject(err) : resolve()
+                (err : any) => err ? reject(err) : resolve()
             );
         })
         
         // Notify the other user that the friend request was cancelled/removed
         const io = Server.socket();
         const remover = await new Promise<any>((resolve, reject) => {
-            db.get(`SELECT username FROM players WHERE id = ?`, [id], (err, row) => err ? reject(err) : resolve(row));
+            db.get(`SELECT username FROM players WHERE id = ?`, [id], (err : any, row : any) => err ? reject(err) : resolve(row));
         });
         
         io.to(String(friendId)).emit("notification", {

@@ -2,6 +2,7 @@ import { FastifyRequest, FastifyReply } from 'fastify';
 import { TournamentController } from '../controllers/tournament';
 import { db } from '../databases/db';
 import jwt from 'jsonwebtoken';
+
 // Use an any-typed reference to avoid TypeScript static member resolution issues during runtime
 const TC: any = (TournamentController as any);
 import { Server } from '../server';
@@ -22,7 +23,7 @@ export function registerTournamentRoutes() {
             const payload: any = jwt.verify(token, process.env.ACCESS_TOKEN || '');
             // fetch user by id
             user = await new Promise((resolve) => {
-              db.get('SELECT * FROM players WHERE id = ?', [payload.id], (err, row) => {
+              db.get('SELECT * FROM players WHERE id = ?', [payload.id], (err : any, row : any) => {
                 if (err) return resolve(null);
                 resolve(row || null);
               });
@@ -61,7 +62,7 @@ export function registerTournamentRoutes() {
           try {
             const payload: any = jwt.verify(token, process.env.ACCESS_TOKEN || '');
             user = await new Promise((resolve) => {
-              db.get('SELECT * FROM players WHERE id = ?', [payload.id], (err, row) => {
+              db.get('SELECT * FROM players WHERE id = ?', [payload.id], (err : any, row : any) => {
                 if (err) return resolve(null);
                 resolve(row || null);
               });
@@ -101,7 +102,7 @@ export function registerTournamentRoutes() {
           try {
             const payload: any = jwt.verify(token, process.env.ACCESS_TOKEN || '');
             user = await new Promise((resolve) => {
-              db.get('SELECT * FROM players WHERE id = ?', [payload.id], (err, row) => {
+              db.get('SELECT * FROM players WHERE id = ?', [payload.id], (err : any, row : any) => {
                 if (err) return resolve(null);
                 resolve(row || null);
               });
@@ -131,7 +132,7 @@ export function registerTournamentRoutes() {
           try {
             const payload: any = jwt.verify(token, process.env.ACCESS_TOKEN || '');
             user = await new Promise((resolve) => {
-              db.get('SELECT * FROM players WHERE id = ?', [payload.id], (err, row) => {
+              db.get('SELECT * FROM players WHERE id = ?', [payload.id], (err : any, row : any) => {
                 if (err) return resolve(null);
                 resolve(row || null);
               });
@@ -186,7 +187,7 @@ export function registerTournamentRoutes() {
           try {
             const payload: any = jwt.verify(token, process.env.ACCESS_TOKEN || '');
             user = await new Promise((resolve) => {
-              db.get('SELECT * FROM players WHERE id = ?', [payload.id], (err, row) => {
+              db.get('SELECT * FROM players WHERE id = ?', [payload.id], (err : any, row : any) => {
                 if (err) return resolve(null);
                 resolve(row || null);
               });
@@ -258,7 +259,7 @@ export function registerTournamentRoutes() {
           try {
             const payload: any = jwt.verify(token, process.env.ACCESS_TOKEN || '');
             user = await new Promise((resolve) => {
-              db.get('SELECT * FROM players WHERE id = ?', [payload.id], (err, row) => {
+              db.get('SELECT * FROM players WHERE id = ?', [payload.id], (err : any, row : any) => {
                 if (err) return resolve(null);
                 resolve(row || null);
               });
@@ -293,7 +294,7 @@ export function registerTournamentRoutes() {
           try {
             const payload: any = jwt.verify(token, process.env.ACCESS_TOKEN || '');
             user = await new Promise((resolve) => {
-              db.get('SELECT * FROM players WHERE id = ?', [payload.id], (err, row) => {
+              db.get('SELECT * FROM players WHERE id = ?', [payload.id], (err : any, row : any) => {
                 if (err) return resolve(null);
                 resolve(row || null);
               });

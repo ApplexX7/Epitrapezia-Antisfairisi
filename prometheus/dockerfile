@@ -1,0 +1,9 @@
+FROM prom/prumetheus:lastest
+
+WORKDIR  /prometheus
+
+COPY config/prometheus.yml /prometheus/prometheus.yml
+
+EXPOSE 9090
+
+CMD ["--config.file=/prometheus/prometheus.yml"]
