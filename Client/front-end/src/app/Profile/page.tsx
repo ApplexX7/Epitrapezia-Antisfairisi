@@ -7,25 +7,27 @@ import { ChartRadarDefault } from '@/components/RadarGraph'
 import { ChartAreaDefault } from '@/components/TimeWInGraph'
 import { PingPong, CrownSimple , Star} from "@phosphor-icons/react/ssr";
 import { useAuth } from '@/components/hooks/authProvider';
-import { useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import api from '@/lib/axios';
 
 
 export default function Profile() {
   const { user: currentUser } = useAuth();
   const searchParams = useSearchParams();
+  const router = useRouter();
   const profileUsername = searchParams.get('user');
   const [profileUser, setProfileUser] = React.useState(currentUser);
   const [isOwnProfile, setIsOwnProfile] = React.useState(true);
   const [stats, setStats] = React.useState({ totalGames: 0, wins: 0, losses: 0, winRate: 0 });
   const [loading, setLoading] = React.useState(false);
+  const pageTitle = isOwnProfile ? "My Account" : `${profileUser?.username || profileUsername || "Account"} Account`;
 
   React.useEffect(() => {
     const fetchProfile = async () => {
       if (profileUsername && profileUsername !== currentUser?.username) {
         setLoading(true);
         try {
-          // Fetch other user's profile
+          // Fetch other users profile
           const response = await api.get(`/user/${profileUsername}`);
           setProfileUser(response.data);
           setIsOwnProfile(false);
@@ -75,18 +77,24 @@ export default function Profile() {
     fetchProfile();
   }, [profileUsername, currentUser]);
     return (
-      <div className="flex h-full w-full flex-col scale-90">
-      <div className="-mt-4 grid grid-cols-4 
-        gap-5 w-full h-full p-5  auto-rows-min overflow-y-auto scrollbar-hide"
-        style={{
-          scrollbarWidth: 'none',
-          msOverflowStyle: 'none'
-        }}>
-        <style>{`
-          div::-webkit-scrollbar {
-            display: none;
-          }
-        `}</style>
+      <div className="flex h-full w-full flex-col  scale-90">
+        <div className="flex items-center justify-between pr-8">
+          <h1 className="pl-20 text-shadow-md text-4xl -mb-6 font-semibold
+            bg-gradient-to-r from-white-smoke to-white-smoke/60
+            text-transparent bg-clip-text z-10">{pageTitle}</h1>
+          <button
+            onClick={() => router.push('/Home')}
+            className="mr-4 px-4 py-2 rounded-[10px] text-sm font-semibold text-white
+              bg-gradient-to-r from-white/25 via-white/10 to-transparent
+              border border-white/20 backdrop-blur-md
+              shadow-md shadow-black/20
+              hover:scale-[1.02] hover:shadow-lg hover:shadow-black/25 hover:bg-white/30
+              active:scale-[0.99] transition-transform transition-colors"
+          >
+            Back to Home
+          </button>
+        </div>
+        <div className="grid grid-cols-4 gap-5 w-full h-full  auto-rows-min mt-[10px]">
           <BoxLayout className="w-full h-ful   card col-span-3 row-span-2">
             <Playerinfo user={profileUser}/>
           </BoxLayout>

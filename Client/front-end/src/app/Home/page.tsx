@@ -7,12 +7,15 @@ import {ChartLineDefault} from '@/components/LineChart'
 import { ChartBarDefault } from '@/components/TimeLineLogin'
 import { useAuth } from '@/components/hooks/authProvider';
 import { useSocketStore } from '@/components/hooks/SocketIOproviders';
+import { useRouter } from 'next/navigation';
 import api from '@/lib/axios';
 
 
 export default function Home() {
   const user = useAuth.getState().user
+  const router = useRouter();
   const [gamesHistory, setGamesHistory] = React.useState<any[]>([]);
+  const [xpRefreshKey, setXpRefreshKey] = React.useState(0);
   const addNotification = useSocketStore((state: any) => state.addNotification);
   const notifications = useSocketStore((state: any) => state.notifications);
 
@@ -59,9 +62,11 @@ export default function Home() {
     // Fetch pending friend requests on page load
     fetchPendingRequests();
     // Mark attendance on page load
-    api.post('/attendance/mark').catch(error => {
-      console.error("Error marking attendance:", error);
-    });
+    api.post('/attendance/mark')
+      .then(() => setXpRefreshKey((k) => k + 1))
+      .catch(error => {
+        console.error("Error marking attendance:", error);
+      });
   }, []);
   return (
     <>
@@ -76,22 +81,34 @@ export default function Home() {
         gap-5 w-full h-[calc(100%-232px)] p-5  auto-rows-min">
         <BoxLayout className="grid grid-cols-1 xl:grid-cols-3 row-span-10 gap-5 col-span-4">
           <BoxLayout className="card  h-full w-full col-span-1 bg-[url('/images/OneVSOne.png')] bg-no-repeat bg-center bg-cover hover:" >
-            <div className="w-full h-full flex items-center justify-center backdrop-blur-sm rounded-[35px] 
-              transition-transform duration-300 ease-in-out focus:scale-110 cursor-pointer hover:scale-110">
+            <button
+              type="button"
+              onClick={() => router.push('/Home/Games/OnlinePong')}
+              className="w-full h-full flex items-center justify-center backdrop-blur-sm rounded-[35px] 
+              transition-transform duration-300 ease-in-out focus:scale-110 cursor-pointer hover:scale-110 focus:outline-none"
+            >
               <h1 className="text-white-smoke font-bold text-2xl md:text-5xl text-shadow-lg/30 hover:text-shadow-white-smoke/50" >Matchup</h1>
-            </div>
+            </button>
           </BoxLayout>
           <BoxLayout className="card col-span-1 bg-[url('/images/Tournaments.png')]  bg-no-repeat bg-cover bg-center" >
-          <div className="w-full h-full flex items-center justify-center backdrop-blur-sm rounded-[35px] 
-              transition-transform duration-300 ease-in-out focus:scale-110   cursor-pointer hover:scale-110">
+          <button
+            type="button"
+            onClick={() => router.push('/Home/Games/Tournament')}
+            className="w-full h-full flex items-center justify-center backdrop-blur-sm rounded-[35px] 
+              transition-transform duration-300 ease-in-out focus:scale-110   cursor-pointer hover:scale-110 focus:outline-none"
+          >
               <h1 className="text-white-smoke font-bold  text-2xl  md:text-5xl text-shadow-lg/30 hover:text-shadow-white-smoke/50" >Master Arena</h1>
-            </div>
+            </button>
           </BoxLayout>
           <BoxLayout className="card col-span-1 bg-[url('/images/rockPaper.png')]  bg-no-repeat  bg-cover bg-center" >
-            <div className="w-full h-full flex items-center justify-center backdrop-blur-sm rounded-[35px] 
-                transition-transform duration-300 ease-in-out focus:scale-110  cursor-pointer hover:scale-110">
-                <h1 className="text-white-smoke font-bold text-2xl  md:text-5xl text-shadow-lg/30  hover:text-shadow-white-smoke/50" >TriStrike</h1>
-              </div>
+            <button
+              type="button"
+              onClick={() => router.push('/Home/Games/TicTacToe')}
+              className="w-full h-full flex items-center justify-center backdrop-blur-sm rounded-[35px] 
+                transition-transform duration-300 ease-in-out focus:scale-110  cursor-pointer hover:scale-110 focus:outline-none"
+            >
+                <h1 className="text-white-smoke font-bold text-2xl  md:text-5xl text-shadow-lg/30  hover:text-shadow-white-smoke/50" >TTT</h1>
+              </button>
           </BoxLayout>
         </BoxLayout>
         <BoxLayout className="card col-span-4  xl:col-span-3 h-fit py-20">
@@ -102,7 +119,7 @@ export default function Home() {
             <BarProgressionLevel level={user?.level || 1} progression={user?.progression || 0}/>
           </BoxLayout>
           <BoxLayout className="py-18 card h-full xl:row-span-auto" >
-            <ChartLineDefault/>
+            <ChartLineDefault refreshKey={xpRefreshKey}/>
           </BoxLayout>
         </BoxLayout>
         <BoxLayout className="col-span-4 w-full  xl:-mt-60 xl:col-span-3">

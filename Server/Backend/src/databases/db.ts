@@ -261,38 +261,41 @@ export function createTournamentPlayersTable() {
 }
 
 export function createTournamentMatchesTable() {
-    db.run(
-        `CREATE TABLE IF NOT EXISTS tournament_matches (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            tournament_id INTEGER NOT NULL,
-            stage TEXT NOT NULL, -- semi | final | third
-            match_number INTEGER NOT NULL,
-            player_a_id INTEGER,
-            player_b_id INTEGER,
-            winner_id INTEGER,
-            loser_id INTEGER,
-            status TEXT DEFAULT 'idle', -- idle | in_progress | finished
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (tournament_id) REFERENCES tournaments(id) ON DELETE CASCADE,
-            FOREIGN KEY (player_a_id) REFERENCES players(id) ON DELETE SET NULL,
-            FOREIGN KEY (player_b_id) REFERENCES players(id) ON DELETE SET NULL,
-            FOREIGN KEY (winner_id) REFERENCES players(id) ON DELETE SET NULL,
-            FOREIGN KEY (loser_id) REFERENCES players(id) ON DELETE SET NULL
-        )`,
-        (err : any) => {
-            if (err) {
-                console.error("Error creating tournament_matches table:", err.message);
-            }
-        }
-    );
+    db.serialize(() => {
+        db.run(
+            `CREATE TABLE IF NOT EXISTS tournament_matches (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                tournament_id INTEGER NOT NULL,
+                stage TEXT NOT NULL, -- semi | final | third
+                match_number INTEGER NOT NULL,
+                player_a_id INTEGER,
+                player_b_id INTEGER,
+                winner_id INTEGER,
+                loser_id INTEGER,
+                status TEXT DEFAULT 'idle', -- idle | in_progress | finished
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (tournament_id) REFERENCES tournaments(id) ON DELETE CASCADE,
+                FOREIGN KEY (player_a_id) REFERENCES players(id) ON DELETE SET NULL,
+                FOREIGN KEY (player_b_id) REFERENCES players(id) ON DELETE SET NULL,
+                FOREIGN KEY (winner_id) REFERENCES players(id) ON DELETE SET NULL,
+                FOREIGN KEY (loser_id) REFERENCES players(id) ON DELETE SET NULL
+            )`,
+            (err : any) => {
+                if (err) {
+                    console.error("Error creating tournament_matches table:", err.message);
+                    return;
+                }
 
-    // Ensure one match per stage/match_number per tournament to avoid duplicate finals
-    db.run(
-        `CREATE UNIQUE INDEX IF NOT EXISTS idx_tournament_match_unique ON tournament_matches(tournament_id, stage, match_number)`,
-        (indexErr : any) => {
-            if (indexErr) console.error('Error creating tournament_matches unique index:', indexErr.message);
-        }
-    );
+                // Ensure one match per stage/match_number per tournament to avoid duplicate finals
+                db.run(
+                    `CREATE UNIQUE INDEX IF NOT EXISTS idx_tournament_match_unique ON tournament_matches(tournament_id, stage, match_number)`,
+                    (indexErr : any) => {
+                        if (indexErr) console.error('Error creating tournament_matches unique index:', indexErr.message);
+                    }
+                );
+            }
+        );
+    });
 }
 
 export function createTournamentResultsTable() {

@@ -25,7 +25,7 @@ const chartConfig = {
   },
 } satisfies ChartConfig
 
-export function ChartLineDefault() {
+export function ChartLineDefault({ refreshKey = 0 }: { refreshKey?: number }) {
   const [chartData, setChartData] = useState([
     { day: "Monday", xp: 0 },
     { day: "Tuesday", xp: 0 },
@@ -50,6 +50,7 @@ export function ChartLineDefault() {
       
       setChartData(transformedData)
       setLoading(false)
+      console.log("[ChartLineDefault] weekData -> chartData", transformedData)
     } catch (error) {
       console.error("Error fetching weekly XP:", error)
       setLoading(false)
@@ -58,7 +59,7 @@ export function ChartLineDefault() {
 
   useEffect(() => {
     fetchWeeklyXp()
-  }, [])
+  }, [refreshKey])
 
   // Listen for XP updates via socket
   useEffect(() => {
