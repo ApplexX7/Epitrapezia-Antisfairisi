@@ -1,15 +1,25 @@
-"use client";
 import React from "react";
-import { useParams } from "next/navigation";
+import { notFound } from "next/navigation";
 import TournamentLobby from "@/components/Tournament/TournamentLobby";
 
-export default function LobbyPage() {
-  const params = useParams();
-  const id = params?.id || "unknown";
+type Props = {
+  params: {
+    id?: string;
+  };
+};
+
+export default function LobbyPage({ params }: Props) {
+  const id = params?.id;
+  if (!id) notFound();
+
+  // Server-backed tournaments use numeric IDs. Local/offline fallback uses `local-...`.
+  const isLocal = id.startsWith("local-");
+  const isNumeric = /^\d+$/.test(id);
+  if (!isLocal && !isNumeric) notFound();
 
   return (
     <div className="min-h-screen px-4 py-8">
-      <TournamentLobby tournamentId={String(id)} />
+      <TournamentLobby tournamentId={id} />
     </div>
   );
 }

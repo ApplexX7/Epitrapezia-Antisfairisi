@@ -1,5 +1,27 @@
 // notifSocket.ts
 import { Server, Socket } from "socket.io";
+import { createRoomAndStartGame, UserSocket } from "./gameSocket";
+
+type PendingInvite = {
+  inviterSocketId: string;
+  mode: string;
+  createdAt: number;
+};
+
+// Keyed by `${inviterId}:${inviteeId}`
+const pendingInvites = new Map<string, PendingInvite>();
+
+// Prevent double-start when multiple accept events arrive close together.
+// Keyed by `${inviterId}:${inviteeId}` and resolves to the created roomId (or undefined).
+const inviteStartInFlight = new Map<string, Promise<string | undefined>>();
+
+// After a room is created for an invite, reuse it for any repeated accepts
+// (e.g. double-click spam) for a short TTL.
+const inviteCompleted = new Map<string, { roomId: string; createdAt: number }>();
+
+function inviteKey(inviterId: number, inviteeId: number) {
+  return `${inviterId}:${inviteeId}`;
+}
 
 interface OnlineUsers {
   [key: number]: Socket[];
@@ -35,6 +57,21 @@ export function registerNotifSocket(
       return;
     }
 
+    const key = inviteKey(Number(user.id), Number(to));
+    // New invite should reset any previous completed/in-flight state for this pair.
+    inviteStartInFlight.delete(key);
+    inviteCompleted.delete(key);
+
+    // Track which exact socket sent this invite so we can start the match
+    // on the same tab/session that initiated it.
+    try {
+      pendingInvites.set(key, {
+        inviterSocketId: socket.id,
+        mode,
+        createdAt: Date.now(),
+      });
+    } catch {}
+
     if (onlineUsers[to]) {
       for (const s of onlineUsers[to]) {
         s.emit("notification", {
@@ -52,9 +89,80 @@ export function registerNotifSocket(
   });
 
   // Response to a game invite (accept/decline)
-  socket.on("game:invite:response", (data: any) => {
+  socket.on("game:invite:response", async (data: any, callback?: Function) => {
     const { to, status } = data || {};
     if (!to || !status) return;
+
+    let roomId: string | undefined;
+    if (status === "accepted" && onlineUsers[to] && onlineUsers[to].length > 0) {
+      const key = inviteKey(Number(to), Number(user.id));
+
+      // If we've already created a room for this invite, reuse it.
+      const done = inviteCompleted.get(key);
+      if (done) {
+        const isExpired = Date.now() - done.createdAt > 2 * 60 * 1000;
+        if (!isExpired) {
+          roomId = done.roomId;
+        } else {
+          inviteCompleted.delete(key);
+        }
+      }
+
+      if (!roomId) {
+        // If a start is already in progress for this invite, await it.
+        const existing = inviteStartInFlight.get(key);
+        if (existing) {
+          roomId = await existing;
+        } else {
+          const startPromise = (async () => {
+            const pending = pendingInvites.get(key);
+            // prune stale invites (5 minutes)
+            const isStale = pending ? Date.now() - pending.createdAt > 5 * 60 * 1000 : false;
+            if (isStale) pendingInvites.delete(key);
+
+            const inviterSockets = onlineUsers[to];
+            if (!inviterSockets || inviterSockets.length === 0) return undefined;
+
+            const inviterSocketRaw =
+              pending && !isStale
+                ? inviterSockets.find((s) => s.id === pending.inviterSocketId)
+                : undefined;
+
+            const inviterSocket =
+              (inviterSocketRaw || inviterSockets[0]) as unknown as UserSocket;
+            const inviteeSocket = socket as unknown as UserSocket;
+
+            try {
+              const res = await createRoomAndStartGame(io, inviterSocket, inviteeSocket);
+              return res?.roomId;
+            } catch {
+              return undefined;
+            } finally {
+              // One response completes the invite lifecycle.
+              pendingInvites.delete(key);
+            }
+          })();
+
+          inviteStartInFlight.set(key, startPromise);
+          try {
+            roomId = await startPromise;
+          } finally {
+            inviteStartInFlight.delete(key);
+          }
+        }
+
+        if (roomId) {
+          inviteCompleted.set(key, { roomId, createdAt: Date.now() });
+        }
+      }
+    }
+
+    // If declined, clear any pending invite record.
+    if (status !== "accepted") {
+      pendingInvites.delete(inviteKey(Number(to), Number(user.id)));
+      inviteStartInFlight.delete(inviteKey(Number(to), Number(user.id)));
+      inviteCompleted.delete(inviteKey(Number(to), Number(user.id)));
+    }
 
     if (onlineUsers[to]) {
       for (const s of onlineUsers[to]) {
@@ -62,10 +170,19 @@ export function registerNotifSocket(
           type: "game-invite-response",
           message: `${user.username} ${status} your game invite`,
           from: { id: user.id, username: user.username },
-          payload: { status },
+          payload: { status, roomId },
           time: new Date().toISOString(),
         });
       }
     }
+
+    if (callback) {
+      if (status === "accepted") {
+        callback(roomId ? { ok: true, roomId } : { ok: false, error: "Failed to start match" });
+      } else {
+        callback({ ok: true });
+      }
+    }
   });
 }
+

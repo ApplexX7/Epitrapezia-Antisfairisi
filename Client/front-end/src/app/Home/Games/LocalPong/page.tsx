@@ -21,7 +21,14 @@ export default function LocalPong() {
         const m = search.get('m');
         const p1 = search.get('p1');
         const p2 = search.get('p2');
+        const n1 = search.get('n1');
+        const n2 = search.get('n2');
         const isTournamentGame = !!(t && t !== 'local');
+
+        const [playerOneName, setPlayerOneName] = useState<string>(n1 || 'Player 1');
+        const [playerTwoName, setPlayerTwoName] = useState<string>(n2 || 'Player 2');
+        const [playerOneAvatar, setPlayerOneAvatar] = useState<string | null>(null);
+        const [playerTwoAvatar, setPlayerTwoAvatar] = useState<string | null>(null);
 
         const [resultReported, setResultReported] = useState(false);
         const [reportError, setReportError] = useState<string | null>(null);
@@ -78,6 +85,52 @@ export default function LocalPong() {
             return () => clearTimeout(timer);
         }, [redirectCountdown, goToTournament]);
 
+        // Keep names in sync with URL (tournament passes n1/n2)
+        useEffect(() => {
+            if (n1) setPlayerOneName(n1);
+            if (n2) setPlayerTwoName(n2);
+        }, [n1, n2]);
+
+        // Fetch avatars for tournament players by id
+        useEffect(() => {
+            const loadAvatars = async () => {
+                try {
+                    const extractAvatar = (res: any): string | null => {
+                        const d = res?.data;
+                        return (
+                            d?.user?.avatar ??
+                            d?.userInof?.avatar ??
+                            d?.userInfo?.avatar ??
+                            null
+                        );
+                    };
+
+                    const fetchUser = async (id: string) => {
+                        try {
+                            // Backend route: GET /user/:id
+                            return await api.get(`/user/${id}`);
+                        } catch {
+                            // Fallback (some older client code uses this path)
+                            return await api.get(`/userInfo/${id}`);
+                        }
+                    };
+
+                    const [a, b] = await Promise.all([
+                        p1 ? fetchUser(p1) : Promise.resolve(null),
+                        p2 ? fetchUser(p2) : Promise.resolve(null),
+                    ]);
+
+                    const aAvatar = extractAvatar(a);
+                    const bAvatar = extractAvatar(b);
+                    if (aAvatar) setPlayerOneAvatar(aAvatar);
+                    if (bAvatar) setPlayerTwoAvatar(bAvatar);
+                } catch (e) {
+                    // keep defaults
+                }
+            };
+            if (p1 || p2) loadAvatars();
+        }, [p1, p2]);
+
     // Fallback: if Board misses the end callback, detect win state from scores and trigger finish
     useEffect(() => {
         if (resultReported) return;
@@ -111,6 +164,10 @@ export default function LocalPong() {
      <ScoreBar 
      playerOneScore = {rightPlayerScore}
      playerTwoScore = {leftPlayerScore}
+    playerOneName={playerOneName}
+    playerTwoName={playerTwoName}
+    playerOneAvatar={playerOneAvatar || undefined}
+    playerTwoAvatar={playerTwoAvatar || undefined}
      />
           <Board 
       playerOneScore = {rightPlayerScore}

@@ -2,7 +2,7 @@ import { Server, Socket } from "socket.io";
 import { v4 as uuidv4 } from "uuid";
 import { db, ensureGameStatsForPlayer } from "../databases/db";
 
-interface UserSocket extends Socket {
+export interface UserSocket extends Socket {
   user: {
     id: number;
     username: string;
@@ -25,6 +25,110 @@ interface GameRoom {
 
 let matchmakingQueue: UserSocket[] = [];
 const activeRooms: Record<string, GameRoom> = {};
+
+function leaveAllGameRooms(player: UserSocket, keepRoomId?: string) {
+  try {
+    for (const r of player.rooms) {
+      if (r === player.id) continue;
+      if (keepRoomId && r === keepRoomId) continue;
+      if (typeof r === "string" && r.startsWith("room-")) {
+        try {
+          player.leave(r);
+        } catch {}
+      }
+    }
+  } catch {}
+}
+
+async function getAvatar(userId: number) {
+  return new Promise<string>((resolve) => {
+    db.get(
+      "SELECT avatar FROM players WHERE id = ?",
+      [userId],
+      (err: any, row: any) => {
+        if (err) {
+          console.error("Error fetching avatar for user", userId, err?.message || err);
+          return resolve("/images/player2.png");
+        }
+        resolve(row?.avatar ? row.avatar : "/images/player2.png");
+      }
+    );
+  });
+}
+
+export async function createRoomAndStartGame(
+  io: Server,
+  leftPlayer: UserSocket,
+  rightPlayer: UserSocket
+): Promise<{ roomId: string } | null> {
+  if (!leftPlayer?.user?.id || !rightPlayer?.user?.id) return null;
+  if (leftPlayer.user.id === rightPlayer.user.id) return null;
+
+  const roomId = `room-${uuidv4()}`;
+  const room: GameRoom = {
+    id: roomId,
+    players: [leftPlayer, rightPlayer],
+    // start with a slightly reduced ball speed
+    ball: { x: 0, y: 0, dx: 6, dy: 6 },
+    baseSpeed: { dx: 6, dy: 6 },
+    roundStart: Date.now(),
+    paddles: {
+      [leftPlayer.user.id]: 0,
+      [rightPlayer.user.id]: 0,
+    },
+    scores: {
+      [leftPlayer.user.id]: 0,
+      [rightPlayer.user.id]: 0,
+    },
+    paddleStep: 24,
+    loop: null,
+  };
+
+  activeRooms[roomId] = room;
+
+  // Remove both participants from matchmaking queue if present
+  matchmakingQueue = matchmakingQueue.filter(
+    (s) => s.id !== leftPlayer.id && s.id !== rightPlayer.id
+  );
+
+  // Make sure each socket only participates in one game room at a time.
+  leaveAllGameRooms(leftPlayer, roomId);
+  leaveAllGameRooms(rightPlayer, roomId);
+
+  leftPlayer.join(roomId);
+  rightPlayer.join(roomId);
+
+  const [leftAvatar, rightAvatar] = await Promise.all([
+    getAvatar(leftPlayer.user.id),
+    getAvatar(rightPlayer.user.id),
+  ]);
+
+  leftPlayer.emit("matched", {
+    opponent: {
+      id: rightPlayer.user.id,
+      username: rightPlayer.user.username,
+      avatar: rightAvatar,
+    },
+    role: "left",
+    roomId,
+  });
+
+  rightPlayer.emit("matched", {
+    opponent: {
+      id: leftPlayer.user.id,
+      username: leftPlayer.user.username,
+      avatar: leftAvatar,
+    },
+    role: "right",
+    roomId,
+  });
+
+  console.log(
+    `🏓 Room created: ${roomId} (${leftPlayer.user.username} vs ${rightPlayer.user.username})`
+  );
+  startGameLoop(io, room);
+  return { roomId };
+}
 
 // Function to update player level based on experience
 function updateLevel(playerId: number) {
@@ -209,81 +313,19 @@ export function registerGameSocket(io: Server, socket: UserSocket) {
     socket.emit("waiting", { message: "searching for opponent" });
   
     // match with first diff user
-    const opponent = matchmakingQueue.find(
-      (s) => s.user.id !== socket.user.id
-    );
+    const opponent = matchmakingQueue.find((s) => s.user.id !== socket.user.id);
     if (!opponent) return;
 
-  const roomId = `room-${uuidv4()}`;
-    const room: GameRoom = {
-      id: roomId,
-      players: [socket, opponent],
-      // start with a slightly reduced ball speed
-        ball: { x: 0, y: 0, dx: 6, dy: 6 },
-        baseSpeed: { dx: 6, dy: 6 },
-        roundStart: Date.now(),
-      paddles: {
-        [socket.user.id]: 0,
-        [opponent.user.id]: 0,
-      },
-      scores: {
-        [socket.user.id]: 0,
-        [opponent.user.id]: 0,
-      },
-      paddleStep: 24,
-      loop: null,
-    };
-
-  activeRooms[roomId] = room;
-  // remove both participants from the queue safely avoid splice(-1,1) edge case
-  matchmakingQueue = matchmakingQueue.filter((s) => s.id !== socket.id && s.id !== opponent.id);
-
-    socket.join(roomId);
-    opponent.join(roomId);
-
-    // get avatar from db , if not exist going back to default
-    const getAvatar = (userId: number) => new Promise<string>((resolve) => {
-      db.get(
-        "SELECT avatar FROM players WHERE id = ?",
-        [userId],
-        (err: any, row: any) => {
-          if (err) {
-            console.error("Error fetching avatar for user", userId, err?.message || err);
-            return resolve("/images/player2.png");
-          }
-          resolve((row && row.avatar) ? row.avatar : "/images/player2.png");
-        }
-      );
-    });
-
-    const [socketAvatar, opponentAvatar] = await Promise.all([
-      getAvatar(socket.user.id),
-      getAvatar(opponent.user.id),
-    ]);
-
-    socket.emit("matched", { 
-      opponent: { id: opponent.user.id, username: opponent.user.username, avatar: opponentAvatar },
-      role: "left",
-      roomId 
-    });
-    
-    opponent.emit("matched", { 
-      opponent: { id: socket.user.id, username: socket.user.username, avatar: socketAvatar },
-      role: "right",
-      roomId 
-    });
-
-    console.log(`🏓 Room created: ${roomId} (${socket.user.username} vs ${opponent.user.username})`);
-
-    startGameLoop(io, room);
+    await createRoomAndStartGame(io, socket, opponent);
   });
 
   socket.on("movePaddle", ({ roomId, direction }: { roomId: string; direction: "up" | "down" }) => {
     const room = activeRooms[roomId];
     if (!room) return;
 
-    // ensure the sender is actually a participant in this room 
-    const isParticipant = room.players.some((p) => p.user.id === socket.user.id);
+    // ensure the sender is actually a participant in this room (by socket id)
+    // so only the currently-bound tab controls the paddle.
+    const isParticipant = room.players.some((p) => p.id === socket.id);
     if (!isParticipant) {
       console.warn(`Unauthorized movePaddle from user ${socket.user?.username} for room ${roomId}`);
       return;
@@ -330,6 +372,52 @@ export function registerGameSocket(io: Server, socket: UserSocket) {
     // remove from queue if waiting
     const idx = matchmakingQueue.indexOf(socket);
     if (idx !== -1) matchmakingQueue.splice(idx, 1);
+  });
+
+  // Allows a participant to re-attach their current socket to an existing room.
+  // This fixes cases where a user navigates late / has multiple tabs.
+  socket.on("game:joinRoom", async (data: any, callback?: Function) => {
+    const { roomId } = data || {};
+    if (!roomId || typeof roomId !== "string") {
+      if (callback) callback({ ok: false, error: "Missing roomId" });
+      return;
+    }
+
+    const room = activeRooms[roomId];
+    if (!room) {
+      if (callback) callback({ ok: false, error: "Room not found" });
+      return;
+    }
+
+    const idx = room.players.findIndex((p) => p.user.id === socket.user.id);
+    if (idx === -1) {
+      if (callback) callback({ ok: false, error: "Not a participant" });
+      return;
+    }
+
+    const oldSocket = room.players[idx];
+    if (oldSocket && oldSocket.id !== socket.id) {
+      try {
+        oldSocket.leave(roomId);
+      } catch {}
+    }
+    room.players[idx] = socket;
+    // Ensure this socket won't receive gameState from other game rooms.
+    leaveAllGameRooms(socket, roomId);
+    socket.join(roomId);
+
+    const opponent = room.players[idx === 0 ? 1 : 0];
+    const opponentAvatar = opponent ? await getAvatar(opponent.user.id) : "/images/player2.png";
+
+    socket.emit("matched", {
+      opponent: opponent
+        ? { id: opponent.user.id, username: opponent.user.username, avatar: opponentAvatar }
+        : { id: -1, username: "Opponent", avatar: opponentAvatar },
+      role: idx === 0 ? "left" : "right",
+      roomId,
+    });
+
+    if (callback) callback({ ok: true, roomId });
   });
 }
 

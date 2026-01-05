@@ -6,12 +6,12 @@ import { NavBar } from '@/components/Navbar'
 import { MagnifyingGlass , Bell} from "@phosphor-icons/react/ssr";
 import { CustomButton } from "@/components/CostumButton"
 import { NavigationMenuDemo } from "@/components/profileBar"
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useSocketStore } from "./hooks/SocketIOproviders";
 import api from "@/lib/axios";
 import toast from "react-hot-toast";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import SearchCompo from "./searchComp";
 
 export default function HomeNavBar (){
@@ -25,6 +25,34 @@ export default function HomeNavBar (){
         const socket = useSocketStore((state: any) => state.socket);
         const unreadCount = notifications.filter((n: any) => !n.read).length;
         const router = useRouter();
+        const pathname = usePathname();
+
+        useEffect(() => {
+            // If I invited someone and they accepted, auto-launch OnlinePong
+            const accepted = notifications.find(
+                (n: any) =>
+                    !n.read &&
+                    n.type === "game-invite-response" &&
+                    n.payload?.status === "accepted" &&
+                    n.payload?.roomId
+            );
+            if (!accepted) return;
+
+            // Only auto-redirect for a *fresh* notification to avoid random redirects
+            // caused by old unread items.
+            const notifTime = accepted.time ? new Date(accepted.time).getTime() : 0;
+            if (!notifTime || Date.now() - notifTime > 30_000) {
+                markAsRead(accepted.id);
+                return;
+            }
+
+            if (pathname === "/Home/Games/OnlinePong") {
+                markAsRead(accepted.id);
+                return;
+            }
+            markAsRead(accepted.id);
+            router.push(`/Home/Games/OnlinePong?roomId=${encodeURIComponent(accepted.payload.roomId)}`);
+        }, [notifications, markAsRead, router, pathname]);
 
         // Listen for friend request handled events from other tabs
         useEffect(() => {
@@ -87,14 +115,20 @@ export default function HomeNavBar (){
 
         const handleGameInviteResponse = (notif: any, status: "accepted" | "declined") => {
             if (!notif?.from?.id || !socket) return;
-            socket.emit("game:invite:response", { to: Number(notif.from.id), status });
-            if (status === "accepted") {
-                toast.success("Launching games page");
-                router.push("/Home/Games");
-            } else {
-                toast("Invite declined", { icon: "✋" });
-            }
-            markAsRead(notif.id);
+            socket.emit(
+                "game:invite:response",
+                { to: Number(notif.from.id), status },
+                (resp?: any) => {
+                    if (status === "accepted") {
+                        const rid = resp?.roomId;
+                        if (rid) router.push(`/Home/Games/OnlinePong?roomId=${encodeURIComponent(rid)}`);
+                        else router.push("/Home/Games/OnlinePong");
+                    } else {
+                        toast("Invite declined", { icon: "✋" });
+                    }
+                    markAsRead(notif.id);
+                }
+            );
         };
 
         const toggleNotifications = () => {

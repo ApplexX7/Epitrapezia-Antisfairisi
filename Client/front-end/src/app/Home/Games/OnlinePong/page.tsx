@@ -1,23 +1,14 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import { useSocketStore } from "@/components/hooks/SocketIOproviders";
+import { MatchedPayload, useSocketStore } from "@/components/hooks/SocketIOproviders";
 import { useAuth } from "@/components/hooks/authProvider";
 import RemoteBoard from "../LocalPong/RemoteBoard";
 import GameCostum from "./GameCostum";
 import RemoteScoreBoard from "./RemoteScoreBoard"
 import { Button } from "@/components/ui/button";
 import Link from 'next/link'
-
-type MatchedPayload = {
-  opponent: {
-    id: number;
-    username: string;
-    avatar: string;
-  };
-  roomId: string;
-  role: "left" | "right";
-};
+import { useSearchParams } from "next/navigation";
 
 type WaitingPayload = {
   message: string;
@@ -44,7 +35,8 @@ export default function Page() {
     let [ballColor, setBallColor] = useState("default");
     let [paddleColor, setPaddleColor] = useState("default");
     let [gameDiff, setGameDiff] = useState("easy");
-  const { socket, isConnected } = useSocketStore();
+  const { socket, isConnected, lastMatched, clearLastMatched } = useSocketStore();
+  const searchParams = useSearchParams();
   const [playerName, setPlayerName] = useState<string | null>(null);
 const [opponentName, setOpponentName] = useState<string | null>(null);
 const [opponentAvatar, setOpponentAvatar] = useState<string | null>(null);
@@ -71,7 +63,7 @@ const [opponentAvatar, setOpponentAvatar] = useState<string | null>(null);
       setStatus(`⏳ ${payload.message}`);
 
     const handleMatched = (payload: MatchedPayload) => {
-      setStatus(`✅ Matched with ${payload.opponent.username}`);
+      setStatus(`Matched with ${payload.opponent.username}`);
       setOpponentName(payload.opponent.username);
       setOpponentAvatar(payload.opponent.avatar);
       setRoomId(payload.roomId);
@@ -85,10 +77,10 @@ const [opponentAvatar, setOpponentAvatar] = useState<string | null>(null);
     };
 
     const handleGameOver = (payload: GameOverPayload) =>
-      setStatus(`❌ ${payload.message}`);
+      setStatus(` ${payload.message}`);
     const handleGameOverWrapped = (payload: GameOverPayload) => {
       setGameOver(payload);
-      setStatus(`❌ ${payload.message}`);
+      setStatus(` ${payload.message}`);
     };
     socket.on("stopmatchmaking", handleStopMatchMacking);
     socket.on("waiting", handleWaiting);
@@ -106,6 +98,31 @@ const [opponentAvatar, setOpponentAvatar] = useState<string | null>(null);
       socket.off("countdown", handleCountdown);
     };
   }, [socket]);
+
+  // If we arrived here after being matched (invite flow), consume the cached payload
+  useEffect(() => {
+    if (roomId || !lastMatched) return;
+    setStatus(`Matched with ${lastMatched.opponent.username}`);
+    setOpponentName(lastMatched.opponent.username);
+    setOpponentAvatar(lastMatched.opponent.avatar);
+    setRoomId(lastMatched.roomId);
+    setRole(lastMatched.role);
+    clearLastMatched();
+  }, [lastMatched, roomId, clearLastMatched]);
+
+  // If we got routed here with a roomId (invite accepted) but missed 'matched', re-join.
+  useEffect(() => {
+    if (!socket) return;
+    if (roomId) return;
+    const qpRoomId = searchParams.get("roomId");
+    if (!qpRoomId) return;
+
+    socket.emit("game:joinRoom", { roomId: qpRoomId }, (resp?: any) => {
+      if (!resp?.ok) {
+        console.warn("Failed to join room", resp?.error);
+      }
+    });
+  }, [socket, roomId, searchParams]);
   let handleStopMatchMacking = () =>
     {
       setMatchupText("Join Matchup");
@@ -202,11 +219,11 @@ const [opponentAvatar, setOpponentAvatar] = useState<string | null>(null);
        setCurrentDiff={setGameDiff}
        setCurrentPaddle={setPaddleColor}
        />
-        <Link href="/Home/Games/">
+        {/* <Link href="/Home/Games/">
        <Button className="fixed bg-purple-400 top-4 left-4 cursor-pointer">
           Back To Games
        </Button>
-        </Link>
+        </Link> */}
           <button
             className="px-6 py-3 bg-purple-600 rounded hover:bg-purple-800 cursor-pointer transition"
             onClick={handleJoin}
