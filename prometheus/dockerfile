@@ -1,4 +1,4 @@
-FROM prom/prumetheus:lastest
+FROM prom/prometheus:latest
 
 WORKDIR  /prometheus
 

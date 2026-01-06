@@ -6,7 +6,7 @@ FROM grafana/grafana-oss:latest
 # RUN grafana-cli plugins install grafana-piechart-panel
 
 # Expose default Grafana port
-EXPOSE 3000
+EXPOSE 4000
 
 # Default command already set in image, no need to override
 # ENTRYPOINT ["/run.sh"]  # optional
