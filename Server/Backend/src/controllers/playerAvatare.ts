@@ -1,6 +1,5 @@
 import { FastifyRequest, FastifyReply } from "fastify";
 import { db } from "../databases/db";
-import { refreshTokenDate, verifyRefreshToken } from "./authRefresh";
 import path from "path";
 import fs from "fs";
 import { pipeline } from "stream/promises";

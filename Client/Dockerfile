@@ -4,9 +4,9 @@ RUN apk add --no-cache bash git
 
 WORKDIR /app
 
-COPY ./front-end/package*.json ./
+COPY ./package*.json ./
 
-COPY ./front-end ./
+COPY ./ ./
 
 RUN npm install
 
