@@ -287,25 +287,25 @@ export class TournamentController {
 
               // Create semi-final matches
               const p = players.map((p: any) => p.player_id);
-              const matches = [
-                { stage: 'semi', match_number: 1, player_a: p[0], player_b: p[1] },
-                { stage: 'semi', match_number: 2, player_a: p[2], player_b: p[3] },
-              ];
 
-              let completed = 0;
-              let hasError = false;
-
-              matches.forEach((match) => {
-                const sql = `
-                  INSERT INTO tournament_matches (tournament_id, stage, match_number, player_a_id, player_b_id, status)
-                  VALUES (?, ?, ?, ?, ?, 'idle')
+              db.serialize(() => {
+                const insertSql = `
+                  INSERT INTO tournament_matches (tournament_id, stage, match_number, player_a_id, player_b_id, status, player_a_accepted, player_b_accepted)
+                  VALUES (?, ?, ?, ?, ?, 'idle', 0, 0)
                 `;
-                db.run(sql, [tournamentId, match.stage, match.match_number, match.player_a, match.player_b], (err) => {
-                  completed++;
-                  if (err && !hasError) {
-                    hasError = true;
-                    reject({ status: 400, message: 'Failed to initialize bracket', error: (err as any)?.message || String(err) });
-                  } else if (completed === matches.length && !hasError) {
+
+                // Insert semi-final 1
+                db.run(insertSql, [tournamentId, 'semi', 1, p[0], p[1]], function(err) {
+                  if (err) {
+                    return reject({ status: 400, message: 'Failed to create semi-final 1', error: (err as any)?.message || String(err) });
+                  }
+
+                  // Insert semi-final 2
+                  db.run(insertSql, [tournamentId, 'semi', 2, p[2], p[3]], function(err) {
+                    if (err) {
+                      return reject({ status: 400, message: 'Failed to create semi-final 2', error: (err as any)?.message || String(err) });
+                    }
+
                     // Update tournament status to in_progress
                     const updateSql = `UPDATE tournaments SET status = 'in_progress', updated_at = CURRENT_TIMESTAMP WHERE id = ?`;
                     db.run(updateSql, [tournamentId], (err) => {
@@ -315,7 +315,7 @@ export class TournamentController {
                         resolve();
                       }
                     });
-                  }
+                  });
                 });
               });
             });
