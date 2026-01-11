@@ -386,4 +386,36 @@ export function registerTournamentRoutes() {
       reply.status(error.status || 500).send({ message: error.message });
     }
   });
+
+  // Get player's tournament history
+  Server.route('get', '/tournaments/history/me', async (request: FastifyRequest, reply: FastifyReply) => {
+    try {
+      let user: any = (request as any).user;
+      if (!user || !user.id) {
+        const authHeader = (request.headers as any).authorization || (request.headers as any).Authorization;
+        if (authHeader && typeof authHeader === 'string' && authHeader.startsWith('Bearer ')) {
+          const token = authHeader.slice(7);
+          try {
+            const payload: any = jwt.verify(token, process.env.ACCESS_TOKEN || '');
+            user = await new Promise((resolve) => {
+              db.get('SELECT * FROM players WHERE id = ?', [payload.id], (err : any, row : any) => {
+                if (err) return resolve(null);
+                resolve(row || null);
+              });
+            });
+            if (user) (request as any).user = user;
+          } catch (e) {}
+        }
+      }
+
+      if (!user || !user.id) {
+        return reply.status(401).send({ message: 'Must be logged in to view tournament history' });
+      }
+
+      const history = await TC.getPlayerTournamentHistory(user.id);
+      reply.send({ tournaments: history });
+    } catch (error: any) {
+      reply.status(error.status || 500).send({ message: error.message });
+    }
+  });
 }

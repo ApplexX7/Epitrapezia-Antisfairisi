@@ -596,4 +596,71 @@ export class TournamentController {
       });
     });
   }
+
+  /**
+   * Get player's tournament history (completed tournaments they participated in)
+   */
+  static getPlayerTournamentHistory(playerId: number): Promise<any[]> {
+    return new Promise((resolve, reject) => {
+      const sql = `
+        SELECT 
+          t.id,
+          t.name,
+          t.status,
+          t.created_at,
+          t.updated_at,
+          tr.first_place_id,
+          tr.second_place_id,
+          tr.third_place_id,
+          tr.fourth_place_id,
+          tr.completed_at,
+          CASE 
+            WHEN tr.first_place_id = ? THEN 1
+            WHEN tr.second_place_id = ? THEN 2
+            WHEN tr.third_place_id = ? THEN 3
+            WHEN tr.fourth_place_id = ? THEN 4
+            ELSE NULL
+          END as player_placement
+        FROM tournaments t
+        INNER JOIN tournament_players tp ON tp.tournament_id = t.id AND tp.player_id = ?
+        LEFT JOIN tournament_results tr ON tr.tournament_id = t.id
+        WHERE t.status = 'completed'
+        ORDER BY tr.completed_at DESC, t.updated_at DESC
+        LIMIT 50
+      `;
+      db.all(sql, [playerId, playerId, playerId, playerId, playerId], async (err, rows) => {
+        if (err) {
+          return reject({ status: 400, message: 'Failed to fetch tournament history', error: (err as any)?.message || String(err) });
+        }
+
+        const tournaments = (rows as any[]) || [];
+
+        // Fetch player usernames for placements
+        const tournamentsWithPlayers = await Promise.all(
+          tournaments.map(async (t: any) => {
+            const playerIds = [t.first_place_id, t.second_place_id, t.third_place_id, t.fourth_place_id].filter(Boolean);
+            if (playerIds.length === 0) return { ...t, players: {} };
+
+            return new Promise((resolve) => {
+              const placeholders = playerIds.map(() => '?').join(',');
+              const playerSql = `SELECT id, username, avatar FROM players WHERE id IN (${placeholders})`;
+              db.all(playerSql, playerIds, (err, players: any) => {
+                if (err) {
+                  resolve({ ...t, players: {} });
+                } else {
+                  const playerMap: any = {};
+                  (players || []).forEach((p: any) => {
+                    playerMap[p.id] = { username: p.username, avatar: p.avatar };
+                  });
+                  resolve({ ...t, players: playerMap });
+                }
+              });
+            });
+          })
+        );
+
+        resolve(tournamentsWithPlayers);
+      });
+    });
+  }
 }
