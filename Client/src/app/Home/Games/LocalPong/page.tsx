@@ -96,9 +96,10 @@ export default function LocalPong() {
         useEffect(() => {
             const loadAvatars = async () => {
                 try {
-                    const extractAvatar = (res: { data?: { user?: { avatar?: string }; userInof?: { avatar?: string }; userInfo?: { avatar?: string } } } | null): string | null => {
+                    const extractAvatar = (res: { data?: { avatar?: string; user?: { avatar?: string }; userInof?: { avatar?: string }; userInfo?: { avatar?: string } } } | null): string | null => {
                         const d = res?.data;
                         return (
+                            d?.avatar ??
                             d?.user?.avatar ??
                             d?.userInof?.avatar ??
                             d?.userInfo?.avatar ??

@@ -74,8 +74,10 @@ export default function TournamentLobby({ tournamentId }: Props) {
     if (!matches.length) return;
     const nextState: Record<string, Match> = {};
     matches.forEach((m: ServerMatchData) => {
-      const pa = playerList.find((p) => String(p.id) === String(m.player_a_id)) || { id: String(m.player_a_id), name: m.player_a_name || 'Player' };
-      const pb = playerList.find((p) => String(p.id) === String(m.player_b_id)) || { id: String(m.player_b_id), name: m.player_b_name || 'Player' };
+      const foundA = playerList.find((p) => String(p.id) === String(m.player_a_id));
+      const foundB = playerList.find((p) => String(p.id) === String(m.player_b_id));
+      const pa = foundA || { id: String(m.player_a_id), name: m.player_a_name || 'Player', avatar: undefined };
+      const pb = foundB || { id: String(m.player_b_id), name: m.player_b_name || 'Player', avatar: undefined };
       const key = `${m.stage}-${m.match_number}`;
       nextState[key] = {
         a: pa,
@@ -212,8 +214,10 @@ export default function TournamentLobby({ tournamentId }: Props) {
       const matches = (res.data?.matches || []) as ServerMatchData[];
       const nextState: Record<string, Match> = {};
       matches.forEach((m: ServerMatchData) => {
-        const pa = players.find((p) => String(p.id) === String(m.player_a_id)) || { id: String(m.player_a_id), name: m.player_a_name || 'Player' };
-        const pb = players.find((p) => String(p.id) === String(m.player_b_id)) || { id: String(m.player_b_id), name: m.player_b_name || 'Player' };
+        const foundA = players.find((p) => String(p.id) === String(m.player_a_id));
+        const foundB = players.find((p) => String(p.id) === String(m.player_b_id));
+        const pa = foundA || { id: String(m.player_a_id), name: m.player_a_name || 'Player', avatar: undefined };
+        const pb = foundB || { id: String(m.player_b_id), name: m.player_b_name || 'Player', avatar: undefined };
         const key = `${m.stage}-${m.match_number}`;
         nextState[key] = { a: pa, b: pb, status: m.status || 'idle', winnerId: m.winner_id ? String(m.winner_id) : null, loserId: m.loser_id ? String(m.loser_id) : null, dbId: m.id };
       });
@@ -339,7 +343,11 @@ export default function TournamentLobby({ tournamentId }: Props) {
           // if current user is not creator we would need password; creator may omit it
           const resp = await api.post(`/tournaments/${tournamentId}/add-player`, body);
           const tour = resp.data?.tournament as TournamentData;
-          const remotePlayers: Player[] = tour?.players?.map((p: ServerPlayerData) => ({ id: String(p.player_id || p.id), name: p.display_name || p.name || 'Player' })) || [];
+          const remotePlayers: Player[] = tour?.players?.map((p: ServerPlayerData) => ({ 
+            id: String(p.player_id || p.id), 
+            name: p.display_name || p.name || 'Player',
+            avatar: p.avatar
+          })) || [];
           setPlayers(remotePlayers);
           setNameEntry("");
           setErrorMessage(null);
