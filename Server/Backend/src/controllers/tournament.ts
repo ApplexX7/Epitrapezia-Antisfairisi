@@ -194,8 +194,14 @@ export class TournamentController {
           return reject({ status: 404, message: 'Tournament not found' });
         }
 
-        // Fetch players
-        const playerSql = `SELECT id, tournament_id, player_id, display_name, joined_at FROM tournament_players WHERE tournament_id = ? ORDER BY joined_at ASC`;
+        // Fetch players with avatar from players table
+        const playerSql = `
+          SELECT tp.id, tp.tournament_id, tp.player_id, tp.display_name, tp.joined_at, p.avatar
+          FROM tournament_players tp
+          LEFT JOIN players p ON tp.player_id = p.id
+          WHERE tp.tournament_id = ?
+          ORDER BY tp.joined_at ASC
+        `;
         db.all(playerSql, [tournamentId], (err, players: any) => {
           if (err) {
             return reject({ status: 400, message: 'Failed to fetch players', error: (err as any)?.message || String(err) });

@@ -3,8 +3,10 @@ import React, { useEffect, useState, useCallback } from "react";
 import api from "@/lib/axios";
 import { useAuth } from "@/components/hooks/authProvider";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
+import { getAvatarUrl } from "@/lib/utils";
 
-type Player = { id: string; name: string; local?: boolean };
+type Player = { id: string; name: string; avatar?: string; local?: boolean };
 
 type Match = {
   a?: Player | null;
@@ -38,6 +40,7 @@ interface ServerPlayerData {
   display_name?: string;
   name?: string;
   username?: string;
+  avatar?: string;
 }
 
 interface TournamentData {
@@ -118,7 +121,8 @@ export default function TournamentLobby({ tournamentId }: Props) {
         setTournamentInfo(res.data || null);
         const remotePlayers: Player[] = res.data?.players?.map((p: ServerPlayerData) => ({ 
           id: String(p.player_id || p.id), 
-          name: p.display_name || p.name 
+          name: p.display_name || p.name,
+          avatar: p.avatar
         })) || [];
         
         if (remotePlayers.length) setPlayers(remotePlayers);
@@ -521,25 +525,65 @@ export default function TournamentLobby({ tournamentId }: Props) {
   if (tournamentComplete) {
     const f = matchesState['final-1'];
     const t = matchesState['third-1'];
+    const first = f?.a?.id === f?.winnerId ? f.a : f?.b;
+    const second = f?.a?.id === f?.loserId ? f.a : f?.b;
+    const third = t?.a?.id === t?.winnerId ? t.a : t?.b;
+    const fourth = t?.a?.id === t?.loserId ? t.a : t?.b;
     return (
       <div className="max-w-3xl mx-auto mt-8 p-4">
         <h2 className="text-3xl font-bold text-center mb-8">🏆 Tournament Results</h2>
         <div className="grid grid-cols-2 gap-4 mb-8">
-          <div className="p-6 bg-yellow-100 rounded-lg text-center border-2 border-yellow-500">
-            <div className="text-sm text-gray-600 mb-2">🥇 1st Place</div>
-            <div className="text-2xl font-bold text-yellow-800">{f?.a?.id === f?.winnerId ? f.a?.name : f?.b?.name}</div>
+          <div className="p-6 bg-yellow-100 rounded-lg text-center border-2 border-yellow-500 flex flex-col items-center gap-2">
+            <div className="text-sm text-gray-600">🥇 1st Place</div>
+            {first && (
+              <Image
+                src={getAvatarUrl(first.avatar)}
+                alt={first.name}
+                width={64}
+                height={64}
+                className="rounded-full object-cover"
+              />
+            )}
+            <div className="text-2xl font-bold text-yellow-800">{first?.name}</div>
           </div>
-          <div className="p-6 bg-gray-100 rounded-lg text-center border-2 border-gray-500">
-            <div className="text-sm text-gray-600 mb-2">🥈 2nd Place</div>
-            <div className="text-2xl font-bold text-gray-800">{f?.a?.id === f?.loserId ? f.a?.name : f?.b?.name}</div>
+          <div className="p-6 bg-gray-100 rounded-lg text-center border-2 border-gray-500 flex flex-col items-center gap-2">
+            <div className="text-sm text-gray-600">🥈 2nd Place</div>
+            {second && (
+              <Image
+                src={getAvatarUrl(second.avatar)}
+                alt={second.name}
+                width={64}
+                height={64}
+                className="rounded-full object-cover"
+              />
+            )}
+            <div className="text-2xl font-bold text-gray-800">{second?.name}</div>
           </div>
-          <div className="p-6 bg-orange-100 rounded-lg text-center border-2 border-orange-500">
-            <div className="text-sm text-gray-600 mb-2">🥉 3rd Place</div>
-            <div className="text-2xl font-bold text-orange-800">{t?.a?.id === t?.winnerId ? t.a?.name : t?.b?.name}</div>
+          <div className="p-6 bg-orange-100 rounded-lg text-center border-2 border-orange-500 flex flex-col items-center gap-2">
+            <div className="text-sm text-gray-600">🥉 3rd Place</div>
+            {third && (
+              <Image
+                src={getAvatarUrl(third.avatar)}
+                alt={third.name}
+                width={64}
+                height={64}
+                className="rounded-full object-cover"
+              />
+            )}
+            <div className="text-2xl font-bold text-orange-800">{third?.name}</div>
           </div>
-          <div className="p-6 bg-blue-100 rounded-lg text-center border-2 border-blue-500">
-            <div className="text-sm text-gray-600 mb-2">4th Place</div>
-            <div className="text-2xl font-bold text-blue-800">{t?.a?.id === t?.loserId ? t.a?.name : t?.b?.name}</div>
+          <div className="p-6 bg-blue-100 rounded-lg text-center border-2 border-blue-500 flex flex-col items-center gap-2">
+            <div className="text-sm text-gray-600">4th Place</div>
+            {fourth && (
+              <Image
+                src={getAvatarUrl(fourth.avatar)}
+                alt={fourth.name}
+                width={64}
+                height={64}
+                className="rounded-full object-cover"
+              />
+            )}
+            <div className="text-2xl font-bold text-blue-800">{fourth?.name}</div>
           </div>
         </div>
       </div>
@@ -564,9 +608,16 @@ export default function TournamentLobby({ tournamentId }: Props) {
         <h3 className="font-semibold mb-4">Players ({players.length}/4)</h3>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
           {players.map((p, i) => (
-            <div key={p.id} className="p-3 bg-purple-100 rounded-lg border-2 border-purple-300 text-center">
+            <div key={p.id} className="p-3 bg-purple-100 rounded-lg border-2 border-purple-300 text-center flex flex-col items-center gap-2">
+              <Image
+                src={getAvatarUrl(p.avatar)}
+                alt={p.name}
+                width={48}
+                height={48}
+                className="rounded-full object-cover"
+              />
               <div className="font-medium text-gray-900">{p.name}</div>
-              <div className="text-xs text-gray-600">{i + 1}</div>
+              <div className="text-xs text-gray-600">Player {i + 1}</div>
             </div>
           ))}
           {players.length < 4 && (
@@ -605,10 +656,28 @@ export default function TournamentLobby({ tournamentId }: Props) {
                   </div>
                   {m && m.a && m.b ? (
                     <div>
-                      <div className="flex justify-between mb-2">
-                        <span className={m.winnerId === m.a.id ? 'font-bold text-green-700' : ''}>{m.a.name}</span>
-                        <span className="text-gray-500">vs</span>
-                        <span className={m.winnerId === m.b.id ? 'font-bold text-green-700' : ''}>{m.b.name}</span>
+                      <div className="flex justify-between items-center mb-3">
+                        <div className="flex flex-col items-center gap-1">
+                          <Image
+                            src={getAvatarUrl(m.a.avatar)}
+                            alt={m.a.name}
+                            width={40}
+                            height={40}
+                            className="rounded-full object-cover"
+                          />
+                          <span className={`text-sm ${m.winnerId === m.a.id ? 'font-bold text-green-700' : ''}`}>{m.a.name}</span>
+                        </div>
+                        <span className="text-gray-500 font-bold">VS</span>
+                        <div className="flex flex-col items-center gap-1">
+                          <Image
+                            src={getAvatarUrl(m.b.avatar)}
+                            alt={m.b.name}
+                            width={40}
+                            height={40}
+                            className="rounded-full object-cover"
+                          />
+                          <span className={`text-sm ${m.winnerId === m.b.id ? 'font-bold text-green-700' : ''}`}>{m.b.name}</span>
+                        </div>
                       </div>
                       {!String(tournamentId).startsWith('local-') && (
                         <div className="mb-2 text-xs text-gray-700 flex items-center justify-between">
@@ -662,10 +731,28 @@ export default function TournamentLobby({ tournamentId }: Props) {
                     <div className={`font-bold text-sm ${titleColor} mb-3`}>{title}</div>
                     {m && m.a && m.b ? (
                       <div>
-                        <div className="flex justify-between mb-2">
-                          <span className={m.winnerId === m.a.id ? 'font-bold text-green-700' : ''}>{m.a.name}</span>
-                          <span className="text-gray-500">vs</span>
-                          <span className={m.winnerId === m.b.id ? 'font-bold text-green-700' : ''}>{m.b.name}</span>
+                        <div className="flex justify-between items-center mb-3">
+                          <div className="flex flex-col items-center gap-1">
+                            <Image
+                              src={getAvatarUrl(m.a.avatar)}
+                              alt={m.a.name}
+                              width={40}
+                              height={40}
+                              className="rounded-full object-cover"
+                            />
+                            <span className={`text-sm ${m.winnerId === m.a.id ? 'font-bold text-green-700' : ''}`}>{m.a.name}</span>
+                          </div>
+                          <span className="text-gray-500 font-bold">VS</span>
+                          <div className="flex flex-col items-center gap-1">
+                            <Image
+                              src={getAvatarUrl(m.b.avatar)}
+                              alt={m.b.name}
+                              width={40}
+                              height={40}
+                              className="rounded-full object-cover"
+                            />
+                            <span className={`text-sm ${m.winnerId === m.b.id ? 'font-bold text-green-700' : ''}`}>{m.b.name}</span>
+                          </div>
                         </div>
                         {!String(tournamentId).startsWith('local-') && (
                           <div className="mb-2 text-xs text-gray-700 flex items-center justify-between">
