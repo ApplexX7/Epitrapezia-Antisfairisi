@@ -326,17 +326,19 @@ export function registerTournamentRoutes() {
 
       await TC.recordMatchResult(parseInt(id), matchId, winnerId, loserId);
       
-      // Check if we need to create final matches
-      await TC.createFinalMatches(parseInt(id));
+      // Try to create final matches (will silently succeed if already exist or not ready)
+      try {
+        await TC.createFinalMatches(parseInt(id));
+      } catch (finalErr: any) {
+        // Ignore errors - finals may not be ready yet or already exist
+        if (!finalErr?.message?.includes('Both semi-finals')) {
+          console.log('createFinalMatches info:', finalErr?.message);
+        }
+      }
 
       reply.send({ message: 'Match result recorded' });
     } catch (error: any) {
-      // Final matches may not be ready yet
-      if (error.message.includes('Both semi-finals')) {
-        reply.send({ message: 'Match result recorded, waiting for other semi-final' });
-      } else {
-        reply.status(error.status || 500).send({ message: error.message });
-      }
+      reply.status(error.status || 500).send({ message: error.message });
     }
   });
 

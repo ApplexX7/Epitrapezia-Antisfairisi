@@ -469,45 +469,55 @@ export class TournamentController {
    */
   static createFinalMatches(tournamentId: number): Promise<void> {
     return new Promise((resolve, reject) => {
-      // Get semi-final winners and losers
-      const sql = `
-        SELECT stage, match_number, winner_id, loser_id 
-        FROM tournament_matches 
-        WHERE tournament_id = ? AND stage = 'semi'
-        ORDER BY match_number
-      `;
-      db.all(sql, [tournamentId], (err, semis: any) => {
+      // First check if final matches already exist
+      const checkSql = `SELECT COUNT(*) as count FROM tournament_matches WHERE tournament_id = ? AND stage IN ('final', 'third')`;
+      db.get(checkSql, [tournamentId], (err, check: any) => {
         if (err) {
-          reject({ status: 400, message: 'Failed to fetch semi-finals', error: (err as any)?.message || String(err) });
-        } else if (!semis || semis.length < 2 || !semis[0].winner_id || !semis[1].winner_id) {
-          reject({ status: 400, message: 'Both semi-finals must be finished' });
-        } else {
-          // Create final and 3rd place
-          const finalSql = `
-            INSERT INTO tournament_matches (tournament_id, stage, match_number, player_a_id, player_b_id, status)
-            VALUES (?, 'final', 1, ?, ?, 'idle')
-            ON CONFLICT DO NOTHING
-          `;
-          const thirdSql = `
-            INSERT INTO tournament_matches (tournament_id, stage, match_number, player_a_id, player_b_id, status)
-            VALUES (?, 'third', 1, ?, ?, 'idle')
-            ON CONFLICT DO NOTHING
-          `;
-
-          db.run(finalSql, [tournamentId, semis[0].winner_id, semis[1].winner_id], (err) => {
-            if (err) {
-              reject({ status: 400, message: 'Failed to create final', error: (err as any)?.message || String(err) });
-            } else {
-              db.run(thirdSql, [tournamentId, semis[0].loser_id, semis[1].loser_id], (err) => {
-                if (err) {
-                  reject({ status: 400, message: 'Failed to create 3rd place match', error: (err as any)?.message || String(err) });
-                } else {
-                  resolve();
-                }
-              });
-            }
-          });
+          return reject({ status: 400, message: 'Failed to check existing finals', error: (err as any)?.message || String(err) });
         }
+        // If final matches already exist, skip creation
+        if (check && check.count > 0) {
+          return resolve();
+        }
+
+        // Get semi-final winners and losers
+        const sql = `
+          SELECT stage, match_number, winner_id, loser_id 
+          FROM tournament_matches 
+          WHERE tournament_id = ? AND stage = 'semi'
+          ORDER BY match_number
+        `;
+        db.all(sql, [tournamentId], (err, semis: any) => {
+          if (err) {
+            reject({ status: 400, message: 'Failed to fetch semi-finals', error: (err as any)?.message || String(err) });
+          } else if (!semis || semis.length < 2 || !semis[0].winner_id || !semis[1].winner_id) {
+            reject({ status: 400, message: 'Both semi-finals must be finished' });
+          } else {
+            // Create final and 3rd place
+            const finalSql = `
+              INSERT INTO tournament_matches (tournament_id, stage, match_number, player_a_id, player_b_id, status, player_a_accepted, player_b_accepted)
+              VALUES (?, 'final', 1, ?, ?, 'idle', 0, 0)
+            `;
+            const thirdSql = `
+              INSERT INTO tournament_matches (tournament_id, stage, match_number, player_a_id, player_b_id, status, player_a_accepted, player_b_accepted)
+              VALUES (?, 'third', 1, ?, ?, 'idle', 0, 0)
+            `;
+
+            db.run(finalSql, [tournamentId, semis[0].winner_id, semis[1].winner_id], (err) => {
+              if (err) {
+                reject({ status: 400, message: 'Failed to create final', error: (err as any)?.message || String(err) });
+              } else {
+                db.run(thirdSql, [tournamentId, semis[0].loser_id, semis[1].loser_id], (err) => {
+                  if (err) {
+                    reject({ status: 400, message: 'Failed to create 3rd place match', error: (err as any)?.message || String(err) });
+                  } else {
+                    resolve();
+                  }
+                });
+              }
+            });
+          }
+        });
       });
     });
   }
