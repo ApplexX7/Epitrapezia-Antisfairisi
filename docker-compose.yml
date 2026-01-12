@@ -76,7 +76,8 @@ services:
       - ./env/grafana.env
     restart: unless-stopped
     volumes:
-      - grafana-storage:/var/lib/grafana
+      - ./grafana/config:/var/lib/grafana/config
+      - ./grafana/datasources:/var/lib/grafana/datasources
     networks:
       - webpong
     depends_on:
