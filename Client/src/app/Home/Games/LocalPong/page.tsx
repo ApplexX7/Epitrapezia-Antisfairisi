@@ -38,6 +38,9 @@ export default function LocalPong() {
         // Track if the game was properly finished (to avoid cancelling completed matches)
         const gameFinishedRef = useRef(false);
         
+        // Track if game has actually started (any score change)
+        const [gameStarted, setGameStarted] = useState(false);
+        
         // Authorization state for tournament games
         const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null);
         const [authError, setAuthError] = useState<string | null>(null);
@@ -46,6 +49,13 @@ export default function LocalPong() {
               if (isTournamentGame) return router.replace(`/Home/Games/Tournament/lobby/${t}`);
               return router.replace('/Home/Games/Tournament');
           }, [isTournamentGame, router, t]);
+          
+        // Track when game has started (any score change means game started)
+        useEffect(() => {
+            if (rightPlayerScore > 0 || leftPlayerScore > 0) {
+                setGameStarted(true);
+            }
+        }, [rightPlayerScore, leftPlayerScore]);
 
         // Check if user is authorized to play this tournament game (must be creator)
         useEffect(() => {
@@ -195,8 +205,8 @@ export default function LocalPong() {
     useEffect(() => {
         if (!isTournamentGame || !m || !t) return;
 
-        const cancelMatch = () => {
-            // Only cancel if the game hasn't finished properly
+        const cancelMatch = async () => {
+            // Only cancel if the game hasn't finished properly and has started
             if (gameFinishedRef.current) return;
             
             // Mark as finished to prevent double-cancel
@@ -205,43 +215,49 @@ export default function LocalPong() {
             const matchIdNum = Number(m);
             if (Number.isNaN(matchIdNum)) return;
             
-            // Use fetch with keepalive for reliable delivery on page unload
-            // This properly includes credentials unlike sendBeacon
-            const payload = JSON.stringify({ matchId: matchIdNum });
-            const url = `${process.env.NEXT_PUBLIC_API_URL || ''}/tournaments/${t}/cancel-match`;
-            
+            // Use axios to ensure auth token is included
             try {
-                fetch(url, {
-                    method: 'POST',
-                    body: payload,
-                    headers: { 'Content-Type': 'application/json' },
-                    credentials: 'include',
-                    keepalive: true
-                }).catch(() => { /* swallow */ });
+                await api.post(`/tournaments/${t}/cancel-match`, { matchId: matchIdNum });
             } catch (__e) {
-                void __e; // swallow
+                console.warn('Failed to cancel match:', __e);
             }
         };
 
-        const handleBeforeUnload = () => {
-            cancelMatch();
-        };
-
-        // Handle browser back/forward navigation
-        const handlePopState = () => {
-            cancelMatch();
+        // For beforeunload (tab close, refresh), use sendBeacon
+        const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+            // Only warn/cancel if game has started and not finished
+            if (gameFinishedRef.current || !gameStarted) return;
+            
+            const matchIdNum = Number(m);
+            if (Number.isNaN(matchIdNum)) return;
+            
+            // Use sendBeacon for the cancel request (server allows this without auth)
+            const payload = JSON.stringify({ matchId: matchIdNum });
+            const url = `${process.env.NEXT_PUBLIC_API_URL || ''}/tournaments/${t}/cancel-match`;
+            
+            if (navigator.sendBeacon) {
+                const blob = new Blob([payload], { type: 'application/json' });
+                navigator.sendBeacon(url, blob);
+            }
+            
+            // Mark as finished to prevent double-cancel
+            gameFinishedRef.current = true;
+            
+            // Show browser confirmation dialog
+            e.preventDefault();
+            e.returnValue = 'Match will be cancelled if you leave.';
         };
 
         window.addEventListener('beforeunload', handleBeforeUnload);
-        window.addEventListener('popstate', handlePopState);
         
         return () => {
             window.removeEventListener('beforeunload', handleBeforeUnload);
-            window.removeEventListener('popstate', handlePopState);
-            // Also cancel when component unmounts (navigation away)
-            cancelMatch();
+            // Cancel when component unmounts (React navigation) - only if game started
+            if (gameStarted) {
+                cancelMatch();
+            }
         };
-    }, [isTournamentGame, m, t]);
+    }, [isTournamentGame, m, t, gameStarted]);
 
         // Show loading state while checking authorization for tournament games
         if (isTournamentGame && isAuthorized === null) {
