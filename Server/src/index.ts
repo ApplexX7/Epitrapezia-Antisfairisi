@@ -77,6 +77,7 @@ app.addHook("preHandler", async (req: FastifyRequest, reply: FastifyReply) => {
   const publicRoutes = [
     "/auth/Login",
     "/auth/Sign-up",
+    "/auth/refresh",
     "/auth/google",
     "/auth/google/callback",
     "/auth/verify-otp",
@@ -100,7 +101,7 @@ app.addHook("preHandler", async (req: FastifyRequest, reply: FastifyReply) => {
   }
 
   try {
-    const decoded = refreshTokenDate(refreshToken);
+    const decoded = await refreshTokenDate(refreshToken);
     if (!decoded) throw new Error("Invalid refresh token");
     (req as any).user = await verifyRefreshToken(refreshToken);
   } catch (err) {
