@@ -199,6 +199,9 @@ export default function LocalPong() {
             // Only cancel if the game hasn't finished properly
             if (gameFinishedRef.current) return;
             
+            // Mark as finished to prevent double-cancel
+            gameFinishedRef.current = true;
+            
             const matchIdNum = Number(m);
             if (Number.isNaN(matchIdNum)) return;
             
@@ -227,10 +230,17 @@ export default function LocalPong() {
             cancelMatch();
         };
 
+        // Handle browser back/forward navigation
+        const handlePopState = () => {
+            cancelMatch();
+        };
+
         window.addEventListener('beforeunload', handleBeforeUnload);
+        window.addEventListener('popstate', handlePopState);
         
         return () => {
             window.removeEventListener('beforeunload', handleBeforeUnload);
+            window.removeEventListener('popstate', handlePopState);
             // Also cancel when component unmounts (navigation away)
             cancelMatch();
         };
