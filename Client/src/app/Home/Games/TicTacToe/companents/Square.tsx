@@ -15,7 +15,7 @@ interface SquareProps {
     return (
       <button
         onClick={() => onClick(index)}
-        className={`w-[20vw] h-[20vw] max-w-24 max-h-24 sm:max-w-28 sm:max-h-28 md:max-w-32 md:max-h-32 lg:max-w-36 lg:max-h-36 rounded-full bg-[#F5F5F5]/10 flex items-center justify-center 
+        className={`w-[18vw] h-[18vw] max-w-20 max-h-20 sm:max-w-24 sm:max-h-24 md:max-w-28 md:max-h-28 lg:max-w-32 lg:max-h-32 rounded-full bg-[#F5F5F5]/10 flex items-center justify-center 
           text-10xl md:text-2xl font-meduim z-10 transition-all duration-300 ease-in-out hover:bg-brightness-125 hover:scale-110 hover:bg-[#F5F5F5]/25
           shadow-[2px_2px_5px_rgba(0,0,0,0.3),_inset_2px_2px_5px_rgba(0,0,0,0.2)] cursor-pointer
           ${
