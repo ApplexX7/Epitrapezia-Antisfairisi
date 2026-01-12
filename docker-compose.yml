@@ -94,8 +94,6 @@ services:
     image: prom/node-exporter:latest
     container_name: node-exporter
     pid: "host"
-    ports:
-      - "9200:9100"
     restart: unless-stopped
     volumes:
       - /proc:/host/proc:ro
@@ -108,8 +106,6 @@ services:
     image: gcr.io/cadvisor/cadvisor:v0.55.1
     container_name: cadvisor
     privileged: true
-    ports:
-      - "8082:8080"   # changed to avoid collision
     volumes:
       - /:/rootfs:ro
       - /sys:/sys:ro
