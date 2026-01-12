@@ -8,7 +8,7 @@ interface GameBoardProps {
 
 export default function GameBoard({ board, winner, onCellClick }: GameBoardProps) {
   return (
-    <div className="grid grid-cols-3 gap-4">
+    <div className="grid grid-cols-3 gap-6 sm:gap-8 md:gap-10">
       {board.map((value, index) => {
         const isWinningCell = winner?.line?.includes(index);
         return (
