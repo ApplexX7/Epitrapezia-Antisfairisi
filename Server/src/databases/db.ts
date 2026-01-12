@@ -4,10 +4,13 @@ import path from "path";
 sqlite3.verbose();
 const { Database } = sqlite3;
 
-const dbPath = path.resolve(__dirname, "./webpongdatabases.sqlite");
+// Use /data for Docker volume mount, fallback to local for development
+const dbPath = process.env.DB_PATH || path.resolve(__dirname, "./webpongdatabases.sqlite");
 export const db = new Database(dbPath, (err : any) => {
     if (err) {
         console.error("Error opening database:", err.message);
+    } else {
+        console.log("Database connected at:", dbPath);
     }
 });
 

@@ -38,6 +38,8 @@ services:
       context: ./Server
     env_file:
       - ./env/api.env
+    volumes:
+      - ./data:/data
     restart: unless-stopped
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:8081/metrics || exit 1"]
