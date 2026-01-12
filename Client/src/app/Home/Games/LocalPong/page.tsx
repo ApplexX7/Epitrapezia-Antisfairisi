@@ -205,24 +205,21 @@ export default function LocalPong() {
             const matchIdNum = Number(m);
             if (Number.isNaN(matchIdNum)) return;
             
-            // Use sendBeacon for reliable delivery on page unload
+            // Use fetch with keepalive for reliable delivery on page unload
+            // This properly includes credentials unlike sendBeacon
             const payload = JSON.stringify({ matchId: matchIdNum });
             const url = `${process.env.NEXT_PUBLIC_API_URL || ''}/tournaments/${t}/cancel-match`;
             
-            // Try sendBeacon first (works on page close)
-            if (navigator.sendBeacon) {
-                const blob = new Blob([payload], { type: 'application/json' });
-                navigator.sendBeacon(url, blob);
-            } else {
-                // Fallback to sync XHR (less reliable on unload)
-                try {
-                    const xhr = new XMLHttpRequest();
-                    xhr.open('POST', url, false); // sync
-                    xhr.setRequestHeader('Content-Type', 'application/json');
-                    xhr.send(payload);
-                } catch (__e) {
-                    void __e; // swallow
-                }
+            try {
+                fetch(url, {
+                    method: 'POST',
+                    body: payload,
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    keepalive: true
+                }).catch(() => { /* swallow */ });
+            } catch (__e) {
+                void __e; // swallow
             }
         };
 
