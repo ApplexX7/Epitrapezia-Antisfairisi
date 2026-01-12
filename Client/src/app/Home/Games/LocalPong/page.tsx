@@ -2,11 +2,13 @@
 import React, { useState, useCallback, useEffect, useRef } from "react";
 import { useSearchParams, useRouter } from 'next/navigation';
 import api from '@/lib/axios';
+import { useAuth } from "@/components/hooks/authProvider";
 import Board from "./Board";
 import ScoreBar from "./ScoreBar";
 import GameCostum from "./GameCostum";
 import OpenGameCostumButton from './OpenGameCostumButton';
 export default function LocalPong() {
+    const { user } = useAuth();
     const [rightPlayerScore, setRightPlayerScore] = useState(0);
     const [leftPlayerScore, setLeftPlayerScore] = useState(0);
     const [boardColor, setBoardColor] = useState("default");
@@ -35,11 +37,48 @@ export default function LocalPong() {
         
         // Track if the game was properly finished (to avoid cancelling completed matches)
         const gameFinishedRef = useRef(false);
+        
+        // Authorization state for tournament games
+        const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null);
+        const [authError, setAuthError] = useState<string | null>(null);
 
           const goToTournament = useCallback(() => {
               if (isTournamentGame) return router.replace(`/Home/Games/Tournament/lobby/${t}`);
               return router.replace('/Home/Games/Tournament');
           }, [isTournamentGame, router, t]);
+
+        // Check if user is authorized to play this tournament game (must be creator)
+        useEffect(() => {
+            if (!isTournamentGame) {
+                // Non-tournament games are always allowed
+                setIsAuthorized(true);
+                return;
+            }
+            
+            if (!user || !user.id) {
+                // Wait for auth to load
+                return;
+            }
+            
+            const checkAuth = async () => {
+                try {
+                    const res = await api.get(`/tournaments/${t}`);
+                    const creatorId = res.data?.creator_id;
+                    if (String(creatorId) === String(user.id)) {
+                        setIsAuthorized(true);
+                        setAuthError(null);
+                    } else {
+                        setIsAuthorized(false);
+                        setAuthError('Only the tournament creator can host this match');
+                    }
+                } catch (_e) {
+                    setIsAuthorized(false);
+                    setAuthError('Failed to verify authorization');
+                }
+            };
+            
+            checkAuth();
+        }, [isTournamentGame, t, user]);
 
           const onGameEnd = useCallback(async (winner: "playerOne" | "playerTwo") => {
               // Mark game as finished so we don't cancel on unmount
@@ -196,6 +235,33 @@ export default function LocalPong() {
             cancelMatch();
         };
     }, [isTournamentGame, m, t]);
+
+        // Show loading state while checking authorization for tournament games
+        if (isTournamentGame && isAuthorized === null) {
+            return (
+                <div className="fixed inset-0 bg-gradient-to-br from-purple-900 to-indigo-900 flex items-center justify-center">
+                    <div className="text-white text-xl">Verifying authorization...</div>
+                </div>
+            );
+        }
+
+        // Show error if not authorized
+        if (isTournamentGame && isAuthorized === false) {
+            return (
+                <div className="fixed inset-0 bg-gradient-to-br from-purple-900 to-indigo-900 flex items-center justify-center p-4">
+                    <div className="bg-white rounded-xl shadow-2xl p-6 max-w-sm w-full text-center space-y-4">
+                        <h3 className="text-lg font-bold text-red-600">Access Denied</h3>
+                        <p className="text-gray-700 text-sm">{authError || 'You are not authorized to host this match.'}</p>
+                        <button
+                            onClick={goToTournament}
+                            className="w-full px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700"
+                        >
+                            Go to tournament lobby
+                        </button>
+                    </div>
+                </div>
+            );
+        }
 
           return (
        <>
