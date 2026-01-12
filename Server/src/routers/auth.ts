@@ -33,21 +33,6 @@ const signUpSchema = {
 } as const;
 
 export async function authRouters() {
-  // await server.register(rateLimit, {
-  //   max: 10,
-  //   timeWindow: "1 minute",
-  //   ban: 2,
-  //   errorResponseBuilder: (req, context) => ({
-  //     code: 429,
-  //     error: "Too Many Auth Attempts",
-  //     message: `Try again in ${Math.ceil(context.ttl / 1000)} seconds`,
-  //   }),
-  // });
-  Server.instance().post<{ Body: LoginBody }>(
-    "/auth/Login",
-    { schema: { body: loginSchema } },
-    Login()
-  );
   Server.instance().get("/auth/refresh", RefreshToken());
   Server.instance().post("/auth/logout", Logout())
   Server.instance().post("/auth/verify-otp", VerifyOtp());

@@ -5,7 +5,7 @@ sqlite3.verbose();
 const { Database } = sqlite3;
 
 // Use /data for Docker volume mount, fallback to local for development
-const dbPath = process.env.DB_PATH || path.resolve(__dirname, "./webpongdatabases.sqlite");
+const dbPath = process.env.DB_PATH || path.resolve(__dirname, "./webpong.sqlite");
 export const db = new Database(dbPath, (err : any) => {
     if (err) {
         console.error("Error opening database:", err.message);
