@@ -6,14 +6,14 @@ export function registerChatSocket(io: Server, socket: Socket, onlineUsers: Reco
     const recipientSockets = onlineUsers[data.to] || [];
 
     const messageData = { 
-      ...data, 
-      from: user.id, 
-      time: new Date().toISOString(),
+      from: user.username,
+      to: data.to,
+      content: data.text,
+      timestamp: Date.now(),
       message_id: data.message_id
     };
 
     recipientSockets.forEach(s => s.emit("chat-message", messageData));
-    socket.emit("chat-message", messageData);
   });
 
     //here add seknd socket the seen

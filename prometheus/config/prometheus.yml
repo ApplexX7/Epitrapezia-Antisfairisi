@@ -9,8 +9,9 @@ scrape_configs:
   # Fastify App Metrics
   - job_name: 'webpong-backend'
     scrape_interval: 5s
+    metrics_path: /metrics
     static_configs:
-      - targets: ['server:8081']  # Match your Docker Compose service
+      - targets: ['server:8081']
 
   # Node Exporter Metrics (Host)
   - job_name: 'node-exporter'
@@ -24,7 +25,7 @@ scrape_configs:
     static_configs:
       - targets: ['cadvisor:8080']
 
-# Optional: Prometheus internal metrics
+  # Prometheus internal metrics
   - job_name: 'prometheus'
     scrape_interval: 5s
     static_configs:
