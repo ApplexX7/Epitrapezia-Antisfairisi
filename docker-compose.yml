@@ -65,8 +65,6 @@ services:
 
   grafana:
     image: grafana/grafana-oss:latest
-    build:
-      context: ./grafana 
     container_name: grafana
     env_file:
       - ./env/grafana.env
