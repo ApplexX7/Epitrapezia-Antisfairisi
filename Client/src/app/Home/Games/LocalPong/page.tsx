@@ -206,7 +206,7 @@ export default function LocalPong() {
         if (!isTournamentGame || !m || !t) return;
 
         const cancelMatch = async () => {
-            // Only cancel if the game hasn't finished properly and has started
+            // Only cancel if the game hasn't finished properly
             if (gameFinishedRef.current) return;
             
             // Mark as finished to prevent double-cancel
@@ -225,8 +225,8 @@ export default function LocalPong() {
 
         // For beforeunload (tab close, refresh), use sendBeacon
         const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-            // Only warn/cancel if game has started and not finished
-            if (gameFinishedRef.current || !gameStarted) return;
+            // Don't cancel if game already finished
+            if (gameFinishedRef.current) return;
             
             const matchIdNum = Number(m);
             if (Number.isNaN(matchIdNum)) return;
@@ -252,12 +252,10 @@ export default function LocalPong() {
         
         return () => {
             window.removeEventListener('beforeunload', handleBeforeUnload);
-            // Cancel when component unmounts (React navigation) - only if game started
-            if (gameStarted) {
-                cancelMatch();
-            }
+            // Always cancel when component unmounts (React navigation)
+            cancelMatch();
         };
-    }, [isTournamentGame, m, t, gameStarted]);
+    }, [isTournamentGame, m, t]);
 
         // Show loading state while checking authorization for tournament games
         if (isTournamentGame && isAuthorized === null) {
