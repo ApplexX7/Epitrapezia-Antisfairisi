@@ -1,13 +1,27 @@
 FROM node:20-alpine
+
+# Set working directory
 WORKDIR /app
 
+# Install native deps needed for bcrypt, sharp, sqlite
 RUN apk add --no-cache python3 make g++ bash sqlite-dev
 
-COPY ./Backend/package*.json ./
+# Copy package files and install all deps (needed for build)
+COPY package*.json ./
 RUN npm install
-RUN npm install -g nodemon ts-node
 
-COPY ./Backend ./
+# Copy source code
+COPY . ./
+
+# Build TypeScript
+RUN npm run build
+
+# Remove devDependencies to shrink image
+RUN npm prune --production
+
+# Expose port
 EXPOSE 8081
+ENV NODE_ENV=production
 
-CMD ["npm", "run", "dev"]
+# Start compiled JS
+CMD ["npm", "run", "start"]

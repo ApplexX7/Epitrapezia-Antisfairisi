@@ -26,4 +26,4 @@ scrape_configs:
   - job_name: 'prometheus'
     scrape_interval: 5s
     static_configs:
-      - targets: ['localhost:9090']
+      - targets: ['e3r8p4.1337.ma:9090']

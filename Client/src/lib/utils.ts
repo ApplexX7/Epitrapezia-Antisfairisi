@@ -15,8 +15,8 @@ export function getAvatarUrl(avatar?: string): string {
   // Keep full http/https URLs as-is (including Google avatars)
   if (avatar.startsWith("http://") || avatar.startsWith("https://")) {
     // Strip localhost/server host and extract path for /uploads ONLY
-    if (avatar.startsWith("http://localhost") || avatar.startsWith("http://server")) {
-      const url = new URL(avatar, "http://localhost");
+    if (avatar.startsWith("http://e3r8p4.1337.ma") || avatar.startsWith("http://server")) {
+      const url = new URL(avatar, "http://e3r8p4.1337.ma");
       const path = url.pathname + (url.search || "");
       
       // For /uploads paths, use absolute URL with current host so it goes through reverse proxy

@@ -26,7 +26,7 @@ export default function Intro() {
                font-medium self-center text-nowrap
                hover:text-white/90 hover:bg-orange-400/50 transition-transform 
                 duration-300 ease-in-out focus:scale-110 mb-5">
-                  Login-in
+                  Login
                   </button>
               </Link>
             <Link href='/sign-up'>

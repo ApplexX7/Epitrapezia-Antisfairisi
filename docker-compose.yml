@@ -5,7 +5,7 @@ services:
     build: ./nginx
     restart: unless-stopped
     ports:
-      - "8443:443"
+      - "443:443"
     depends_on:
       - client
       - server
@@ -36,9 +36,6 @@ services:
     container_name: server
     build:
       context: ./Server
-    volumes:
-      - ./Server/Backend:/app
-      - /app/node_modules  
     env_file:
       - ./env/api.env
     restart: unless-stopped
