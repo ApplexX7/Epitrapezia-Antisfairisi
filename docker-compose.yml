@@ -68,6 +68,24 @@ services:
       - server
       - node-exporter
       - cadvisor
+      - alertmanager
+
+  alertmanager:
+    image: prom/alertmanager:latest
+    build:
+      context: ./alertmanager
+    container_name: alertmanager
+    restart: unless-stopped
+    volumes:
+      - ./alertmanager/config:/etc/alertmanager
+      - alertmanager-data:/alertmanager
+    command:
+      - '--config.file=/etc/alertmanager/alertmanager.yml'
+      - '--storage.path=/alertmanager'
+      - '--web.external-url=https://e3r8p4.1337.ma/alertmanager'
+      - '--web.route-prefix=/'
+    networks:
+      - webpong
 
   grafana:
     image: grafana/grafana-oss:latest
@@ -130,3 +148,4 @@ networks:
 
 volumes:
   grafana-storage:
+  alertmanager-data:
