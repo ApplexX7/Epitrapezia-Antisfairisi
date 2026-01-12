@@ -112,7 +112,7 @@ export default function Home() {
           <BoxLayout className="card col-span-1 bg-[url('/images/rockPaper.png')]  bg-no-repeat  bg-cover bg-center" >
             <button
               type="button"
-              onClick={() => router.push('/Home/Games/TicTacToe')}
+              onClick={() => router.push('Home/Games/TicTacToe/online')}
               className="w-full h-full flex items-center justify-center backdrop-blur-sm rounded-[35px] 
                 transition-transform duration-300 ease-in-out focus:scale-110  cursor-pointer hover:scale-110 focus:outline-none"
             >

@@ -1,5 +1,3 @@
-import Image from "next/image";
-
 interface VSBannerProps {
   player1Name: string;
   player2Name: string;
@@ -27,7 +25,7 @@ export default function VSBanner({player1Name, player2Name, player1Avatar, playe
         isPlayer1Winner || isPlayer1Champion ? 'scale-110' : isPlayer2Winner || isPlayer2Champion ? 'opacity-40 scale-90' : ''
       }`}>
         <div className="relative">
-          <Image
+          <img
             src={player1Avatar}
             alt="player 1"
             className={`h-10 w-10 sm:h-10 sm:w-10 lg:h-[7vh] lg:w-[7vh] rounded-full object-cover ${
@@ -75,7 +73,7 @@ export default function VSBanner({player1Name, player2Name, player1Avatar, playe
         {isPlayer2Winner && !isPlayer2Champion && <span className="text-2xl">👑</span>}
         <span className="font-bold text-lg">{player2Name}</span>
         <div className="relative">
-          <Image
+          <img
             src={player2Avatar}
             alt="player 2"
             className={`h-10 w-10 sm:h-10 sm:w-10 lg:w-[7vh] lg:h-[7vh] rounded-full object-cover ${
