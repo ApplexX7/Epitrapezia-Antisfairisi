@@ -35,17 +35,16 @@ export async function FriendRequest(req : FastifyRequest<{Body:{friendId : numbe
             db.get(`SELECT username FROM players WHERE id = ?`, [id], (err : any, row : any) => err ? reject(err) : resolve(row));
           });
         const io = Server.socket();
-                const payload = {
-                        from: { id, username: sender.username },
-                        message: `${sender.username} sent you a friend request`
-                    };
-                io.to(String(friendId)).emit("friend:request", payload);
-                io.to(String(friendId)).emit("notification", {
-                        type: "friend-request",
-                        message: payload.message,
-                        from: payload.from,
-                        time: new Date().toISOString(),
-                    });
+        const payload = {
+            from: { id, username: sender.username },
+            message: `${sender.username} sent you a friend request`
+        };
+        io.to(String(friendId)).emit("notification", {
+            type: "friend-request",
+            message: payload.message,
+            from: payload.from,
+            time: new Date().toISOString(),
+        });
         return reply.send({ success: true, message: "Friend request sent" });
     } catch(err){
         console.log(err);
