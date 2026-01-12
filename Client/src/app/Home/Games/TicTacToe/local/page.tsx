@@ -61,7 +61,7 @@ export default function Home() {
   }
 
   return (
-    <main className="flex flex-col items-center justify-center h-screen bg-[#F5F5F5]/10 rounded-xl border-none 
+    <main className="flex flex-col items-center justify-center min-h-screen max-h-screen overflow-hidden bg-[#F5F5F5]/10 rounded-xl border-none 
       shadow-[2px_2px_5px_3px_rgba(0,0,0,0.3)] m-2 md:m-10">
       <VSBanner
         player1Name="Saloua_X"

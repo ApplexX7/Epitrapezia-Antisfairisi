@@ -15,7 +15,7 @@ interface SquareProps {
     return (
       <button
         onClick={() => onClick(index)}
-        className={`w-35 h-35 sm:w-35 sm:h-35 md:w-85 md:h-85 lg:w-85 lg:h-85  rounded-full bg-[#F5F5F5]/10 flex items-center justify-center 
+        className={`w-[20vw] h-[20vw] max-w-24 max-h-24 sm:max-w-28 sm:max-h-28 md:max-w-32 md:max-h-32 lg:max-w-36 lg:max-h-36 rounded-full bg-[#F5F5F5]/10 flex items-center justify-center 
           text-10xl md:text-2xl font-meduim z-10 transition-all duration-300 ease-in-out hover:bg-brightness-125 hover:scale-110 hover:bg-[#F5F5F5]/25
           shadow-[2px_2px_5px_rgba(0,0,0,0.3),_inset_2px_2px_5px_rgba(0,0,0,0.2)] cursor-pointer
           ${
@@ -26,7 +26,7 @@ interface SquareProps {
         `}
       >
       {value === 'X' && (
-       <svg viewBox="0 0 100 100" className="w-15 h-15 md:w-28 md:h-28 sm:h-15 sm:w-15 lg:h-24 lg:w-24">
+       <svg viewBox="0 0 100 100" className="w-[60%] h-[60%] max-w-16 max-h-16 sm:max-w-20 sm:max-h-20 md:max-w-24 md:max-h-24">
        <defs>
          <linearGradient id="xGradient" x1="0%" y1="0%" x2="100%" y2="100%">
            <stop offset="0%" stopColor="#a855f7" />      {/* purple-400 */}
@@ -40,7 +40,7 @@ interface SquareProps {
       )}
 
       {value === 'O' && (
-        <svg viewBox="0 0 100 100" className="w-15 h-15 md:w-28 md:h-28 sm:h-15 sm:w-15 lg:h-24 lg:w-24">
+        <svg viewBox="0 0 100 100" className="w-[60%] h-[60%] max-w-16 max-h-16 sm:max-w-20 sm:max-h-20 md:max-w-24 md:max-h-24">
           <defs>
             <linearGradient id="oGradient" x1="0%" y1="0%" x2="100%" y2="100%">
               <stop offset="0%" stopColor="#a855f7" />      {/* purple-400 */}
