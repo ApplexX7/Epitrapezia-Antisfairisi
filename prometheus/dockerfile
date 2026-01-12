@@ -6,4 +6,4 @@ COPY config/prometheus.yml /prometheus/prometheus.yml
 
 EXPOSE 9090
 
-CMD ["--config.file=/prometheus/prometheus.yml"]
+CMD ["--config.file=/prometheus/prometheus.yml", "--web.external-url=https://e3r8p4.1337.ma/prometheus", "--web.route-prefix=/"]

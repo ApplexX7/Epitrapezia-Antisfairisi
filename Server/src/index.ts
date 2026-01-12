@@ -85,8 +85,13 @@ app.addHook("preHandler", async (req: FastifyRequest, reply: FastifyReply) => {
     "/auth/verify-login-otp",
     "/auth/resend-login-otp",
     "/tournaments",
-     "/metrics",
+    "/metrics",
   ];
+
+  // Allow cancel-match without auth (for sendBeacon on page unload)
+  if (routeUrl.includes('/cancel-match')) {
+    return;
+  }
 
   if (publicRoutes.some((r) => routeUrl.startsWith(r))) {
     return;

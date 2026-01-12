@@ -85,24 +85,6 @@ export const ChatList = ({
             {showBlockedList ? "Blocked Users" : "Recent chat"}
           </h2>
         )}
-        <div ref={searchRef} className={`flex gap-2 md:gap-4 px-3 md:px-5 ${isSearchActive ? 'w-full' : ''}`}>
-          <button
-            onClick={() => setIsSearchActive(!isSearchActive)}
-            className="flex justify-center items-center bg-white-smoke/10 hover:opacity-40
-              h-[40px] w-[40px] md:h-[48px] md:w-[48px] rounded-4xl shadow-[inset_2px_0px_4px_rgba(245,245,245,0.3)]
-              backdrop-blur-lg brightness-150">
-            <MagnifyingGlass size={20} weight="bold" className="md:w-[25px] md:h-[25px]"/>
-          </button>
-          {isSearchActive && (
-            <input
-              type="search"
-              placeholder="Search"
-              className="flex-1 px-3 md:px-4 py-2 rounded-4xl focus:outline-none focus:ring-1 
-                focus:ring-white border-none bg-white-smoke/10 backdrop-blur-lg brightness-150 text-sm md:text-base"
-              autoFocus
-            />
-          )}
-        </div>
       </div>
       
       <div className="flex flex-col mb-3 md:mb-5 px-5 md:px-10">

@@ -342,6 +342,24 @@ export function registerTournamentRoutes() {
     }
   });
 
+  // Cancel a match (when host leaves/closes tab during in-progress game)
+  // Resets match to idle without storing results
+  Server.route('post', '/tournaments/:id/cancel-match', async (request: FastifyRequest, reply: FastifyReply) => {
+    try {
+      const { id } = request.params as { id: string };
+      const { matchId } = request.body as { matchId: number };
+
+      if (!matchId) {
+        return reply.status(400).send({ message: 'Match ID is required' });
+      }
+
+      await TC.cancelMatch(parseInt(id), matchId);
+      reply.send({ message: 'Match cancelled' });
+    } catch (error: any) {
+      reply.status(error.status || 400).send({ message: error.message });
+    }
+  });
+
   // Complete tournament - WITH VALIDATION
   Server.route('post', '/tournaments/:id/complete', async (request: FastifyRequest, reply: FastifyReply) => {
     try {

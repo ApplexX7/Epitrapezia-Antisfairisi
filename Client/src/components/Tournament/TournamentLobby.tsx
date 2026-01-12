@@ -713,7 +713,7 @@ export default function TournamentLobby({ tournamentId }: Props) {
                           }
                           className="flex-1 px-2 py-1 rounded text-sm bg-green-600 text-white hover:bg-green-700 disabled:opacity-50"
                         >
-                          {m.status === 'idle' ? 'Start' : m.status}
+                          {m.status !== 'idle' ? m.status : (!m.acceptedA || !m.acceptedB) ? 'Waiting for accepts' : 'Start'}
                         </button>
                       </div>
                     </div>
@@ -787,7 +787,7 @@ export default function TournamentLobby({ tournamentId }: Props) {
                           }
                           className="w-full px-2 py-1 rounded text-sm bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50"
                         >
-                          {m.status === 'idle' ? 'Start' : m.status}
+                          {m.status !== 'idle' ? m.status : (!m.acceptedA || !m.acceptedB) ? 'Waiting for accepts' : 'Start'}
                         </button>
                       </div>
                     ) : (

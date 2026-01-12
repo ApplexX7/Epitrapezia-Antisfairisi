@@ -60,10 +60,6 @@ services:
     container_name: prometheus
     volumes:
       - ./prometheus/config:/etc/prometheus
-    command:
-      - '--config.file=/etc/prometheus/prometheus.yml'
-      - '--web.external-url=https://e3r8p4.1337.ma/prometheus'
-      - '--web.route-prefix=/'
     networks:
       - webpong
     depends_on:
@@ -81,11 +77,6 @@ services:
     volumes:
       - ./alertmanager/config:/etc/alertmanager
       - alertmanager-data:/alertmanager
-    command:
-      - '--config.file=/etc/alertmanager/alertmanager.yml'
-      - '--storage.path=/alertmanager'
-      - '--web.external-url=https://e3r8p4.1337.ma/alertmanager'
-      - '--web.route-prefix=/'
     networks:
       - webpong
 
