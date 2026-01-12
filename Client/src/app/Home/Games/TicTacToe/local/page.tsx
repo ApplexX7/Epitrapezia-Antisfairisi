@@ -61,11 +61,11 @@ export default function Home() {
   }
 
   return (
-    <main className="flex flex-col items-center justify-center h-screen bg-[#F5F5F5]/10 rounded-xl border-none 
-      shadow-[2px_2px_5px_3px_rgba(0,0,0,0.3)] m-2 md:m-10 mb-[10px]">
+    <main className="flex flex-col items-center self-center justify-center w-full h-screen max-w-350 bg-[#F5F5F5]/10 rounded-xl border-none 
+      shadow-[2px_2px_5px_3px_rgba(0,0,0,0.3)] px-5 py-2 m-2 md:m-10 mb-[20px]">
       <VSBanner
-        player1Name="Saloua_X"
-        player2Name="Saloua_O"
+        player1Name="Player_X"
+        player2Name="Player_O"
         player1Avatar="/images/defaultAvatare.jpg"
         player2Avatar="/images/defaultAvatare.jpg"
         winner={winner}
@@ -76,7 +76,7 @@ export default function Home() {
       {gameOver && (
         <div className=" mb-4 bg-yellow-400 text-purple-900 rounded-2xl px-6 py-3 text-center animate-bounce">
           <p className="text-2xl font-bold">
-            🏆 {player1Score >= 3 ? 'Saloua_X' : 'Saloua_O'} WINS THE MATCH! 🏆
+            🏆 {player1Score >= 3 ? 'Player_X' : 'Player_O'} WINS THE MATCH! 🏆
           </p>
         </div>
       )}
