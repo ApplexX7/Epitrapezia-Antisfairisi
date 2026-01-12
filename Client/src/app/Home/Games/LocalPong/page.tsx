@@ -1,5 +1,5 @@
 "use client"
-import React, { useState, useCallback, useEffect } from "react";
+import React, { useState, useCallback, useEffect, useRef } from "react";
 import { useSearchParams, useRouter } from 'next/navigation';
 import api from '@/lib/axios';
 import Board from "./Board";
@@ -32,6 +32,9 @@ export default function LocalPong() {
 
         const [resultReported, setResultReported] = useState(false);
         const [reportError, setReportError] = useState<string | null>(null);
+        
+        // Track if the game was properly finished (to avoid cancelling completed matches)
+        const gameFinishedRef = useRef(false);
 
           const goToTournament = useCallback(() => {
               if (isTournamentGame) return router.replace(`/Home/Games/Tournament/lobby/${t}`);
@@ -39,6 +42,9 @@ export default function LocalPong() {
           }, [isTournamentGame, router, t]);
 
           const onGameEnd = useCallback(async (winner: "playerOne" | "playerTwo") => {
+              // Mark game as finished so we don't cancel on unmount
+              gameFinishedRef.current = true;
+              
               const winnerId = winner === 'playerOne' ? p1 : p2;
               const loserId = winner === 'playerOne' ? p2 : p1;
               if (!winnerId || !loserId) {
@@ -144,6 +150,52 @@ export default function LocalPong() {
             onGameEnd('playerTwo');
         }
     }, [leftPlayerScore, rightPlayerScore, onGameEnd, resultReported]);
+
+    // Cancel match if user leaves during an in-progress tournament game
+    // This handles: tab close, browser close, page refresh, navigation away
+    useEffect(() => {
+        if (!isTournamentGame || !m || !t) return;
+
+        const cancelMatch = () => {
+            // Only cancel if the game hasn't finished properly
+            if (gameFinishedRef.current) return;
+            
+            const matchIdNum = Number(m);
+            if (Number.isNaN(matchIdNum)) return;
+            
+            // Use sendBeacon for reliable delivery on page unload
+            const payload = JSON.stringify({ matchId: matchIdNum });
+            const url = `${process.env.NEXT_PUBLIC_API_URL || ''}/tournaments/${t}/cancel-match`;
+            
+            // Try sendBeacon first (works on page close)
+            if (navigator.sendBeacon) {
+                const blob = new Blob([payload], { type: 'application/json' });
+                navigator.sendBeacon(url, blob);
+            } else {
+                // Fallback to sync XHR (less reliable on unload)
+                try {
+                    const xhr = new XMLHttpRequest();
+                    xhr.open('POST', url, false); // sync
+                    xhr.setRequestHeader('Content-Type', 'application/json');
+                    xhr.send(payload);
+                } catch (__e) {
+                    void __e; // swallow
+                }
+            }
+        };
+
+        const handleBeforeUnload = () => {
+            cancelMatch();
+        };
+
+        window.addEventListener('beforeunload', handleBeforeUnload);
+        
+        return () => {
+            window.removeEventListener('beforeunload', handleBeforeUnload);
+            // Also cancel when component unmounts (navigation away)
+            cancelMatch();
+        };
+    }, [isTournamentGame, m, t]);
 
           return (
        <>

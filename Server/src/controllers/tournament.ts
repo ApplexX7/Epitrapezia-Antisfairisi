@@ -407,6 +407,37 @@ export class TournamentController {
   }
 
   /**
+   * Cancel a match that is in_progress (e.g., host left the game).
+   * Resets the match to idle and clears acceptance flags so it can be replayed.
+   * Does NOT store any results in the database.
+   */
+  static cancelMatch(tournamentId: number, matchId: number): Promise<void> {
+    return new Promise((resolve, reject) => {
+      const matchSql = `SELECT id, status FROM tournament_matches WHERE id = ? AND tournament_id = ?`;
+      db.get(matchSql, [matchId, tournamentId], (err, match: any) => {
+        if (err) return reject({ status: 400, message: 'Failed to fetch match', error: (err as any)?.message || String(err) });
+        if (!match) return reject({ status: 404, message: 'Match not found' });
+        
+        // Only allow cancelling matches that are in_progress
+        if (match.status !== 'in_progress') {
+          return reject({ status: 409, message: 'Only in-progress matches can be cancelled' });
+        }
+
+        // Reset match to idle, clear acceptance flags, don't store any results
+        const sql = `
+          UPDATE tournament_matches 
+          SET status = 'idle', player_a_accepted = 0, player_b_accepted = 0
+          WHERE id = ? AND tournament_id = ?
+        `;
+        db.run(sql, [matchId, tournamentId], (err) => {
+          if (err) return reject({ status: 400, message: 'Failed to cancel match', error: (err as any)?.message || String(err) });
+          resolve();
+        });
+      });
+    });
+  }
+
+  /**
    * Record match result
    */
   static recordMatchResult(
