@@ -58,6 +58,10 @@ services:
     container_name: prometheus
     volumes:
       - ./prometheus/config:/etc/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--web.external-url=https://e3r8p4.1337.ma/prometheus'
+      - '--web.route-prefix=/'
     networks:
       - webpong
     depends_on:
