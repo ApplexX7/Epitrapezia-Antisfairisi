@@ -4,7 +4,7 @@ import path from "path";
 sqlite3.verbose();
 const { Database } = sqlite3;
 
-const dbPath = path.resolve(__dirname, "./mydatabase.sqlite");
+const dbPath = path.resolve(__dirname, "./webpongdatabases.sqlite");
 export const db = new Database(dbPath, (err : any) => {
     if (err) {
         console.error("Error opening database:", err.message);

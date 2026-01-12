@@ -4,7 +4,7 @@ groups:
       # High CPU Usage
       - alert: HighCPUUsage
         expr: 100 - (avg by(instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 80
-        for: 5m
+        for: 1s
         labels:
           severity: warning
         annotations:
@@ -14,7 +14,7 @@ groups:
       # High Memory Usage
       - alert: HighMemoryUsage
         expr: (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100 > 85
-        for: 5m
+        for: 1s
         labels:
           severity: warning
         annotations:
@@ -24,7 +24,7 @@ groups:
       # Critical Memory Usage
       - alert: CriticalMemoryUsage
         expr: (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100 > 95
-        for: 2m
+        for: 1s
         labels:
           severity: critical
         annotations:
@@ -34,7 +34,7 @@ groups:
       # Container Down
       - alert: ContainerDown
         expr: absent(container_last_seen{name=~"client|server|nginx|grafana|prometheus"})
-        for: 1m
+        for: 1s
         labels:
           severity: critical
         annotations:
@@ -44,7 +44,7 @@ groups:
       # High HTTP Error Rate
       - alert: HighHTTPErrorRate
         expr: rate(http_request_duration_seconds_count{status=~"5.."}[5m]) / rate(http_request_duration_seconds_count[5m]) > 0.1
-        for: 5m
+        for: 1s
         labels:
           severity: warning
         annotations:
@@ -54,7 +54,7 @@ groups:
       # Service Down
       - alert: ServiceDown
         expr: up == 0
-        for: 1m
+        for: 1s
         labels:
           severity: critical
         annotations:
@@ -64,7 +64,7 @@ groups:
       # Prometheus Target Missing
       - alert: PrometheusTargetMissing
         expr: up == 0
-        for: 5m
+        for: 1s
         labels:
           severity: critical
         annotations:
@@ -74,7 +74,7 @@ groups:
       # Disk Space Low
       - alert: DiskSpaceLow
         expr: (node_filesystem_avail_bytes{fstype!~"tmpfs|fuse.lxcfs"} / node_filesystem_size_bytes{fstype!~"tmpfs|fuse.lxcfs"}) * 100 < 20
-        for: 5m
+        for: 1s
         labels:
           severity: warning
         annotations:
