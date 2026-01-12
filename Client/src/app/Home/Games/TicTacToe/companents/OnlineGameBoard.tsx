@@ -9,7 +9,7 @@ interface OnlineGameBoardProps {
 
 export default function OnlineGameBoard({ board, winner, onCellClick, disabled }: OnlineGameBoardProps) {
   return (
-    <div className="grid grid-cols-3 gap-6 sm:gap-8 md:gap-10">
+    <div className="grid grid-cols-3 gap-4">
       {board.map((value, index) => {
         const isWinningCell = winner?.line?.includes(index);
         return (
