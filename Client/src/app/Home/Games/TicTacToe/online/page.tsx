@@ -90,8 +90,8 @@ export default function OnlineTicTacToe() {
     const handleGameState = (state: TttGameState) => {
       setGameState(state);
       
-      // Show next round button if there's a round winner but match isn't over
-      if (state.winner && !state.matchOver) {
+      // Show next round button if there's a round winner OR draw, but match isn't over
+      if ((state.winner || state.isDraw) && !state.matchOver) {
         setShowNextRound(true);
       } else {
         setShowNextRound(false);
@@ -113,6 +113,7 @@ export default function OnlineTicTacToe() {
 
     const handleError = (payload: { message: string }) => {
       console.error("TicTacToe error:", payload.message);
+      setStatus(`❌ Error: ${payload.message}`);
     };
 
     socket.on("ttt:waiting", handleWaiting);
@@ -201,8 +202,8 @@ export default function OnlineTicTacToe() {
     // Check if cell is empty
     if (gameState.board[index] !== null) return;
     
-    // Check if there's a winner already
-    if (gameState.winner) return;
+    // Check if round is already decided (win or draw)
+    if (gameState.winner || gameState.isDraw) return;
 
     socket.emit("ttt:makeMove", { roomId, index });
   };
@@ -357,12 +358,12 @@ export default function OnlineTicTacToe() {
             board={gameState?.board ?? Array(9).fill(null)}
             winner={gameState?.winner ? { player: gameState.winner.oderId === player1Id ? 'X' : 'O', line: gameState.winner.line } : null}
             onCellClick={handleCellClick}
-            disabled={!isMyTurn || !!gameState?.winner}
+            disabled={!isMyTurn || !!gameState?.winner || !!gameState?.isDraw}
           />
 
           <div className="flex gap-4 mt-4">
-            {/* Next Round button */}
-            {showNextRound && !gameState?.matchOver && (
+            {/* Next Round button - show for wins or draws when match isn't over */}
+            {showNextRound && !gameState?.matchOver && (gameState?.winner || gameState?.isDraw) && (
               <button
                 onClick={handleNextRound}
                 className="mt-7 p-3 rounded-xl hover:scale-110 bg-[#F5F5F5]/25 text-2xl text-white flex items-center gap-2 

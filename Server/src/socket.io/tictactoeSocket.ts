@@ -425,12 +425,21 @@ export function registerTicTacToeSocket(io: Server, socket: UserSocket) {
   // Handle next round request
   socket.on("ttt:nextRound", ({ roomId }: { roomId: string }) => {
     const room = activeTicTacToeRooms[roomId];
-    if (!room) return;
+    if (!room) {
+      socket.emit("ttt:error", { message: "Room not found" });
+      return;
+    }
 
     const playerIndex = room.players.findIndex((p) => p.id === socket.id);
-    if (playerIndex === -1) return;
+    if (playerIndex === -1) {
+      socket.emit("ttt:error", { message: "Not a participant in this game" });
+      return;
+    }
 
-    if (room.gameOver) return;
+    if (room.gameOver) {
+      socket.emit("ttt:error", { message: "Game is already over" });
+      return;
+    }
 
     // Reset board for next round
     room.board = Array(9).fill(null);
