@@ -18,6 +18,7 @@ import { useState } from "react"
   
 export function NavigationMenuDemo() {
     const disconnectSocket = useSocketStore((state) => state.disconnectSocket);
+    const clearNotifications = useSocketStore((state) => state.clearNotifications);
     const router = useRouter()
     const {clearAuth, user} = useAuth()
     const [avatarError, setAvatarError] = useState(false)
@@ -26,7 +27,13 @@ export function NavigationMenuDemo() {
       try {
         await api.post("/auth/logout");
         disconnectSocket();
+        clearNotifications();
         clearAuth();
+        
+        // Clear session storage flags for pending requests
+        if (typeof window !== 'undefined') {
+          sessionStorage.removeItem('lastPendingRequestsFetch');
+        }
   
         toast.success(`Goodbye ${user?.username || ""}! 👋`, {
           icon: "🚪",

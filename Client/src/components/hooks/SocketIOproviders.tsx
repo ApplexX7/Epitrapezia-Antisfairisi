@@ -85,8 +85,16 @@ export const useSocketStore = create<SocketStore>((set, get) => ({
         return;
       }
 
+      // Use stable ID for friend requests based on sender ID
+      let stableId = notif.id;
+      if (notif.type === "friend-request" && notif.from?.id) {
+        stableId = `friend-request-${notif.from.id}`;
+      } else if (!stableId) {
+        stableId = `${notif.type}-${Date.now()}`;
+      }
+
       const newNotif: Notification = {
-        id: notif.id || `${notif.type}-${Date.now()}`,
+        id: stableId,
         type: notif.type,
         message: notif.message || "",
         from: notif.from,
@@ -111,10 +119,14 @@ export const useSocketStore = create<SocketStore>((set, get) => ({
       set({ lastMatched: payload });
     });
 
-    // Legacy friend request event
+    // Legacy friend request event - use stable ID
     socket.on("friend:request", (payload: Notification) => {
+      const stableId = payload?.from?.id 
+        ? `friend-request-${payload.from.id}` 
+        : `friend-request-${Date.now()}`;
+        
       const newNotif: Notification = {
-        id: `friend-request-${payload?.from?.id}-${Date.now()}`,
+        id: stableId,
         type: "friend-request",
         message: payload?.message || "You have a new friend request",
         from: payload?.from,

@@ -1,7 +1,7 @@
 "use client";
 import { BoxLayout } from '@/components/BoxLayout'
 import GameHistory from '@/components/GameHistory'
-import React, { useRef } from "react";
+import React from "react";
 import BarProgressionLevel  from '@/components/BarProgressionLevel'
 import {ChartLineDefault} from '@/components/LineChart'
 import { ChartBarDefault } from '@/components/TimeLineLogin'
@@ -19,12 +19,32 @@ interface FriendRequest {
   senderUsername: string;
 }
 
+// Module-level flag to track if we've already fetched pending requests this session
+// This persists across component re-renders but resets on hard page refresh
+let hasFetchedPendingRequestsGlobal = false;
+
+// Helper to check if we've fetched recently (within 5 seconds)
+function shouldFetchPendingRequests(): boolean {
+  if (typeof window === 'undefined') return false;
+  if (hasFetchedPendingRequestsGlobal) return false;
+  
+  const lastFetch = sessionStorage.getItem('lastPendingRequestsFetch');
+  if (lastFetch) {
+    const timeSinceLastFetch = Date.now() - parseInt(lastFetch, 10);
+    // Don't fetch if we fetched within the last 5 seconds
+    if (timeSinceLastFetch < 5000) {
+      hasFetchedPendingRequestsGlobal = true;
+      return false;
+    }
+  }
+  return true;
+}
+
 export default function Home() {
   const user = useAuth.getState().user
   const router = useRouter();
   const [, setGamesHistory] = React.useState<GameHistory[]>([]);
   const [xpRefreshKey, setXpRefreshKey] = React.useState(0);
-  const hasFetchedPendingRequests = useRef(false);
 
   const historyGames = async () => {
     try {
@@ -38,9 +58,14 @@ export default function Home() {
   };
 
   const fetchPendingRequests = React.useCallback(async () => {
-    // Prevent multiple fetches
-    if (hasFetchedPendingRequests.current) return;
-    hasFetchedPendingRequests.current = true;
+    // Prevent multiple fetches in the same session using sessionStorage
+    if (!shouldFetchPendingRequests()) return;
+    hasFetchedPendingRequestsGlobal = true;
+    
+    // Store the fetch timestamp to prevent rapid re-fetches
+    if (typeof window !== 'undefined') {
+      sessionStorage.setItem('lastPendingRequestsFetch', Date.now().toString());
+    }
     
     try {
       const res = await api.get("/friends/requests/pending");
@@ -71,7 +96,7 @@ export default function Home() {
       }
     } catch (err) {
       console.error("Error fetching pending requests:", err);
-      hasFetchedPendingRequests.current = false; // Allow retry on error
+      hasFetchedPendingRequestsGlobal = false; // Allow retry on error
     }
   }, []);
 
