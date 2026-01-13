@@ -211,7 +211,8 @@ export default function OnlineTicTacToe() {
   const handleNextRound = () => {
     if (!socket || !roomId) return;
     socket.emit("ttt:nextRound", { roomId });
-    setShowNextRound(false);
+    // Don't hide the button here - let handleGameState handle it when server confirms
+    // This ensures the button stays visible if there's a server error
   };
 
   const handleReplay = () => {
