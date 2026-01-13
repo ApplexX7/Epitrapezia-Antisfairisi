@@ -39,36 +39,17 @@
     shadow-[1px_1px_1px_1px_rgba(0,0,0,0.2)];
 }
 
-/*  scrollBar  */
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+/*  scrollBar - Hidden globally */
+* {
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
 }
 
-::-webkit-scrollbar-track {
-  background: rgba(68, 33, 153, 0.1); 
-  border-radius: 10px;
+*::-webkit-scrollbar {
+  display: none; /* Chrome, Safari and Opera */
 }
 
-::-webkit-scrollbar-thumb {
-  background: linear-gradient(
-    to bottom,
-    #442199,  
-    #762675   
-  );
-  border-radius: 10px;
-  border: 2px solid rgba(255, 255, 255, 0.1);
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(
-    to bottom,
-    #762675,  
-    #442199   
-  );
-}
-
-/* Hide scrollbar while maintaining scroll functionality */
+/* Hide scrollbar utility class (for explicit use) */
 .scrollbar-hide {
   -ms-overflow-style: none; /* IE and Edge */
   scrollbar-width: none; /* Firefox */
