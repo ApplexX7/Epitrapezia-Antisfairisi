@@ -1,7 +1,7 @@
 "use client";
 import { BoxLayout } from '@/components/BoxLayout'
 import GameHistory from '@/components/GameHistory'
-import React from "react";
+import React, { useRef } from "react";
 import BarProgressionLevel  from '@/components/BarProgressionLevel'
 import {ChartLineDefault} from '@/components/LineChart'
 import { ChartBarDefault } from '@/components/TimeLineLogin'
@@ -24,8 +24,7 @@ export default function Home() {
   const router = useRouter();
   const [, setGamesHistory] = React.useState<GameHistory[]>([]);
   const [xpRefreshKey, setXpRefreshKey] = React.useState(0);
-  const addNotification = useSocketStore((state) => state.addNotification);
-  const notifications = useSocketStore((state) => state.notifications);
+  const hasFetchedPendingRequests = useRef(false);
 
   const historyGames = async () => {
     try {
@@ -39,19 +38,28 @@ export default function Home() {
   };
 
   const fetchPendingRequests = React.useCallback(async () => {
+    // Prevent multiple fetches
+    if (hasFetchedPendingRequests.current) return;
+    hasFetchedPendingRequests.current = true;
+    
     try {
       const res = await api.get("/friends/requests/pending");
       if (res.data?.requests && res.data.requests.length > 0) {
+        // Get current state directly to avoid stale closure
+        const currentNotifications = useSocketStore.getState().notifications;
+        const addNotification = useSocketStore.getState().addNotification;
+        
         // Add pending requests as notifications if they're not already there
         res.data.requests.forEach((request: FriendRequest) => {
           // Check if there's already a friend-request notification from this sender
-          const exists = notifications.some((n: unknown) => {
-            const notif = n as { type?: string; from?: { id?: number } };
-            return notif.type === "friend-request" && notif.from?.id === request.senderId;
+          const exists = currentNotifications.some((n: unknown) => {
+            const notif = n as { type?: string; from?: { id?: string | number } };
+            return notif.type === "friend-request" && 
+              (notif.from?.id === String(request.senderId) || notif.from?.id === request.senderId);
           });
           if (!exists) {
             addNotification({
-              id: `friend-request-${request.senderId}-${Date.now()}`,
+              id: `friend-request-${request.senderId}`,
               type: "friend-request",
               message: `${request.senderUsername} sent you a friend request`,
               from: { id: String(request.senderId), username: request.senderUsername },
@@ -63,8 +71,9 @@ export default function Home() {
       }
     } catch (err) {
       console.error("Error fetching pending requests:", err);
+      hasFetchedPendingRequests.current = false; // Allow retry on error
     }
-  }, [notifications, addNotification]);
+  }, []);
 
   React.useEffect(() => {
     historyGames();

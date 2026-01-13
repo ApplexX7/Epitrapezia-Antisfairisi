@@ -5,6 +5,7 @@ import toast from "react-hot-toast";
 import Image from "next/image";
 import { getAvatarUrl } from "@/lib/utils";
 import { Check, X } from "@phosphor-icons/react/ssr";
+import { useSocketStore } from "./hooks/SocketIOproviders";
 
 interface FriendRequest {
   id: number;
@@ -45,6 +46,8 @@ export default function PendingFriendRequests() {
       await api.post("/friends/Accept", { friendId: senderId });
       toast.success("Friend request accepted!");
       setRequests((prev) => prev.filter((r) => r.senderId !== senderId));
+      // Also remove from notification store
+      useSocketStore.getState().removeNotification(String(senderId));
     } catch (err) {
       const error = err as { response?: { data?: { message?: string } } };
       toast.error(error.response?.data?.message || "Failed to accept request");
@@ -64,6 +67,8 @@ export default function PendingFriendRequests() {
       await api.post("/friends/Remove", { friendId: senderId });
       toast.success("Friend request declined");
       setRequests((prev) => prev.filter((r) => r.senderId !== senderId));
+      // Also remove from notification store
+      useSocketStore.getState().removeNotification(String(senderId));
     } catch (err) {
       const error = err as { response?: { data?: { message?: string } } };
       toast.error(error.response?.data?.message || "Failed to decline request");

@@ -15,6 +15,7 @@ export type GameRecord = {
   player2_score: number;
   winner_id: number;
   created_at: string;
+  game_type?: 'pong' | 'tictactoe';
   opponent?: User;
 };
 
@@ -119,7 +120,7 @@ export default function GameHistory({ playerId }: { playerId: number }) {
                 {game.opponent?.username || "Unknown"}
               </p>
               <p className="text-xs text-gray-400">
-                {formatDate(game.created_at)}
+                {formatDate(game.created_at)} • {game.game_type === 'tictactoe' ? '❌⭕ TicTacToe' : '🏓 Pong'}
               </p>
             </div>
 
@@ -141,12 +142,12 @@ export default function GameHistory({ playerId }: { playerId: number }) {
               {won ? (
                 <>
                   <CrownSimple size={14} weight="fill" />
-                  <span>Starter</span>
+                  <span>Victory</span>
                 </>
               ) : (
                 <>
                   <Star size={14} weight="fill" />
-                  <span>Underdog</span>
+                  <span>Defeat</span>
                 </>
               )}
             </div>

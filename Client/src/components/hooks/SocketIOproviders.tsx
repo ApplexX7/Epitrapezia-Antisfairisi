@@ -137,9 +137,24 @@ export const useSocketStore = create<SocketStore>((set, get) => ({
   },
 
   addNotification: (notif: Notification) =>
-    set((state) => ({
-      notifications: [notif, ...state.notifications],
-    })),
+    set((state) => {
+      // Check for duplicate notifications to prevent re-adding on page refresh
+      // For friend requests, check by sender ID; for others, check by exact ID
+      const isDuplicate = state.notifications.some((existing) => {
+        if (notif.type === "friend-request" && existing.type === "friend-request") {
+          return existing.from?.id === notif.from?.id;
+        }
+        return existing.id === notif.id;
+      });
+      
+      if (isDuplicate) {
+        return state; // Don't add duplicate
+      }
+      
+      return {
+        notifications: [notif, ...state.notifications],
+      };
+    }),
 
   removeNotification: (fromUserId: string) =>
     set((state) => ({

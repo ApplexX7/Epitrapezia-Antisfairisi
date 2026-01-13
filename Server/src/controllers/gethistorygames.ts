@@ -14,12 +14,18 @@ export function GetHistoryGames() {
                 return reply.status(400).send({ message: "Player ID required" });
             }
 
+            // Fetch games from both game_history (Pong) and tictactoe_history tables
             const gamesHistory = await new Promise((resolve, reject) => {
                 db.all(
-                    `SELECT * FROM game_history
+                    `SELECT id, player1_id, player2_id, player1_score, player2_score, winner_id, created_at, 'pong' as game_type 
+                     FROM game_history
+                     WHERE player1_id = ? OR player2_id = ?
+                     UNION ALL
+                     SELECT id, player1_id, player2_id, player1_score, player2_score, winner_id, created_at, 'tictactoe' as game_type 
+                     FROM tictactoe_history
                      WHERE player1_id = ? OR player2_id = ?
                      ORDER BY created_at DESC`,
-                    [targetPlayerId, targetPlayerId],
+                    [targetPlayerId, targetPlayerId, targetPlayerId, targetPlayerId],
                     (err: any, rows: any[]) => {
                         if (err) {
                             console.error("Error fetching game history:", err.message);
