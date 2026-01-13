@@ -9,7 +9,6 @@ export function ResendOtp(){
         reply:FastifyReply,
     ) => {
         try{
-
             const {email} = req.body;
             const user = await playerExist(email, "");
             if (!user)
@@ -28,7 +27,6 @@ export function ResendOtp(){
                 message: "OTP resent successfully",
             })
         } catch (err) {
-            console.log(err);
             return reply.status(400).send({ message: "Internal server error" });
         }
     }

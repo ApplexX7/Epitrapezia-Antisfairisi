@@ -115,7 +115,6 @@ export function MarkAttendance() {
                 totalExperience: newExperience
             });
         } catch (err) {
-            console.error("Error marking attendance:", err);
             return reply.status(400).send({ message: 'Internal server error', error: String(err) });
         }
     };
@@ -146,7 +145,6 @@ export function GetTodayAttendance() {
                 minutes: Math.round(hoursToday * 60)
             });
         } catch (err) {
-            console.error("Error fetching today's attendance:", err);
             return reply.status(400).send({ message: 'Internal server error' });
         }
     };
@@ -195,7 +193,6 @@ export function GetWeeklyAttendance() {
 
             return reply.status(200).send({ weekDays });
         } catch (err) {
-            console.error("Error fetching weekly attendance:", err);
             return reply.status(400).send({ message: 'Internal server error' });
         }
     };

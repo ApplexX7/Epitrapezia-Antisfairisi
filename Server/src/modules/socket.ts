@@ -10,15 +10,12 @@ export class SocketManager {
     });
 
     this.io.on("connection", (socket : any) => {
-      console.log("🟢 A user connected:", socket.id);
 
       socket.on("message", (data : any) => {
-        console.log("📩 Message received:", data);
         this.io.emit("message", data);
       });
 
       socket.on("disconnect", () => {
-        console.log("🔴 User disconnected:", socket.id);
       });
     });
   }

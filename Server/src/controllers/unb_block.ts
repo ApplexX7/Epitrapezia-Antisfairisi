@@ -30,7 +30,6 @@ export async function blockUser(
         
         return reply.send({ message: "User blocked successfully" });
     } catch(err) {
-        console.error("Block user error:", err);
         return reply.code(400).send({ message: `Database Error: ${err}` });
     }
 }
@@ -84,7 +83,6 @@ export async function getBlockedUsers(
         
         return reply.send({ blockedUsers });
     } catch (err: any) {
-        console.error(err);
         return reply.code(400).send({ message: "Internal Server Error" });
     }
 }

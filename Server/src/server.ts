@@ -63,13 +63,6 @@ export class Server {
     }
   }
 
-
-  private static  broadcastUsersList() {
-    const users = Array.from(this.connectedClients.values()).map(u => u.username);
-    this.io.emit("users-list", users);
-    
-  }
-
   public static route(
     method: "get" | "post" | "put" | "delete" | "patch",
     path: string,

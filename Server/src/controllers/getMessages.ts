@@ -14,10 +14,8 @@ export function getMessages(sender_id: number, receiver_id: number): Promise<any
     
     db.all(query, [sender_id, receiver_id, receiver_id, sender_id], (err : any, rows : any) => {
       if (err) {
-        console.error("❌ DB Error in getMessages:", err);
         reject(err);
       } else {
-        console.log("✅ Retrieved rows:", rows);
         resolve(rows);
       }
     });

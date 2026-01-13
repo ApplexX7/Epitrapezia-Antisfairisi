@@ -28,7 +28,6 @@ export async function getGameStats(req: FastifyRequest, reply: FastifyReply) {
 
     return reply.status(200).send(stats);
   } catch (err) {
-    console.error("Error fetching game stats:", err);
     return reply.status(400).send({ message: "Internal Server Error" });
   }
 }

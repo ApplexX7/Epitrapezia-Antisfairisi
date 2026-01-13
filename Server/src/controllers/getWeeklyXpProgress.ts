@@ -68,7 +68,6 @@ export function GetWeeklyXpProgress() {
         weekEnd: endOfWeek.toISOString().split('T')[0]
       });
     } catch (err) {
-      console.error("Error fetching weekly XP progress:", err);
       return reply.status(400).send({ message: "Internal server error" });
     }
   };

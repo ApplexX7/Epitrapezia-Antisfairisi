@@ -20,7 +20,6 @@ function updateLevel(playerId: number) {
     [playerId],
     (err, row: { experience: number }) => {
       if (err) {
-        console.error("Error getting experience:", err);
         return;
       }
       const experience = row.experience;

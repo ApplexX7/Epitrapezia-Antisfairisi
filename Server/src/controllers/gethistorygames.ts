@@ -38,7 +38,6 @@ export function GetHistoryGames() {
             });
             return reply.status(200).send({ games: gamesHistory });
         } catch (err) {
-            console.error("Unexpected error in GetHistoryGames:", err);
             return reply.status(400).send({ message: 'Internal server error' });
         }
     };

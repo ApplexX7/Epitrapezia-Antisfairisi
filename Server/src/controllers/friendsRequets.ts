@@ -47,7 +47,6 @@ export async function FriendRequest(req : FastifyRequest<{Body:{friendId : numbe
         });
         return reply.send({ success: true, message: "Friend request sent" });
     } catch(err){
-        console.log(err);
         return reply.code(400).send({mesage : `Database Error : ${err}`})
     }
 }

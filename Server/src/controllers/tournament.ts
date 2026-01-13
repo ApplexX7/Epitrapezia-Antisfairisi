@@ -49,7 +49,6 @@ export class TournamentController {
               const countSql = `SELECT COUNT(*) as count FROM tournament_players WHERE tournament_id = ?`;
               db.get(countSql, [tournament.id], (err, result: any) => {
                 if (err) {
-                  console.error('Error getting player count:', err);
                   resolve({ ...tournament, playerCount: 0 });
                 } else {
                   resolve({ ...tournament, playerCount: result.count || 0 });

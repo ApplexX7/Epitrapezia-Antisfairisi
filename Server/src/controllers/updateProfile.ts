@@ -102,7 +102,6 @@ export function updateProfile() {
 
       return reply.code(200).send({ user: mapUser(updated) });
     } catch (err) {
-      console.error("updateProfile error", err);
       return reply.code(400).send({ message: "Internal Server Error" });
     }
   };

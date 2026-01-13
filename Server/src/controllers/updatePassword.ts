@@ -64,7 +64,6 @@ export function updatePassword() {
 
       return reply.code(200).send({ message: "Password updated successfully" });
     } catch (err) {
-      console.error("updatePassword error", err);
       return reply.code(400).send({ message: "Internal Server Error" });
     }
   };

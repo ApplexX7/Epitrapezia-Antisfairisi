@@ -93,7 +93,6 @@ export function toggleTwoFactor() {
           : "Two-Factor Authentication disabled",
       });
     } catch (err) {
-      console.error("toggleTwoFactor error", err);
       return reply.code(400).send({ message: "Internal Server Error" });
     }
   };

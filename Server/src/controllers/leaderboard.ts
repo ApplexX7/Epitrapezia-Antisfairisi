@@ -24,7 +24,6 @@ export function GetLeaderboard() {
 
       return reply.status(200).send({ players });
     } catch (err) {
-      console.error("Error fetching leaderboard:", err);
       return reply.status(400).send({ message: "Internal server error" });
     }
   };

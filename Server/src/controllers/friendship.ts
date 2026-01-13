@@ -38,7 +38,6 @@ export async function Friendship(req: FastifyRequest<{ Body: { id: number } }>, 
     }));
     return reply.send({ friendList : friend });
   } catch (err: any) {
-    console.error(err);
     return reply.code(400).send({ message: "Internal Server Error" });
   }
 }

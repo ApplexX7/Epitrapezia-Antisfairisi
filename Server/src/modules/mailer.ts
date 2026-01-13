@@ -17,10 +17,8 @@ export async function SendEmail(to:string, subject: string, html : string) {
             subject,
             html,
         });
-        console.log("✅ Email sent:", info.messageId);
         return info;
     }catch (err){
-        console.error("❌ Error sending email:", err);
         throw err;
     }
 }

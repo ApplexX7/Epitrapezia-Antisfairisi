@@ -10,10 +10,6 @@ import { storeRefrechTokenInDb } from "../modules/storeRefreshTokenInDb";
 const CLIENT_ID = process.env.GOOGLE_CLIENT_ID!;
 const CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET!;
 const REDIRECT_URI = process.env.GOOGLE_REDIRECT_URI!;
-// Prefer a relative redirect so the browser will be sent back to the same host/port
-// that initiated the OAuth flow (works with reverse proxies). If you need an
-// absolute URL, set FRONTEND_REDIRECT in env and uncomment the line below.
-// const FRONTEND_REDIRECT = process.env.FRONTEND_REDIRECT || "https://localhost:443/Home";
 
 const googleClient = new OAuth2Client(CLIENT_ID);
 
@@ -126,7 +122,6 @@ export async function GoogleAuthCallback(req: FastifyRequest, reply: FastifyRepl
   // TLS on a non-standard host port (e.g. 8443) while the server is unaware.
   reply.redirect('/Home');
   } catch (err: any) {
-    console.error("Google OAuth callback error:", err.response?.data || err);
     reply.code(400).send({ message: "Google OAuth failed" });
   }
 }

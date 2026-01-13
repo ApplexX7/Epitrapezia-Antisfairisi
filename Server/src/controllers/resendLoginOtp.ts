@@ -49,7 +49,6 @@ export function ResendLoginOtp() {
 
       return reply.status(200).send({ message: "Two-factor code resent" });
     } catch (err) {
-      console.error(err);
       return reply.status(400).send({ message: "Internal server error" });
     }
   };

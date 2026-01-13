@@ -113,7 +113,6 @@ export function VerifyLoginOtp() {
           token: { accessToken },
         });
     } catch (err) {
-      console.error(err);
       return reply.status(400).send({ message: "Internal server error" });
     }
   };

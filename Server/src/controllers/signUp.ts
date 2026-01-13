@@ -56,7 +56,6 @@ export function SignUp() {
       try {
         await ensureGameStatsForPlayer(userId);
       } catch (e) {
-        console.error('Could not create initial game_stats row for user', userId, e);
       }
       // end
       const otp = generateOTP();
@@ -83,7 +82,6 @@ export function SignUp() {
         user,
       });
     } catch (err) {
-      console.log(err);
       return reply.status(400).send({ message: "Internal server error during registration" });
     }
   };

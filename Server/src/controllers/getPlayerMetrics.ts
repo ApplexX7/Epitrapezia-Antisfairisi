@@ -106,7 +106,6 @@ export function GetPlayerMetrics() {
         },
       });
     } catch (err) {
-      console.error("Error fetching player metrics:", err);
       return reply.status(400).send({ message: "Internal server error" });
     }
   };

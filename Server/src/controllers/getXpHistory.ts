@@ -79,7 +79,6 @@ export function GetXpHistory() {
         currentExperience: player.experience
       });
     } catch (err) {
-      console.error("Error fetching XP history:", err);
       return reply.status(400).send({ message: "Internal server error" });
     }
   };

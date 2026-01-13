@@ -33,7 +33,6 @@ export async function getPendingFriendRequests(req: FastifyRequest, reply: Fasti
       count: requests.length,
     });
   } catch (err) {
-    console.error("getPendingFriendRequests error:", err);
     return reply.code(400).send({ message: "Database Error" });
   }
 }
