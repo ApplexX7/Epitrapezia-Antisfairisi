@@ -18,11 +18,11 @@ route:
 receivers:
   - name: 'email-notifications'
     email_configs:
-      - to: 'hilali123hd@gmail.com'
+      - to: ''
         from: 'alertmanager@webpong.com'
         smarthost: 'smtp.gmail.com:587'
-        auth_username: 'hilali123hd@gmail.com'
-        auth_password: 'juku vkpu wejh jost'
+        auth_username: ''
+        auth_password: ''
         send_resolved: true
         headers:
           subject: '{{ .Status | toUpper }} - {{ .CommonLabels.alertname }}'

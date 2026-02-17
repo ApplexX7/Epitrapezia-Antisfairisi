@@ -27,7 +27,7 @@ A modern multiplayer Pong game web application with real-time gameplay, tourname
 |--------|------|------------------|
 | mohilali | Tech Lead / Developer | Backend architecture, API development, database design |
 | asedoun | Developer | Frontend development, UI/UX implementation |
-| sel-aada | PO / Developer | Feature coordination, game logic, testing |
+| sel-aada | Developer | Feature coordination, testing |
 
 ---
 
@@ -116,9 +116,6 @@ players ─────────┬──── player_infos
 ## 🚀 Instructions
 
 ### Prerequisites
-- Docker & Docker Compose
-- Make (optional, for convenience)
-- Git
 
 ### Environment Setup
 
@@ -142,7 +139,87 @@ docker-compose up --build
    - **App**: https://localhost:443
    - **Grafana**: http://localhost:4000 (for monitoring)
 
----
+### Running with Makefile
+
+The project provides a Makefile for convenient command execution:
+
+#### Common Commands:
+
+```bash
+# Build and start all services (recommended for first run)
+make all
+
+# Build images without starting containers
+make build
+
+# Start services in detached mode (runs in background)
+make start
+
+# Stop all services
+make stop
+
+# Stop and remove all volumes and images
+make clean
+
+# View logs from all services (live, use Ctrl+C to exit)
+make logs
+
+# View logs from specific service
+make logs-server      # Backend server logs
+make logs-client      # Frontend client logs
+
+# Restart services
+make restart          # Restart all services
+make restart-server   # Restart only backend
+make restart-client   # Restart only frontend
+
+# Remove stopped containers and prune build cache
+make clean-cache
+```
+
+### Running Manually (Without Makefile)
+
+If you prefer to use Docker Compose directly:
+
+```bash
+# Build all images
+docker-compose -f docker-compose.yml build
+
+# Build and start all services with logs
+docker-compose -f docker-compose.yml up --build --remove-orphans
+
+# Start services in background (detached mode)
+docker-compose -f docker-compose.yml up -d
+
+# Stop all services
+docker-compose -f docker-compose.yml down
+
+# Stop and remove all volumes (clean slate)
+docker-compose -f docker-compose.yml down -v
+
+# View logs from all services
+docker-compose -f docker-compose.yml logs -f
+
+# View specific service logs
+docker-compose -f docker-compose.yml logs -f server    # Backend
+docker-compose -f docker-compose.yml logs -f client    # Frontend
+
+# Restart specific service
+docker-compose -f docker-compose.yml restart server
+docker-compose -f docker-compose.yml restart client
+```
+
+### Accessing the Application
+
+Once running, access the services at:
+
+| Service | URL | Purpose |
+|---------|-----|---------|
+| **Web App** | https://localhost:443 | Main Pong game application |
+| **Grafana** | http://localhost:4000 | Monitoring dashboards (admin/admin by default) |
+| **Backend API** | http://localhost:8081 | API endpoints |
+| **Frontend Dev** | http://localhost:3000 | Frontend dev server (internal) |
+
 
 ## 👤 Individual Contributions
 
@@ -151,18 +228,18 @@ docker-compose up --build
 - Set up database schema and migrations
 - Implemented authentication system with 2FA
 - Docker configuration and deployment setup
-
-### asedoun
-- Built the entire frontend UI with Next.js
-- Implemented real-time game rendering
-- Chat interface and Socket.IO integration
 - Set up monitoring with Grafana dashboards
-
-### sel-aada
-- Developed game logic for Pong and Tic-Tac-Toe
-- Tournament bracket system
 - Player statistics and leaderboard features
 - Testing and bug fixes
+
+### asedoun
+- Implemented real-time game rendering
+- Tournament bracket system
+- Developed game logic for Pong game
+
+### sel-aada
+- Chat interface 
+- Developed game logic for  Tic-Tac-Toe
 
 ---
 
@@ -174,13 +251,6 @@ docker-compose up --build
 - [Docker Compose Reference](https://docs.docker.com/compose/)
 - [SQLite Documentation](https://www.sqlite.org/docs.html)
 
-### AI Usage
-AI tools (GitHub Copilot) were used for:
-- Code autocompletion and boilerplate generation
-- Debugging assistance
-- Documentation writing support
-
-All AI-generated code was reviewed and adapted by team members.
 
 ---
 
