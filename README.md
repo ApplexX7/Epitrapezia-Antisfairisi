@@ -85,13 +85,13 @@ players ─────────┬──── player_infos
 |---------|-------------|----------------|
 | User Authentication | Sign up, login, Google OAuth, 2FA | mohilali |
 | Real-time Pong Game | Multiplayer Pong with Socket.IO | asedoun, sel-aada |
-| Tic-Tac-Toe | Alternative game mode | sel-aada |
+| Tic-Tac-Toe | Alternative game mode | asedoun |
 | Tournament System | Create/join tournaments with brackets | mohilali, asedoun |
-| Chat System | Real-time messaging between friends | asedoun |
+| Chat System | Real-time messaging between friends | sel-aada |
 | Friend Management | Send requests, accept, block users | mohilali |
-| Player Profiles | Stats, level progression, avatars | sel-aada |
+| Player Profiles | Stats, level progression, avatars | mohilali |
 | Leaderboard | Global player rankings | mohilali |
-| Monitoring Dashboard | Grafana + Prometheus metrics | asedoun |
+| Monitoring Dashboard | Grafana + Prometheus metrics | mohilali |
 
 ---
 
