@@ -102,10 +102,10 @@ players ─────────┬──── player_infos
 | Backend Framework (Fastify) | Major | 2 | RESTful API with Fastify | mohilali |
 | Frontend Framework (Next.js) | Major | 2 | React-based SPA with SSR | asedoun |
 | Database Integration | Minor | 1 | SQLite with proper schema | mohilali |
-| User Management | Major | 2 | Auth, profiles, 2FA | mohilali, sel-aada |
-| Real-time Multiplayer | Major | 2 | Socket.IO game implementation | asedoun, sel-aada |
-| Chat System | Major | 2 | Real-time messaging | asedoun |
-| Monitoring (Prometheus/Grafana) | Minor | 1 | Metrics and dashboards | asedoun |
+| User Management | Major | 2 | Auth, profiles, 2FA | mohilali |
+| Real-time Multiplayer | Major | 2 | Socket.IO game implementation | mohilali,asedoun, sel-aada |
+| Chat System | Major | 2 | Real-time messaging | sel-aada |
+| Monitoring (Prometheus/Grafana) | Minor | 1 | Metrics and dashboards | mohilali |
 | Docker Deployment | Minor | 1 | Full containerization | mohilali |
 | Another Game (Tic-Tac-Toe) | Minor | 1 | Additional game mode | sel-aada |
 
